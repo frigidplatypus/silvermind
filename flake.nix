@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    sbtask.url = "git+file:///home/justin/development/go/sbtask";
+    sbtask.url = "git+ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git";
   };
 
   outputs = { self, nixpkgs, flake-utils, sbtask, ... }:

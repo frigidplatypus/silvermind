@@ -109,11 +109,11 @@
         "rev": "694c68766d139e183fe5fa6cdaead7eac377fbaa",
         "revCount": 19,
         "type": "git",
-        "url": "file:///home/justin/development/go/sbtask"
+        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       },
       "original": {
         "type": "git",
-        "url": "file:///home/justin/development/go/sbtask"
+        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       }
     },
     "systems": {
