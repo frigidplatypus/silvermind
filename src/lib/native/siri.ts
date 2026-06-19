@@ -12,8 +12,8 @@ export interface SiriIntent {
 const addTaskIntent: SiriIntent = {
   name: 'AddTaskIntent',
   title: 'Add Task',
-  description: 'Create a new task in Prowl',
-  suggestedPhrase: 'Add a task in Prowl',
+  description: 'Create a new task in Silvermind',
+  suggestedPhrase: 'Add a task in Silvermind',
   parameters: {
     title: { type: 'string', description: 'Task title' },
   },
@@ -22,15 +22,15 @@ const addTaskIntent: SiriIntent = {
 const openInboxIntent: SiriIntent = {
   name: 'OpenInboxIntent',
   title: 'Open Inbox',
-  description: 'Open the Prowl inbox',
-  suggestedPhrase: 'Show me my tasks in Prowl',
+  description: 'Open the Silvermind inbox',
+  suggestedPhrase: 'Show me my tasks in Silvermind',
 };
 
 const openTodayIntent: SiriIntent = {
   name: 'OpenTodayIntent',
   title: 'Open Today',
-  description: "Open Prowl's Today view",
-  suggestedPhrase: "Show me today's tasks in Prowl",
+  description: "Open Silvermind's Today view",
+  suggestedPhrase: "Show me today's tasks in Silvermind",
 };
 
 export const allIntents: SiriIntent[] = [addTaskIntent, openInboxIntent, openTodayIntent];

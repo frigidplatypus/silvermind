@@ -17,7 +17,7 @@
 </script>
 
 <nav class="sidebar" role="navigation" aria-label="Main navigation">
-  <div class="sidebar-brand">🐾 Prowl</div>
+  <div class="sidebar-brand">🐾 Silvermind</div>
   {#each items as item}
     <button
       class="sidebar-item"

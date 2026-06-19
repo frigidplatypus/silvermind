@@ -1,4 +1,4 @@
-# Research: Prowl Desktop Layout
+# Research: Silvermind Desktop Layout
 
 **Date**: 2026-06-19
 **Feature**: [spec.md](./spec.md)

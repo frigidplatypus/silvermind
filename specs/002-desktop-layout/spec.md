@@ -1,4 +1,4 @@
-# Feature Specification: Prowl Desktop Layout
+# Feature Specification: Silvermind Desktop Layout
 
 **Feature Branch**: `002-desktop-layout`
 

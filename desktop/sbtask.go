@@ -52,7 +52,7 @@ func StartSbtaskServer(cfgPath string) (*SbtaskServer, error) {
 	go func() {
 		s.health.State = "running"
 		s.health.LastError = ""
-		log.Printf("[prowl] sbtask serve running on localhost:%d space=%s", defaultPort, spaceURL)
+		log.Printf("[silvermind] sbtask serve running on localhost:%d space=%s", defaultPort, spaceURL)
 		if err := s.srv.Start(); err != nil {
 			s.health.State = "failed"
 			s.health.LastError = err.Error()

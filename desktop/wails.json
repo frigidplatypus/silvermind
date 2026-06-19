@@ -1,5 +1,5 @@
 {
-  "name": "prowl-desktop",
+  "name": "silvermind",
   "assetdir": "frontend/dist",
   "frontend:install": "cd .. && pnpm build:desktop",
   "frontend:build": "",
@@ -9,18 +9,18 @@
   "version": "2",
   "Path": "",
   "BuildDir": "",
-  "outputfilename": "prowl-desktop",
+  "outputfilename": "silvermind",
   "OutputType": "",
   "Platform": "",
   "runNonNativeBuildHooks": false,
   "postBuildHooks": null,
   "Author": {
-    "name": "Prowl",
+    "name": Silvermind",
     "email": ""
   },
   "Info": {
-    "companyName": "Prowl",
-    "productName": "Prowl Desktop",
+    "companyName": Silvermind",
+    "productName": Silvermind Desktop",
     "productVersion": "0.1.0",
     "copyright": "",
     "comments": "Desktop task management powered by sbtask"

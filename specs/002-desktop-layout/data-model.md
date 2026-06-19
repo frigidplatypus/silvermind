@@ -1,4 +1,4 @@
-# Data Model: Prowl Desktop Layout
+# Data Model: Silvermind Desktop Layout
 
 **Date**: 2026-06-19
 **Feature**: [spec.md](./spec.md)

@@ -19,7 +19,7 @@ func main() {
 	app := &App{}
 
 	err := wails.Run(&options.App{
-		Title:     "Prowl",
+		Title:     "Silvermind",
 		Width:     1200,
 		Height:    800,
 		MinWidth:  800,
@@ -62,7 +62,7 @@ func (a *App) startSbtask() {
 	cfgPath := filepath.Join(home, ".config", "sbtask", "config.yaml")
 	s, err := StartSbtaskServer(cfgPath)
 	if err != nil {
-		log.Printf("[prowl] sbtask startup failed: %v", err)
+		log.Printf("[silvermind] sbtask startup failed: %v", err)
 	}
 	a.server = s
 }

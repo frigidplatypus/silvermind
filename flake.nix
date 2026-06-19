@@ -1,5 +1,5 @@
 {
-  description = "Prowl — task management powered by sbtask";
+  description = "Silvermind — task management powered by sbtask";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -12,19 +12,17 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        # ── Svelte frontend (static assets) ───────────────────────────
-        prowl-frontend-desktop = pkgs.stdenv.mkDerivation {
-          pname = "prowl-frontend-desktop";
+        # ── Svelte frontend ──────────────────────────────────────────
+        silvermind-frontend-desktop = pkgs.stdenv.mkDerivation {
+          pname = "silvermind-frontend-desktop";
           version = "0.1.0";
           src = ./.;
 
-          nativeBuildInputs = with pkgs; [
-            nodejs-slim_22
-            pnpm
-          ];
+          nativeBuildInputs = with pkgs; [ nodejs-slim_22 pnpm ];
 
           buildPhase = ''
             export HOME=$TMPDIR
+            cd $src
             pnpm install --no-frozen-lockfile
             pnpm exec vite build --config vite.config.desktop.ts
           '';
@@ -35,43 +33,38 @@
           '';
         };
 
-        # ── Prowl desktop app (Wails + Go) ───────────────────────────
-        prowl-desktop = pkgs.stdenv.mkDerivation {
-          pname = "prowl-desktop";
+        # ── Silvermind desktop app ────────────────────────────────────────
+        silvermind = pkgs.stdenv.mkDerivation {
+          pname = "silvermind";
           version = "0.1.0";
           src = ./desktop;
 
           nativeBuildInputs = with pkgs; [
-            pkg-config
-            wrapGAppsHook3
-            go
+            pkg-config wrapGAppsHook3 go
           ];
 
-          buildInputs = with pkgs; [
-            webkitgtk_6_0
-            gtk3
-          ];
+          buildInputs = with pkgs; [ webkitgtk_6_0 gtk3 ];
 
           preBuild = ''
             mkdir -p frontend/dist
-            cp -r ${prowl-frontend-desktop}/* frontend/dist/
+            cp -r ${silvermind-frontend-desktop}/* frontend/dist/
+            export HOME=$TMPDIR
           '';
 
           buildPhase = ''
-            export HOME=$TMPDIR
-            go build -ldflags="-s -w" -o prowl-desktop .
+            go build -ldflags="-s -w" -o silvermind .
           '';
 
           installPhase = ''
             mkdir -p $out/bin
-            cp prowl-desktop $out/bin/
+            cp silvermind $out/bin/
           '';
 
           meta = with pkgs.lib; {
             description = "Desktop task management powered by sbtask";
-            homepage = "https://github.com/justin/prowl";
+            homepage = "https://github.com/justin/silvermind";
             license = licenses.mit;
-            mainProgram = "prowl-desktop";
+            mainProgram = "silvermind";
             platforms = platforms.linux;
           };
         };
@@ -79,9 +72,9 @@
       in
       {
         packages = {
-          inherit prowl-frontend-desktop prowl-desktop;
+          inherit silvermind-frontend-desktop silvermind;
           inherit (sbtask.packages.${system}) sbtask;
-          default = prowl-desktop;
+          default = silvermind;
         };
 
         devShells.default = pkgs.mkShell {
@@ -96,7 +89,7 @@
 
         apps.default = {
           type = "app";
-          program = "${prowl-desktop}/bin/prowl-desktop";
+          program = "${silvermind}/bin/silvermind";
         };
       }
     );

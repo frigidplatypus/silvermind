@@ -1,4 +1,4 @@
-# Implementation Plan: Prowl Desktop Layout
+# Implementation Plan: Silvermind Desktop Layout
 
 **Branch**: `002-desktop-layout` | **Date**: 2026-06-19 | **Spec**: [spec.md](./spec.md)
 

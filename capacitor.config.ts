@@ -1,15 +1,15 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'ai.prowl.app',
-  appName: 'Prowl',
+  appId: 'ai.silvermind.app',
+  appName: 'Silvermind',
   webDir: 'dist',
   server: {
     allowNavigation: ['*'],
     cleartext: true,
   },
   ios: {
-    scheme: 'Prowl',
+    scheme: 'Silvermind',
     contentInset: 'automatic',
     prefersStatusBarHidden: false,
   },

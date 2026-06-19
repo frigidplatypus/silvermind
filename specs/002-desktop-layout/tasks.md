@@ -1,4 +1,4 @@
-# Tasks: Prowl Desktop Layout
+# Tasks: Silvermind Desktop Layout
 
 **Input**: Design documents from `/specs/002-desktop-layout/`
 

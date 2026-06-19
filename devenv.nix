@@ -9,12 +9,15 @@
     go
     gopls
     delve
+    nodejs-slim_22
+    pnpm
+    wails
+    webkitgtk_6_0
+    gtk3
+    pkg-config
 
     # sbtask CLI from sbtask flake
     inputs.sbtask.packages.${pkgs.system}.sbtask
-
-    # Prowl desktop from local flake (includes frontend + Go binary)
-    inputs.prowl.packages.${pkgs.system}.prowl-desktop
   ];
 
   # https://devenv.sh/languages/
@@ -31,7 +34,6 @@
   # https://devenv.sh/processes/
   processes.sbtask.exec = "sbtask --config ${config.env.DEVENV_ROOT}/sbtask-config.yaml serve --port 7433 --host 0.0.0.0";
   processes.vite.exec = "${lib.getExe pkgs.pnpm} --dir ${config.env.DEVENV_ROOT} exec vite --host 0.0.0.0 --port 5173";
-  processes.desktop.exec = "prowl-desktop";
 
   # https://devenv.sh/scripts/
   scripts.hello.exec = ''
@@ -39,7 +41,7 @@
   '';
 
   scripts.build-desktop.exec = ''
-    echo "Building Prowl desktop..."
+    echo "Building Silvermind desktop..."
     nix build ${config.env.DEVENV_ROOT}#prowl-desktop --no-link
     echo "Done: result/bin/prowl-desktop"
   '';
@@ -49,7 +51,7 @@
     hello
     git --version
     go version
-    echo "Prowl packages:"
+    echo "Silvermind packages:"
     echo "  sbtask:          $(which sbtask)"
     echo "  prowl-desktop:   $(which prowl-desktop || echo 'built by flake, not in PATH by default')"
     echo ""

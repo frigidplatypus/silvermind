@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Prowl Desktop Layout
+# Specification Quality Checklist: Silvermind Desktop Layout
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-06-19

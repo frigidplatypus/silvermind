@@ -1,7 +1,7 @@
 {
-  "name": "prowl",
+  "name": "silvermind",
   "version": "0.1.0",
-  "description": "Prowl — a native iOS task management app powered by sbtask",
+  "description": "Silvermind — a native iOS task management app powered by sbtask",
   "type": "module",
   "scripts": {
     "dev": "vite",

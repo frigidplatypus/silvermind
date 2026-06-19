@@ -4,8 +4,6 @@ inputs:
     url: github:cachix/devenv-nixpkgs/rolling
   sbtask:
     url: /home/justin/development/go/sbtask
-  prowl:
-    url: /home/justin/development/mobile_apps/prowl
 
 # If you're using non-OSS software, you can set allow_unfree to true.
 # allow_unfree: true
