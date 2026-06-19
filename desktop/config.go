@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
+	"sort"
 
-	"gopkg.in/yaml.v3"
+	"github.com/justin/sbtask/pkg/config"
 )
 
-type SpaceConfig struct {
+type SpaceInfo struct {
 	Name        string `json:"name"`
 	URL         string `json:"url"`
 	DefaultPage string `json:"default_page"`
@@ -16,23 +15,13 @@ type SpaceConfig struct {
 	Active      bool   `json:"active"`
 }
 
-type configFile struct {
-	Spaces      map[string]struct {
-		Space       string `yaml:"space"`
-		DefaultPage string `yaml:"default_page"`
-		InboxPage   string `yaml:"inbox_page"`
-	} `yaml:"spaces"`
-	ActiveSpace string `yaml:"active_space"`
-}
-
 type ConfigManager struct {
 	path string
 }
 
 func NewConfigManager() *ConfigManager {
-	home, _ := os.UserHomeDir()
 	return &ConfigManager{
-		path: filepath.Join(home, ".config", "sbtask", "config.yaml"),
+		path: config.DefaultConfigPath(),
 	}
 }
 
@@ -40,49 +29,18 @@ func (c *ConfigManager) configPath() string {
 	return c.path
 }
 
-func (c *ConfigManager) load() (*configFile, error) {
-	data, err := os.ReadFile(c.configPath())
-	if err != nil {
-		return nil, err
-	}
-	var cfg configFile
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
-	}
-	if cfg.Spaces == nil {
-		cfg.Spaces = make(map[string]struct {
-			Space       string `yaml:"space"`
-			DefaultPage string `yaml:"default_page"`
-			InboxPage   string `yaml:"inbox_page"`
-		})
-	}
-	return &cfg, nil
+func (c *ConfigManager) load() (*config.ConfigFile, error) {
+	return config.LoadConfig(c.path)
 }
 
-func (c *ConfigManager) save(cfg *configFile) error {
-	dir := filepath.Dir(c.configPath())
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(c.configPath(), data, 0644)
+func (c *ConfigManager) save(cfg *config.ConfigFile) error {
+	return config.SaveConfig(c.path, cfg)
 }
 
-func (c *ConfigManager) ListSpaces() []SpaceConfig {
-	cfg, err := c.load()
-	if err != nil {
-		return nil
-	}
-	return mapSpaces(cfg)
-}
-
-func mapSpaces(cfg *configFile) []SpaceConfig {
-	var spaces []SpaceConfig
+func toSpaces(cfg *config.ConfigFile) []SpaceInfo {
+	var spaces []SpaceInfo
 	for name, sp := range cfg.Spaces {
-		spaces = append(spaces, SpaceConfig{
+		spaces = append(spaces, SpaceInfo{
 			Name:        name,
 			URL:         sp.Space,
 			DefaultPage: sp.DefaultPage,
@@ -90,21 +48,22 @@ func mapSpaces(cfg *configFile) []SpaceConfig {
 			Active:      name == cfg.ActiveSpace,
 		})
 	}
+	sort.Slice(spaces, func(i, j int) bool { return spaces[i].Name < spaces[j].Name })
 	return spaces
 }
 
-func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceConfig, error) {
+func (c *ConfigManager) ListSpaces() []SpaceInfo {
 	cfg, err := c.load()
 	if err != nil {
-		// Create default config if missing
-		cfg = &configFile{ActiveSpace: name}
+		return nil
 	}
-	if cfg.Spaces == nil {
-		cfg.Spaces = make(map[string]struct {
-			Space       string `yaml:"space"`
-			DefaultPage string `yaml:"default_page"`
-			InboxPage   string `yaml:"inbox_page"`
-		})
+	return toSpaces(cfg)
+}
+
+func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+	cfg, err := c.load()
+	if err != nil {
+		return nil, err
 	}
 	if _, exists := cfg.Spaces[name]; exists {
 		return nil, fmt.Errorf("space %q already exists", name)
@@ -115,21 +74,21 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]Sp
 	if inboxPage == "" {
 		inboxPage = "Inbox"
 	}
-	cfg.Spaces[name] = struct {
-		Space       string `yaml:"space"`
-		DefaultPage string `yaml:"default_page"`
-		InboxPage   string `yaml:"inbox_page"`
-	}{Space: url, DefaultPage: defaultPage, InboxPage: inboxPage}
+	cfg.Spaces[name] = config.SpaceConfig{
+		Space:       url,
+		DefaultPage: defaultPage,
+		InboxPage:   inboxPage,
+	}
 	if cfg.ActiveSpace == "" {
 		cfg.ActiveSpace = name
 	}
 	if err := c.save(cfg); err != nil {
 		return nil, err
 	}
-	return mapSpaces(cfg), nil
+	return toSpaces(cfg), nil
 }
 
-func (c *ConfigManager) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceConfig, error) {
+func (c *ConfigManager) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -151,10 +110,10 @@ func (c *ConfigManager) UpdateSpace(name, url, defaultPage, inboxPage string) ([
 	if err := c.save(cfg); err != nil {
 		return nil, err
 	}
-	return mapSpaces(cfg), nil
+	return toSpaces(cfg), nil
 }
 
-func (c *ConfigManager) RemoveSpace(name string) ([]SpaceConfig, error) {
+func (c *ConfigManager) RemoveSpace(name string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -173,10 +132,10 @@ func (c *ConfigManager) RemoveSpace(name string) ([]SpaceConfig, error) {
 	if err := c.save(cfg); err != nil {
 		return nil, err
 	}
-	return mapSpaces(cfg), nil
+	return toSpaces(cfg), nil
 }
 
-func (c *ConfigManager) SetActiveSpace(name string) ([]SpaceConfig, error) {
+func (c *ConfigManager) SetActiveSpace(name string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -188,5 +147,5 @@ func (c *ConfigManager) SetActiveSpace(name string) ([]SpaceConfig, error) {
 	if err := c.save(cfg); err != nil {
 		return nil, err
 	}
-	return mapSpaces(cfg), nil
+	return toSpaces(cfg), nil
 }

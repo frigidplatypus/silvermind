@@ -4,8 +4,6 @@ import (
 	"context"
 	"embed"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -58,9 +56,7 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 func (a *App) startSbtask() {
-	home, _ := os.UserHomeDir()
-	cfgPath := filepath.Join(home, ".config", "sbtask", "config.yaml")
-	s, err := StartSbtaskServer(cfgPath)
+	s, err := StartSbtaskServer(a.config.configPath())
 	if err != nil {
 		log.Printf("[silvermind] sbtask startup failed: %v", err)
 	}
@@ -82,35 +78,35 @@ func (a *App) RestartSbtask() {
 	a.startSbtask()
 }
 
-func (a *App) ListSpaces() []SpaceConfig {
+func (a *App) ListSpaces() []SpaceInfo {
 	if a.config != nil {
 		return a.config.ListSpaces()
 	}
 	return nil
 }
 
-func (a *App) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceConfig, error) {
+func (a *App) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	if a.config != nil {
 		return a.config.AddSpace(name, url, defaultPage, inboxPage)
 	}
 	return nil, nil
 }
 
-func (a *App) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceConfig, error) {
+func (a *App) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	if a.config != nil {
 		return a.config.UpdateSpace(name, url, defaultPage, inboxPage)
 	}
 	return nil, nil
 }
 
-func (a *App) RemoveSpace(name string) ([]SpaceConfig, error) {
+func (a *App) RemoveSpace(name string) ([]SpaceInfo, error) {
 	if a.config != nil {
 		return a.config.RemoveSpace(name)
 	}
 	return nil, nil
 }
 
-func (a *App) SetActiveSpace(name string) ([]SpaceConfig, error) {
+func (a *App) SetActiveSpace(name string) ([]SpaceInfo, error) {
 	if a.config != nil {
 		spaces, err := a.config.SetActiveSpace(name)
 		if err == nil {
@@ -122,7 +118,6 @@ func (a *App) SetActiveSpace(name string) ([]SpaceConfig, error) {
 }
 
 func (a *App) GetConfigPath() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "sbtask", "config.yaml")
+	return a.config.configPath()
 }
 
