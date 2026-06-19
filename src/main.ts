@@ -1,4 +1,4 @@
-import { mount } from 'svelte';
+import { mount, unmount } from 'svelte';
 import './app.css';
 import { initServiceListener } from '$lib/stores/service.svelte';
 import { loadSpaces } from '$lib/stores/space.svelte';
@@ -9,20 +9,17 @@ initServiceListener();
 loadSpaces().catch(() => {});
 loadTheme();
 
-let app: any = null;
-
 function getActiveTab(): string {
   const hash = window.location.hash.slice(1) || '/inbox';
   return hash.replace('/', '');
 }
 
+let app: ReturnType<typeof mount>;
+
 function render() {
   const root = document.getElementById('app')!;
-  if (app) {
-    app.$set({ activeTab: getActiveTab() });
-  } else {
-    app = mount(Layout, { target: root, props: { activeTab: getActiveTab() } });
-  }
+  if (app) unmount(app);
+  app = mount(Layout, { target: root, props: { activeTab: getActiveTab() } });
 }
 
 render();

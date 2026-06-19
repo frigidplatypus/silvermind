@@ -1,6 +1,7 @@
 import type { Task } from '$lib/types/task';
 import { getInbox } from '$lib/api/inbox';
 import { getToday } from '$lib/api/today';
+import { createTask } from '$lib/api/tasks';
 
 let _tasks = $state<Task[]>([]);
 let _isLoading = $state(false);
@@ -37,10 +38,9 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
 }
 
 export async function addTask(text: string): Promise<Task | null> {
-  const { createTask } = await import('$lib/api/tasks');
   try {
     const task = await createTask({ text, page: 'Tasks' });
-    _tasks = [task, ..._tasks];
+    await loadInbox();
     return task;
   } catch (e) {
     _lastError = e instanceof Error ? e.message : 'Failed to create task';

@@ -17,7 +17,7 @@
 </script>
 
 <nav class="sidebar" role="navigation" aria-label="Main navigation">
-  <div class="sidebar-brand">🐾 Silvermind</div>
+  <div class="sidebar-brand"><Icon name="layers" size="1.25rem" /> Silvermind</div>
   {#each items as item}
     <button
       class="sidebar-item"
@@ -44,6 +44,9 @@
     height: 100%;
   }
   .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: var(--font-size-lg);
     font-weight: 700;
     color: var(--color-text);

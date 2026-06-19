@@ -10,6 +10,7 @@
   import SpaceSwitcher from '$lib/components/SpaceSwitcher.svelte';
   import ServiceErrorBanner from '$lib/components/ServiceErrorBanner.svelte';
   import DesktopShell from '$lib/components/DesktopShell.svelte';
+  import Icon from '$lib/components/Icon.svelte';
   import InboxPage from './inbox/+page.svelte';
   import TodayPage from './today/+page.svelte';
   import SettingsPage from './settings/+page.svelte';
@@ -41,7 +42,7 @@
 </script>
 
 {#if getIsDesktop()}
-  <DesktopShell activeView={currentTab} {navigate} />
+  <DesktopShell activeView={currentTab} onNavigate={navigate} />
 {:else}
   <div class="app-shell">
     <ServiceErrorBanner />
@@ -56,13 +57,13 @@
     </main>
     <nav class="tab-bar" role="tablist" aria-label="Main navigation" style="padding-bottom: var(--safe-area-bottom)">
       <button class="tab-button" class:active={currentTab === 'inbox'} role="tab" aria-selected={currentTab === 'inbox'} onclick={() => navigate('inbox')}>
-        <span class="tab-icon"><i class="fa-solid fa-inbox"></i></span><span class="tab-label">Inbox</span>
+        <span class="tab-icon"><Icon name="inbox" /></span><span class="tab-label">Inbox</span>
       </button>
       <button class="tab-button" class:active={currentTab === 'today'} role="tab" aria-selected={currentTab === 'today'} onclick={() => navigate('today')}>
-        <span class="tab-icon"><i class="fa-solid fa-calendar-day"></i></span><span class="tab-label">Today</span>
+        <span class="tab-icon"><Icon name="calendar" /></span><span class="tab-label">Today</span>
       </button>
       <button class="tab-button" class:active={currentTab === 'settings'} role="tab" aria-selected={currentTab === 'settings'} onclick={() => navigate('settings')}>
-        <span class="tab-icon"><i class="fa-solid fa-gear"></i></span><span class="tab-label">Settings</span>
+        <span class="tab-icon"><Icon name="settings" /></span><span class="tab-label">Settings</span>
       </button>
     </nav>
     {#if currentTab !== 'settings'}<div class="quick-capture-container"><QuickCapture /></div>{/if}

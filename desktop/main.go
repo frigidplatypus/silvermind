@@ -47,7 +47,7 @@ type App struct {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	a.config = &ConfigManager{}
+	a.config = NewConfigManager()
 	a.startSbtask()
 }
 

@@ -17,9 +17,14 @@
     onNavigate: (view: string) => void;
   } = $props();
 
-  function handleTaskTap(task: any) {
-    setSelectedTaskId(`${task.page}/${task.position}`);
-  }
+  let prevView = $state(activeView);
+
+  $effect(() => {
+    if (activeView !== prevView) {
+      prevView = activeView;
+      setSelectedTaskId(null);
+    }
+  });
 
   function handleDetailClose() {
     setSelectedTaskId(null);

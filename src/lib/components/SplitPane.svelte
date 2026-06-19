@@ -2,9 +2,11 @@
   import { getSplitRatio, setSplitRatio } from '$lib/stores/desktop.svelte';
 
   let {
-    children,
+    left,
+    right,
   }: {
-    children: import('svelte').Snippet;
+    left: import('svelte').Snippet;
+    right: import('svelte').Snippet;
   } = $props();
 
   let dragging = $state(false);
@@ -36,7 +38,7 @@
 
 <div class="split-pane" class:dragging>
   <div class="split-left" style="width: {ratio * 100}%">
-    {@render children?.left()}
+    {@render left()}
   </div>
   <div
     class="split-divider"
@@ -48,7 +50,7 @@
     onpointerup={onPointerUp}
   ></div>
   <div class="split-right" style="width: {(1 - ratio) * 100}%">
-    {@render children?.right()}
+    {@render right()}
   </div>
 </div>
 

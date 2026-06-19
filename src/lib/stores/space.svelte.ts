@@ -39,13 +39,12 @@ export async function loadSpaces(): Promise<void> {
       name: s.name || s.url,
       url: s.url,
       active: s.active ?? false,
-      is_default: s.active ?? false,
     }));
     const value = restore(ACTIVE_SPACE_KEY);
     if (value && spacesVal.some((s) => s.id === value)) {
       activeIdVal = value;
     } else {
-      activeIdVal = spacesVal.find((s) => s.is_default)?.id ?? spacesVal[0]?.id ?? null;
+      activeIdVal = spacesVal.find((s) => s.active)?.id ?? spacesVal[0]?.id ?? null;
     }
     if (activeIdVal) setApiSpace(activeIdVal);
   } catch (e) {
