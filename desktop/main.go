@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"log"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -75,6 +76,7 @@ func (a *App) RestartSbtask() {
 	if a.server != nil {
 		a.server.Stop()
 	}
+	time.Sleep(200 * time.Millisecond)
 	a.startSbtask()
 }
 

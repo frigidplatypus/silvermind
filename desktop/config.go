@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/justin/sbtask/pkg/config"
 )
@@ -115,10 +116,14 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]Sp
 		log.Printf("[silvermind] AddSpace load error: %v", err)
 		return nil, err
 	}
-	if _, exists := cfg.Spaces[name]; exists {
-		err := fmt.Errorf("space %q already exists", name)
-		log.Printf("[silvermind] AddSpace: %v", err)
-		return nil, err
+	// Case-insensitive duplicate check
+	nameLower := strings.ToLower(name)
+	for existingName := range cfg.Spaces {
+		if strings.ToLower(existingName) == nameLower {
+			err := fmt.Errorf("space %q already exists (as %q)", name, existingName)
+			log.Printf("[silvermind] AddSpace: %v", err)
+			return nil, err
+		}
 	}
 	if defaultPage == "" {
 		defaultPage = "Tasks"

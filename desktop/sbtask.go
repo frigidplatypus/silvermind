@@ -30,10 +30,12 @@ func StartSbtaskServer(cfgPath string) (*SbtaskServer, error) {
 		health: ServiceHealth{State: "starting", Port: defaultPort},
 	}
 
+	log.Printf("[silvermind] loading config from %s", cfgPath)
 	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
 		s.health.State = "failed"
 		s.health.LastError = fmt.Sprintf("config error: %v", err)
+		log.Printf("[silvermind] config load error: %v", err)
 		return s, err
 	}
 
@@ -47,6 +49,7 @@ func StartSbtaskServer(cfgPath string) (*SbtaskServer, error) {
 	}
 	s.health.SpaceURL = spaceURL
 
+	log.Printf("[silvermind] starting sbtask serve: space=%q url=%s port=%d", activeSpace, spaceURL, defaultPort)
 	s.srv = serve.NewServer(cfg, activeSpace, spaceURL, "", "localhost", defaultPort)
 
 	go func() {
@@ -56,6 +59,7 @@ func StartSbtaskServer(cfgPath string) (*SbtaskServer, error) {
 		if err := s.srv.Start(); err != nil {
 			s.health.State = "failed"
 			s.health.LastError = err.Error()
+			log.Printf("[silvermind] sbtask serve error: %v", err)
 		}
 	}()
 
