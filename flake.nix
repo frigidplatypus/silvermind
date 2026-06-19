@@ -24,10 +24,13 @@
           proxyVendor = true;
 
           nativeBuildInputs = with pkgs; [ pkg-config wrapGAppsHook3 go ];
-          buildInputs = with pkgs; [ webkitgtk_6_0 gtk3 ];
+          buildInputs = with pkgs; [ webkitgtk_4_1 gtk3 ];
 
           preBuild = ''
             export HOME=$TMPDIR
+            export CGO_ENABLED=1
+            export CGO_CFLAGS="-Wno-error=incompatible-pointer-types $CGO_CFLAGS"
+            export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -Wno-error=incompatible-pointer-types"
             if [ ! -f frontend/dist/index.html ]; then
               echo "ERROR: frontend/dist/ is empty. Run 'pnpm build:desktop' first."
               exit 1
@@ -39,6 +42,7 @@
             fi
           '';
 
+          tags = [ "desktop" "production" "webkit2_41" ];
           ldflags = [ "-s" "-w" ];
 
           meta = with pkgs.lib; {
@@ -63,7 +67,7 @@
             go gopls delve
             nodejs-slim_22 pnpm
             wails pkg-config
-            webkitgtk_6_0 gtk3
+            webkitgtk_4_1 gtk3
             sbtask.packages.${system}.sbtask
           ];
         };

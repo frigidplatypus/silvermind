@@ -12,15 +12,22 @@
     nodejs-slim_22
     pnpm
     wails
-    webkitgtk_6_0
+    webkitgtk_4_1
     gtk3
     pkg-config
-
-    # sbtask CLI from sbtask flake
     inputs.sbtask.packages.${pkgs.system}.sbtask
   ];
 
   # https://devenv.sh/languages/
+  languages.javascript = {
+    enable = true;
+    npm.enable = false;
+    pnpm.enable = true;
+  };
+
+  languages.go = {
+    enable = true;
+  };
   languages.javascript = {
     enable = true;
     npm.enable = false;
