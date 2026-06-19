@@ -87,21 +87,33 @@ func (a *App) ListSpaces() []SpaceInfo {
 
 func (a *App) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	if a.config != nil {
-		return a.config.AddSpace(name, url, defaultPage, inboxPage)
+		spaces, err := a.config.AddSpace(name, url, defaultPage, inboxPage)
+		if err == nil {
+			a.RestartSbtask()
+		}
+		return spaces, err
 	}
 	return nil, nil
 }
 
 func (a *App) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	if a.config != nil {
-		return a.config.UpdateSpace(name, url, defaultPage, inboxPage)
+		spaces, err := a.config.UpdateSpace(name, url, defaultPage, inboxPage)
+		if err == nil {
+			a.RestartSbtask()
+		}
+		return spaces, err
 	}
 	return nil, nil
 }
 
 func (a *App) RemoveSpace(name string) ([]SpaceInfo, error) {
 	if a.config != nil {
-		return a.config.RemoveSpace(name)
+		spaces, err := a.config.RemoveSpace(name)
+		if err == nil {
+			a.RestartSbtask()
+		}
+		return spaces, err
 	}
 	return nil, nil
 }
