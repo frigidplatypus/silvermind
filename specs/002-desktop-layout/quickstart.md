@@ -14,15 +14,15 @@
 ## One-Time Setup
 
 ```bash
-# From the prowl repo root
-cd prowl
+# From the silvermind repo root
+cd silvermind
 
 # Build the Svelte frontend for desktop (strips Capacitor)
 pnpm exec vite build --config vite.config.desktop.ts
 
 # Initialize Wails project (first time only)
 cd desktop
-go mod init prowl-desktop
+go mod init silvermind
 go mod edit -replace github.com/justin/sbtask=../go/sbtask
 go mod tidy
 ```
@@ -35,8 +35,8 @@ pnpm exec vite build --config vite.config.desktop.ts
 
 # Build and run the Wails app
 cd desktop
-go build -o prowl-desktop .
-./prowl-desktop
+go build -o silvermind .
+./silvermind
 ```
 
 Expected: A native window opens at ~1200x800, showing the sidebar on the left, split-pane with inbox tasks in the center, and detail panel on the right. The quick capture bar is at the top.
@@ -45,7 +45,7 @@ Expected: A native window opens at ~1200x800, showing the sidebar on the left, s
 
 ### Scenario 1: Desktop Shell Launch (US1)
 
-1. Run `./prowl-desktop`
+1. Run `./silvermind`
 2. Verify a native window opens within 3 seconds (SC-001)
 3. Verify the sidebar shows Inbox, Today, Settings
 4. Click Today — verify the main area switches to Today view
@@ -95,10 +95,10 @@ Expected: A native window opens at ~1200x800, showing the sidebar on the left, s
 ```bash
 # Desktop build
 pnpm exec vite build --config vite.config.desktop.ts
-cd desktop && go build -o prowl-desktop . && cd ..
+cd desktop && go build -o silvermind . && cd ..
 # Verify binary exists and is reasonable size
-test -f desktop/prowl-desktop
-test $(stat -c%s desktop/prowl-desktop) -lt 20000000  # <20MB
+test -f desktop/silvermind
+test $(stat -c%s desktop/silvermind) -lt 20000000  # <20MB
 ```
 
 ## Troubleshooting

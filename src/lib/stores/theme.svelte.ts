@@ -6,7 +6,7 @@ export function getTheme(): Theme { return current; }
 
 export function loadTheme(): void {
   try {
-    const saved = localStorage.getItem('prowl-theme');
+    const saved = localStorage.getItem('silvermind-theme');
     if (saved === 'light' || saved === 'dark') {
       current = saved as Theme;
     }
@@ -20,7 +20,7 @@ export function loadTheme(): void {
 
 export function setTheme(theme: Theme): void {
   current = theme;
-  try { localStorage.setItem('prowl-theme', theme); } catch { /* noop */ }
+  try { localStorage.setItem('silvermind-theme', theme); } catch { /* noop */ }
   apply();
 }
 

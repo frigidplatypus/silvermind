@@ -1,8 +1,8 @@
-# Data Model: Prowl Mobile App
+# Data Model: Silvermind Mobile App
 
 **Date**: 2026-06-18
 **Feature**: [spec.md](./spec.md)
-**Source-of-truth note**: sbtask owns all task and space data. Prowl is a thin client that reads from and writes to the sbtask REST API. The model below is the **consumer view** of sbtask's data, used to define types, validation, and UI representation in the Svelte app.
+**Source-of-truth note**: sbtask owns all task and space data. Silvermind is a thin client that reads from and writes to the sbtask REST API. The model below is the **consumer view** of sbtask's data, used to define types, validation, and UI representation in the Svelte app.
 
 ## Entity: Task
 
@@ -80,7 +80,7 @@ Represents a named context or workspace for organizing tasks.
 
 ### State Transitions
 
-Spaces are managed outside of Prowl (in sbtask CLI). The app reads but does not create, edit, or delete spaces.
+Spaces are managed outside of Silvermind (in sbtask CLI). The app reads but does not create, edit, or delete spaces.
 
 ### Relationships
 
@@ -88,7 +88,7 @@ Spaces are managed outside of Prowl (in sbtask CLI). The app reads but does not 
 
 ## Entity: ActiveSpacePreference
 
-A tiny Prowl-only entity (lives in Capacitor Preferences, not sbtask).
+A tiny Silvermind-only entity (lives in Capacitor Preferences, not sbtask).
 
 ### Fields
 
@@ -165,7 +165,7 @@ Out of v1 scope unless added; defer to a later feature.
                                └────────────────────┘
 
 ┌────────────────────┐
-│ ActiveSpacePref    │  (Prowl-side, not sbtask)
+│ ActiveSpacePref    │  (Silvermind-side, not sbtask)
 │ ─────────────      │
 │ active_space_id    │
 └────────────────────┘
@@ -174,7 +174,7 @@ Out of v1 scope unless added; defer to a later feature.
 ## Cardinalities
 
 - One Space → many Tasks
-- One ActiveSpacePreference per Prowl install
+- One ActiveSpacePreference per Silvermind install
 - No other relationships
 
 ## Data Volume Assumptions

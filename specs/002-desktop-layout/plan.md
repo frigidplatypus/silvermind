@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add a Wails v3 desktop wrapper around the existing Svelte 5 Prowl codebase. The Go backend embeds sbtask as a library (via local `replace` directive), starts `serve` in-process on localhost:7433, and exposes an AppService for configuration management. The Svelte frontend gains a desktop-optimized layout (sidebar nav, split pane, top bar quick capture) via CSS media queries at 800px breakpoint. Keyboard shortcuts provide power-user navigation. The same `src/` tree serves both mobile (Capacitor) and desktop (Wails) from a single codebase.
+Add a Wails v3 desktop wrapper around the existing Svelte 5 Silvermind codebase. The Go backend embeds sbtask as a library (via local `replace` directive), starts `serve` in-process on localhost:7433, and exposes an AppService for configuration management. The Svelte frontend gains a desktop-optimized layout (sidebar nav, split pane, top bar quick capture) via CSS media queries at 800px breakpoint. Keyboard shortcuts provide power-user navigation. The same `src/` tree serves both mobile (Capacitor) and desktop (Wails) from a single codebase.
 
 ## Technical Context
 

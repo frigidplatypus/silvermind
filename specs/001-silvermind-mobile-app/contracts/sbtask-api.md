@@ -1,12 +1,12 @@
 # sbtask API Contract (Consumer View)
 
 **Date**: 2026-06-18
-**Source-of-truth note**: This is the Prowl-side contract for the `sbtask serve` REST API. The actual sbtask `serve` implementation is owned by a separate project. This document captures the surface Prowl depends on. If sbtask changes, this contract is the integration boundary.
+**Source-of-truth note**: This is the Silvermind-side contract for the `sbtask serve` REST API. The actual sbtask `serve` implementation is owned by a separate project. This document captures the surface Silvermind depends on. If sbtask changes, this contract is the integration boundary.
 
 ## Base URL
 
 - `http://127.0.0.1:7433`
-- Port `7433` is the default; if sbtask is configured for a different port, Prowl must be updated to match (the port is read from sbtask's startup banner or config).
+- Port `7433` is the default; if sbtask is configured for a different port, Silvermind must be updated to match (the port is read from sbtask's startup banner or config).
 - HTTP (not HTTPS) — loopback is exempt from iOS ATS requirements.
 - All requests are local. No CORS, no auth headers.
 
@@ -226,10 +226,10 @@ Health check used by the `sbtask-ios` plugin for polling.
 ## Versioning
 
 - sbtask returns its version in `/health`.
-- Prowl pins against the `latest` semver-major of sbtask at build time. Major version mismatches are surfaced to the user as an incompatibility error.
+- Silvermind pins against the `latest` semver-major of sbtask at build time. Major version mismatches are surfaced to the user as an incompatibility error.
 
-## Prowl-Side Concerns
+## Silvermind-Side Concerns
 
-- All requests are issued from inside the iOS WebView, which means cookies and credentials would be persisted in the WebView if used. Prowl sends no credentials.
+- All requests are issued from inside the iOS WebView, which means cookies and credentials would be persisted in the WebView if used. Silvermind sends no credentials.
 - Network failure (server down) is handled by the `sbtask-ios` plugin, not by the fetch client. The client sees a regular error from the plugin's shim or from `fetch` rejecting.
-- Timeouts: 5s default on Prowl side for user-initiated calls; 2s for health check polling.
+- Timeouts: 5s default on Silvermind side for user-initiated calls; 2s for health check polling.

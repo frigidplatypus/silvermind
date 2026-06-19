@@ -19,7 +19,7 @@ Before you start:
 ### 1. Clone and install
 
 ```bash
-cd prowl
+cd silvermind
 pnpm install   # or npm install
 ```
 

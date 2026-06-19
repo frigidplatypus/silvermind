@@ -6,20 +6,20 @@
 
 **Status**: Draft
 
-**Input**: User description: "Desktop layout for Prowl using Wails (Go + Svelte 5) as the desktop wrapper. The app embeds sbtask as a Go library (imports pkg/serve directly, no separate binary) and starts the HTTP server in-process on launch. The same Svelte 5 codebase serves both desktop and mobile — desktop layout is achieved via CSS media queries, not a code fork."
+**Input**: User description: "Desktop layout for Silvermind using Wails (Go + Svelte 5) as the desktop wrapper. The app embeds sbtask as a Go library (imports pkg/serve directly, no separate binary) and starts the HTTP server in-process on launch. The same Svelte 5 codebase serves both desktop and mobile — desktop layout is achieved via CSS media queries, not a code fork."
 
 ## Clarifications
 
 ### Session 2026-06-19
 
 - Q: Wails v3 Go API approach — how does the Go backend communicate with the Svelte frontend? → A: Service pattern. Go exposes an AppService (sbtask lifecycle, config CRUD, health) and the frontend calls these via `@wailsio/runtime`. Native dialogs use `window.runtime.WindowDialogs()`.
-- Q: How does Prowl's Wails project import sbtask as a Go library? → A: Local `replace` directive in go.mod: `replace github.com/justin/sbtask => /home/justin/development/go/sbtask`. Live co-development, no version bumps needed.
+- Q: How does Silvermind's Wails project import sbtask as a Go library? → A: Local `replace` directive in go.mod: `replace github.com/justin/sbtask => /home/justin/development/go/sbtask`. Live co-development, no version bumps needed.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Desktop Shell & Navigation (Priority: P1)
 
-A user launches Prowl on their Linux desktop. The app opens in a native window with a dark-themed sidebar showing Inbox, Today, and Settings as persistent navigation items. The active view is highlighted, and clicking any item switches the main content area instantly.
+A user launches Silvermind on their Linux desktop. The app opens in a native window with a dark-themed sidebar showing Inbox, Today, and Settings as persistent navigation items. The active view is highlighted, and clicking any item switches the main content area instantly.
 
 **Why this priority**: Without the desktop shell, there is no app. This delivers the basic window, navigation, and layout that all other features depend on.
 
@@ -27,7 +27,7 @@ A user launches Prowl on their Linux desktop. The app opens in a native window w
 
 **Acceptance Scenarios**:
 
-1. **Given** the app binary is built, **When** the user runs `prowl-desktop`, **Then** a native window opens with the Svelte UI rendered inside a system WebView within 3 seconds.
+1. **Given** the app binary is built, **When** the user runs `silvermind`, **Then** a native window opens with the Svelte UI rendered inside a system WebView within 3 seconds.
 2. **Given** the app is open, **When** the user clicks "Today" in the sidebar, **Then** the main content area switches to the Today view and the sidebar highlights "Today".
 3. **Given** the app is open, **When** the user resizes the window, **Then** the layout adapts — the sidebar remains fixed width and the main area fills remaining space.
 4. **Given** the app is open, **When** the user closes the window, **Then** the sbtask server shuts down cleanly.
@@ -70,7 +70,7 @@ A user opens the Settings view to manage their sbtask spaces. They can add, edit
 
 ### User Story 4 — Keyboard Navigation (Priority: P3)
 
-A power user navigates Prowl entirely via keyboard. They can switch views, navigate the task list, open and edit tasks, mark tasks done, and create new tasks without touching the mouse.
+A power user navigates Silvermind entirely via keyboard. They can switch views, navigate the task list, open and edit tasks, mark tasks done, and create new tasks without touching the mouse.
 
 **Why this priority**: Keyboard shortcuts are a quality-of-life enhancement for desktop power users. The app is fully functional without them; they provide speed and ergonomics.
 
@@ -124,7 +124,7 @@ The quick capture input is visible as a persistent bar at the top of the main co
 - **FR-009**: The app MUST shut down sbtask serve cleanly when the window closes (graceful HTTP server shutdown within 5 seconds).
 - **FR-010**: The desktop app MUST reuse the same Svelte 5 codebase as the mobile app. Layout changes are achieved via CSS media queries and conditional rendering, not a code fork.
 - **FR-011**: The sbtask integration MUST use Go library imports from the local sbtask source via a `replace` directive in go.mod (no shelling out to a binary, no Process/spawn).
-- **FR-012**: The app MUST be buildable as a single binary (`prowl-desktop`) via Wails v3 on NixOS/Linux.
+- **FR-012**: The app MUST be buildable as a single binary (`silvermind`) via Wails v3 on NixOS/Linux.
 - **FR-013**: If sbtask serve fails to start, the app MUST show a native error dialog with the failure reason and an option to open the config manager.
 - **FR-014**: The app MUST bundle all Svelte assets (HTML, CSS, JS) into the Go binary at build time — no external files, no dev server in production.
 

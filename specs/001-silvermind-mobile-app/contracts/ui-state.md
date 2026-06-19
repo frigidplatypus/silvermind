@@ -3,7 +3,7 @@
 **Date**: 2026-06-18
 **Purpose**: Define the in-memory and persisted state shape of the Svelte 5 UI layer. This is the boundary between components, runes, and Capacitor's Preferences API.
 
-This contract is internal to Prowl. It is not a public API. Components import these types and stores; the Svelte runes enforce reactivity.
+This contract is internal to Silvermind. It is not a public API. Components import these types and stores; the Svelte runes enforce reactivity.
 
 ## State Modules
 

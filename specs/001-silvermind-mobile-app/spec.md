@@ -1,6 +1,6 @@
 # Feature Specification: Silvermind Mobile App
 
-**Feature Branch**: `001-prowl-mobile-app`
+**Feature Branch: 001-silvermind-mobile-app`
 
 **Created**: 2026-06-18
 

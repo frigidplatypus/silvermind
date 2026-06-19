@@ -153,7 +153,7 @@
 - [x] T039 [P] Add desktop toast notification for sbtask status changes (starting/running/failed) — subtle toast in the top-right corner of the desktop layout, auto-dismiss after 3 seconds
 - [x] T041 Implement sbtask startup failure dialog — on AppService.StartSbtask failure, show native error dialog with the failure reason and "Open Config Manager" button
 - [x] T042 [P] Add default config generation — if ~/.config/sbtask/config.yaml is missing, create a default with a single space pointing to localhost:3000
-- [x] T043 Verify binary size <20MB — run `cd desktop && go build -ldflags="-s -w" -o prowl-desktop . && stat -c%s prowl-desktop`
+- [x] T043 Verify binary size <20MB — run `cd desktop && go build -ldflags="-s -w" -o silvermind . && stat -c%s silvermind`
 - [x] T044 Run quickstart.md validation scenarios — all 6 scenarios pass on the built binary
 - [x] T044 Code cleanup — remove debug logs, refactor duplicated layout logic, ensure consistent error handling
 

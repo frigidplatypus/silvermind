@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // REST API wrapper around sbtask CLI
-// Exposes the endpoints Prowl expects: /tasks, /inbox, /today, /done, /undo, /spaces, /health
+// Exposes the endpoints Silvermind expects: /tasks, /inbox, /today, /done, /undo, /spaces, /health
 
 import { createServer } from 'node:http';
 import { execSync } from 'node:child_process';
@@ -244,5 +244,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[sbtask-api] Prowl REST API wrapping sbtask CLI on http://0.0.0.0:${PORT}`);
+  console.log(`[sbtask-api] Silvermind REST API wrapping sbtask CLI on http://0.0.0.0:${PORT}`);
 });

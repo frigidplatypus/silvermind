@@ -1,6 +1,6 @@
 # Implementation Plan: Silvermind Mobile App
 
-**Branch**: `001-prowl-mobile-app` | **Date**: 2026-06-18 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-silvermind-mobile-app` | **Date**: 2026-06-18 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/001-silvermind-mobile-app/spec.md`
 

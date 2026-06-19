@@ -42,8 +42,8 @@
 
   scripts.build-desktop.exec = ''
     echo "Building Silvermind desktop..."
-    nix build ${config.env.DEVENV_ROOT}#prowl-desktop --no-link
-    echo "Done: result/bin/prowl-desktop"
+    nix build ${config.env.DEVENV_ROOT}#silvermind --no-link
+    echo "Done: result/bin/silvermind"
   '';
 
   # https://devenv.sh/basics/
@@ -53,7 +53,7 @@
     go version
     echo "Silvermind packages:"
     echo "  sbtask:          $(which sbtask)"
-    echo "  prowl-desktop:   $(which prowl-desktop || echo 'built by flake, not in PATH by default')"
+    echo "  silvermind:   $(which silvermind || echo 'built by flake, not in PATH by default')"
     echo ""
     echo "Run 'devenv up' to start sbtask + vite + desktop"
   '';
