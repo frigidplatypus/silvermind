@@ -1,0 +1,10 @@
+spaces:
+  notes:
+    space: https://notes.fluffy-rooster.ts.net
+    default_page: Tasks
+    inbox_page: Inbox
+  household:
+    space: https://household.fluffy-rooster.ts.net
+    default_page: HouseholdTasks
+    inbox_page: Inbox
+active_space: notes

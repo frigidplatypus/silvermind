@@ -1,0 +1,28 @@
+{
+  "name": "prowl-desktop",
+  "assetdir": "frontend/dist",
+  "frontend:install": "cd .. && pnpm build:desktop",
+  "frontend:build": "",
+  "frontend:dev": "cd .. && pnpm dev:desktop",
+  "frontend:dev:watcher": "cd .. && pnpm dev:desktop",
+  "wailsjsdir": "frontend",
+  "version": "2",
+  "Path": "",
+  "BuildDir": "",
+  "outputfilename": "prowl-desktop",
+  "OutputType": "",
+  "Platform": "",
+  "runNonNativeBuildHooks": false,
+  "postBuildHooks": null,
+  "Author": {
+    "name": "Prowl",
+    "email": ""
+  },
+  "Info": {
+    "companyName": "Prowl",
+    "productName": "Prowl Desktop",
+    "productVersion": "0.1.0",
+    "copyright": "",
+    "comments": "Desktop task management powered by sbtask"
+  }
+}

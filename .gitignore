@@ -1,0 +1,37 @@
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+# Node.js / TypeScript
+node_modules/
+dist/
+build/
+*.log
+.env*
+.env.local
+.env.*.local
+
+# Svelte/Vite
+.vite/
+.svelte-kit/
+
+# Capacitor
+ios/
+android/
+.idea/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Build artifacts
+*.tsbuildinfo
