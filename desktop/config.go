@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/justin/sbtask/pkg/config"
@@ -20,10 +22,56 @@ type ConfigManager struct {
 	path string
 }
 
-func NewConfigManager() *ConfigManager {
-	return &ConfigManager{
-		path: config.DefaultConfigPath(),
+func silvermindConfigPath() string {
+	dir := os.Getenv("XDG_CONFIG_HOME")
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		dir = filepath.Join(home, ".config")
 	}
+	return filepath.Join(dir, "silvermind", "config.yaml")
+}
+
+func NewConfigManager() *ConfigManager {
+	cm := &ConfigManager{
+		path: silvermindConfigPath(),
+	}
+	cm.migrate()
+	return cm
+}
+
+// migrate imports sbtask config on first run if Silvermind config doesn't exist
+func (c *ConfigManager) migrate() {
+	if c.path == "" {
+		return
+	}
+	// If our config already exists, nothing to migrate
+	if _, err := os.Stat(c.path); err == nil {
+		return
+	}
+	// Try to load from sbtask config path
+	sbtaskCfg, err := config.LoadConfig(config.DefaultConfigPath())
+	if err != nil || sbtaskCfg == nil {
+		return
+	}
+	// Only migrate if it has at least one space and isn't the default
+	if len(sbtaskCfg.Spaces) == 0 {
+		return
+	}
+	// Check if it's the bare default (single "main" space at localhost)
+	if len(sbtaskCfg.Spaces) == 1 {
+		if sp, ok := sbtaskCfg.Spaces["main"]; ok && sp.Space == "http://localhost:3000" {
+			return // skip default-only config
+		}
+	}
+	// Save to our path
+	if err := config.SaveConfig(c.path, sbtaskCfg); err != nil {
+		log.Printf("[silvermind] config migration failed: %v", err)
+		return
+	}
+	log.Printf("[silvermind] migrated config from %s", config.DefaultConfigPath())
 }
 
 func (c *ConfigManager) configPath() string {

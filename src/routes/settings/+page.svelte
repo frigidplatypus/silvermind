@@ -126,7 +126,7 @@
         </button>
       </div>
     {:else}
-      <p class="section-desc">Spaces are configured in your sbtask config file (~/.config/sbtask/config.yaml). Changes there will appear here after a restart.</p>
+      <p class="section-desc">Spaces are configured in your Silvermind config file (~/.config/silvermind/config.yaml).</p>
     {/if}
   </section>
 
