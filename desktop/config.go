@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/justin/sbtask/pkg/config"
@@ -63,10 +64,13 @@ func (c *ConfigManager) ListSpaces() []SpaceInfo {
 func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
+		log.Printf("[silvermind] AddSpace load error: %v", err)
 		return nil, err
 	}
 	if _, exists := cfg.Spaces[name]; exists {
-		return nil, fmt.Errorf("space %q already exists", name)
+		err := fmt.Errorf("space %q already exists", name)
+		log.Printf("[silvermind] AddSpace: %v", err)
+		return nil, err
 	}
 	if defaultPage == "" {
 		defaultPage = "Tasks"
@@ -83,8 +87,10 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]Sp
 		cfg.ActiveSpace = name
 	}
 	if err := c.save(cfg); err != nil {
+		log.Printf("[silvermind] AddSpace save error: %v", err)
 		return nil, err
 	}
+	log.Printf("[silvermind] Added space %q -> %s", name, url)
 	return toSpaces(cfg), nil
 }
 

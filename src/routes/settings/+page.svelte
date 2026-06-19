@@ -29,8 +29,10 @@
       newName = '';
       newUrl = '';
       await loadSpaces();
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to add space';
+    } catch (e: any) {
+      const msg = e?.error || e?.message || String(e);
+      console.error('[silvermind] AddSpace failed:', msg, e);
+      error = msg;
     } finally {
       saving = false;
     }
@@ -42,8 +44,10 @@
     try {
       await removeSpaceDesktop(name);
       await loadSpaces();
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to remove space';
+    } catch (e: any) {
+      const msg = e?.error || e?.message || String(e);
+      console.error('[silvermind] RemoveSpace failed:', msg, e);
+      error = msg;
     } finally {
       saving = false;
     }
@@ -54,8 +58,10 @@
       try {
         await setActiveSpaceDesktop(name);
         await loadSpaces();
-      } catch (e) {
-        error = e instanceof Error ? e.message : 'Failed to set active space';
+      } catch (e: any) {
+        const msg = e?.error || e?.message || String(e);
+        console.error('[silvermind] SetActiveSpace failed:', msg, e);
+        error = msg;
       }
     } else {
       await setActiveSpace(name);
