@@ -114,7 +114,7 @@
       <div class="add-space-form">
         <h4 class="form-title">Add Space</h4>
         <input type="text" class="field" placeholder="Space name" bind:value={newName} disabled={saving} />
-        <input type="text" class="field" placeholder="Taskd URL" bind:value={newUrl} disabled={saving} />
+        <input type="text" class="field" placeholder="Space URL" bind:value={newUrl} disabled={saving} />
         <button class="add-btn" onclick={handleAddSpace} disabled={saving || !newName.trim() || !newUrl.trim()}>
           {saving ? 'Adding…' : 'Add Space'}
         </button>
