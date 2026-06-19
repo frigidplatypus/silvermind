@@ -1,4 +1,4 @@
-module prowl-desktop
+module silvermind-desktop
 
 go 1.26.3
 

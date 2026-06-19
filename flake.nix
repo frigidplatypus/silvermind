@@ -12,53 +12,34 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        # ── Svelte frontend ──────────────────────────────────────────
-        silvermind-frontend = pkgs.stdenv.mkDerivation {
-          pname = "silvermind-frontend";
-          version = "0.1.0";
-          src = ./.;
-
-          nativeBuildInputs = with pkgs; [ nodejs-slim_22 pnpm ];
-
-          buildPhase = ''
-            export HOME=$TMPDIR
-            cd $src
-            pnpm install --no-frozen-lockfile
-            pnpm exec vite build --config vite.config.desktop.ts
-          '';
-
-          installPhase = ''
-            mkdir -p $out
-            cp -r desktop/frontend/dist/* $out/
-          '';
-        };
-
-        # ── Silvermind desktop app ────────────────────────────────────────
-        silvermind-desktop = pkgs.stdenv.mkDerivation {
+        # ── Silvermind desktop app ──────────────────────────────────
+        # Frontend assets must be pre-built:
+        #   pnpm build:desktop
+        # This writes to desktop/frontend/dist/ which Go embeds at compile time.
+        silvermind-desktop = pkgs.buildGoModule {
           pname = "silvermind-desktop";
           version = "0.1.0";
           src = ./desktop;
+          vendorHash = "sha256-UuCwmr8BYrSqyXQ1lNXXjj1uH0vogXyn0taCeCZg+z4=";
+          proxyVendor = true;
 
-          nativeBuildInputs = with pkgs; [
-            pkg-config wrapGAppsHook3 go
-          ];
-
+          nativeBuildInputs = with pkgs; [ pkg-config wrapGAppsHook3 go ];
           buildInputs = with pkgs; [ webkitgtk_6_0 gtk3 ];
 
           preBuild = ''
-            mkdir -p frontend/dist
-            cp -r ${silvermind-frontend}/* frontend/dist/
             export HOME=$TMPDIR
+            if [ ! -f frontend/dist/index.html ]; then
+              echo "ERROR: frontend/dist/ is empty. Run 'pnpm build:desktop' first."
+              exit 1
+            fi
+            # Point sbtask replace directive to the flake input
+            SBTASK_SRC="${sbtask}"
+            if [ -d "$SBTASK_SRC" ]; then
+              go mod edit -replace github.com/justin/sbtask=$SBTASK_SRC
+            fi
           '';
 
-          buildPhase = ''
-            go build -ldflags="-s -w" -o silvermind-desktop .
-          '';
-
-          installPhase = ''
-            mkdir -p $out/bin
-            cp silvermind-desktop $out/bin/
-          '';
+          ldflags = [ "-s" "-w" ];
 
           meta = with pkgs.lib; {
             description = "Desktop task management powered by sbtask";
@@ -72,7 +53,7 @@
       in
       {
         packages = {
-          inherit silvermind-frontend silvermind-desktop;
+          inherit silvermind-desktop;
           inherit (sbtask.packages.${system}) sbtask;
           default = silvermind-desktop;
         };
@@ -89,7 +70,7 @@
 
         apps.default = {
           type = "app";
-          program = "${silvermind-desktop}/bin/silvermind";
+          program = "${silvermind-desktop}/bin/silvermind-desktop";
         };
       }
     );
