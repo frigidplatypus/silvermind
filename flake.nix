@@ -13,8 +13,8 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # ── Svelte frontend ──────────────────────────────────────────
-        silvermind-frontend-desktop = pkgs.stdenv.mkDerivation {
-          pname = "silvermind-frontend-desktop";
+        silvermind-frontend = pkgs.stdenv.mkDerivation {
+          pname = "silvermind-frontend";
           version = "0.1.0";
           src = ./.;
 
@@ -34,8 +34,8 @@
         };
 
         # ── Silvermind desktop app ────────────────────────────────────────
-        silvermind = pkgs.stdenv.mkDerivation {
-          pname = "silvermind";
+        silvermind-desktop = pkgs.stdenv.mkDerivation {
+          pname = "silvermind-desktop";
           version = "0.1.0";
           src = ./desktop;
 
@@ -47,24 +47,24 @@
 
           preBuild = ''
             mkdir -p frontend/dist
-            cp -r ${silvermind-frontend-desktop}/* frontend/dist/
+            cp -r ${silvermind-frontend}/* frontend/dist/
             export HOME=$TMPDIR
           '';
 
           buildPhase = ''
-            go build -ldflags="-s -w" -o silvermind .
+            go build -ldflags="-s -w" -o silvermind-desktop .
           '';
 
           installPhase = ''
             mkdir -p $out/bin
-            cp silvermind $out/bin/
+            cp silvermind-desktop $out/bin/
           '';
 
           meta = with pkgs.lib; {
             description = "Desktop task management powered by sbtask";
             homepage = "https://github.com/justin/silvermind";
             license = licenses.mit;
-            mainProgram = "silvermind";
+            mainProgram = "silvermind-desktop";
             platforms = platforms.linux;
           };
         };
@@ -72,9 +72,9 @@
       in
       {
         packages = {
-          inherit silvermind-frontend-desktop silvermind;
+          inherit silvermind-frontend silvermind-desktop;
           inherit (sbtask.packages.${system}) sbtask;
-          default = silvermind;
+          default = silvermind-desktop;
         };
 
         devShells.default = pkgs.mkShell {
@@ -89,7 +89,7 @@
 
         apps.default = {
           type = "app";
-          program = "${silvermind}/bin/silvermind";
+          program = "${silvermind-desktop}/bin/silvermind";
         };
       }
     );

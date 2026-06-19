@@ -42,8 +42,8 @@
 
   scripts.build-desktop.exec = ''
     echo "Building Silvermind desktop..."
-    nix build ${config.env.DEVENV_ROOT}#silvermind --no-link
-    echo "Done: result/bin/silvermind"
+    nix build ${config.env.DEVENV_ROOT}#silvermind-desktop --no-link
+    echo "Done: result/bin/silvermind-desktop"
   '';
 
   # https://devenv.sh/basics/
@@ -52,10 +52,10 @@
     git --version
     go version
     echo "Silvermind packages:"
-    echo "  sbtask:          $(which sbtask)"
-    echo "  silvermind:   $(which silvermind || echo 'built by flake, not in PATH by default')"
+    echo "  sbtask:               $(which sbtask)"
+    echo "  silvermind-desktop:   built by 'nix build .#silvermind-desktop'"
     echo ""
-    echo "Run 'devenv up' to start sbtask + vite + desktop"
+    echo "Run 'devenv up' to start sbtask + vite"
   '';
 
   # https://devenv.sh/tests/
