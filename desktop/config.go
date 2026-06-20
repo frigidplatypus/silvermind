@@ -147,7 +147,7 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]Sp
 	return toSpaces(cfg), nil
 }
 
-func (c *ConfigManager) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -165,7 +165,22 @@ func (c *ConfigManager) UpdateSpace(name, url, defaultPage, inboxPage string) ([
 	if inboxPage != "" {
 		sp.InboxPage = inboxPage
 	}
-	cfg.Spaces[name] = sp
+	if newName == "" {
+		newName = name
+	}
+	// Check for rename collision (case-insensitive)
+	if strings.ToLower(newName) != strings.ToLower(name) {
+		for existingName := range cfg.Spaces {
+			if strings.ToLower(existingName) == strings.ToLower(newName) {
+				return nil, fmt.Errorf("space %q already exists", newName)
+			}
+		}
+	}
+	delete(cfg.Spaces, name)
+	cfg.Spaces[newName] = sp
+	if cfg.ActiveSpace == name {
+		cfg.ActiveSpace = newName
+	}
 	if err := c.save(cfg); err != nil {
 		return nil, err
 	}

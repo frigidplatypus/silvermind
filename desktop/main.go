@@ -98,9 +98,9 @@ func (a *App) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, e
 	return nil, nil
 }
 
-func (a *App) UpdateSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+func (a *App) UpdateSpace(name, newName, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
 	if a.config != nil {
-		spaces, err := a.config.UpdateSpace(name, url, defaultPage, inboxPage)
+		spaces, err := a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage)
 		if err == nil {
 			a.RestartSbtask()
 		}

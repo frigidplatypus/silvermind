@@ -2,8 +2,9 @@
   import { getTheme, setTheme } from '$lib/stores/theme.svelte';
   import { getSpacesList, loadSpaces, setActiveSpace } from '$lib/stores/space.svelte';
   import type { Theme } from '$lib/stores/theme.svelte';
+  import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
-  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop } from '$lib/desktop-bridge';
+  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop } from '$lib/desktop-bridge';
 
   let currentTheme = $state<Theme>(getTheme());
   let isDesktop = $state(false);
@@ -11,12 +12,48 @@
   let newUrl = $state('');
   let saving = $state(false);
   let error = $state<string | null>(null);
+  let editingSpace = $state<string | null>(null);
+  let editName = $state('');
+  let editUrl = $state('');
+  let editDefaultPage = $state('');
+  let editInboxPage = $state('');
 
   $effect(() => {
     isDesktop = isDesktopApp();
   });
 
   function onThemeChange(t: Theme) { currentTheme = t; setTheme(t); }
+
+  function startEdit(space: Space) {
+    editingSpace = space.name;
+    editName = space.name;
+    editUrl = space.url;
+    editDefaultPage = '';
+    editInboxPage = '';
+  }
+
+  function cancelEdit() {
+    editingSpace = null;
+  }
+
+  async function handleEditSave(originalName: string) {
+    const name = editName.trim();
+    const url = editUrl.trim();
+    if (!name || !url) return;
+    saving = true;
+    error = null;
+    try {
+      await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage);
+      editingSpace = null;
+      await loadSpaces();
+    } catch (e: any) {
+      const msg = e?.error || e?.message || String(e);
+      console.error('[silvermind] UpdateSpace failed:', msg, e);
+      error = msg;
+    } finally {
+      saving = false;
+    }
+  }
 
   async function handleAddSpace() {
     const name = newName.trim();
@@ -94,24 +131,48 @@
     <div class="space-list">
       {#each getSpacesList() as space}
         <div class="space-item">
-          <div class="space-info">
-            <span class="space-name">{space.name}</span>
-            <span class="space-url">{space.url}</span>
-          </div>
-          <div class="space-actions">
-            {#if !space.active}
-              <button class="action-btn set-active" onclick={() => handleSetActive(space.id)} aria-label="Set {space.name} as active space">
-                <Icon name="check-circle" size="1rem" /> Set active
-              </button>
-            {:else}
-              <span class="active-badge">Active</span>
-            {/if}
-            {#if isDesktop && getSpacesList().length > 1}
-              <button class="action-btn remove" onclick={() => handleRemoveSpace(space.name)} aria-label="Remove space {space.name}">
-                <Icon name="trash-2" size="1rem" />
-              </button>
-            {/if}
-          </div>
+          {#if isDesktop && editingSpace === space.name}
+            <div class="space-edit-form">
+              <label class="field-label" for="edit-name-{space.name}">Name</label>
+              <input id="edit-name-{space.name}" type="text" class="field" bind:value={editName} disabled={saving} />
+              <label class="field-label" for="edit-url-{space.name}">URL</label>
+              <input id="edit-url-{space.name}" type="text" class="field" bind:value={editUrl} disabled={saving} />
+              <label class="field-label" for="edit-dp-{space.name}">Default page</label>
+              <input id="edit-dp-{space.name}" type="text" class="field" bind:value={editDefaultPage} placeholder="Tasks" disabled={saving} />
+              <label class="field-label" for="edit-ip-{space.name}">Inbox page</label>
+              <input id="edit-ip-{space.name}" type="text" class="field" bind:value={editInboxPage} placeholder="Inbox" disabled={saving} />
+              <div class="edit-actions">
+                <button class="action-btn cancel" onclick={cancelEdit} disabled={saving}>Cancel</button>
+                <button class="action-btn save" onclick={() => handleEditSave(space.name)} disabled={saving || !editName.trim() || !editUrl.trim()}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          {:else}
+            <div class="space-info">
+              <span class="space-name">{space.name}</span>
+              <span class="space-url">{space.url}</span>
+            </div>
+            <div class="space-actions">
+              {#if !space.active}
+                <button class="action-btn set-active" onclick={() => handleSetActive(space.name)} aria-label="Set {space.name} as active space">
+                  <Icon name="check-circle" size="1rem" /> Set active
+                </button>
+              {:else}
+                <span class="active-badge">Active</span>
+              {/if}
+              {#if isDesktop}
+                <button class="action-btn edit" onclick={() => startEdit(space)} aria-label="Edit space {space.name}">
+                  <Icon name="edit-3" size="1rem" />
+                </button>
+                {#if getSpacesList().length > 1}
+                  <button class="action-btn remove" onclick={() => handleRemoveSpace(space.name)} aria-label="Remove space {space.name}">
+                    <Icon name="trash-2" size="1rem" />
+                  </button>
+                {/if}
+              {/if}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -156,8 +217,15 @@
   .space-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
   .action-btn { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.625rem; border-radius: var(--radius-md); font-size: var(--font-size-xs); font-weight: 500; }
   .action-btn.set-active { color: var(--color-accent); background: var(--color-accent-light); }
+  .action-btn.edit { color: var(--color-accent); background: var(--color-accent-light); padding: 0.375rem; }
   .action-btn.remove { color: var(--color-danger); background: var(--color-danger-light); padding: 0.375rem; }
+  .action-btn.cancel { color: var(--color-text-secondary); background: var(--color-bg-tertiary); }
+  .action-btn.save { color: #fff; background: var(--color-accent); }
+  .action-btn.save:disabled { opacity: 0.4; }
   .active-badge { font-size: var(--font-size-xs); padding: 0.125rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-success-light); color: var(--color-success); font-weight: 600; }
+  .space-edit-form { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+  .field-label { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+  .edit-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.25rem; }
   .add-space-form { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; border-radius: var(--radius-md); background: var(--color-bg-secondary); }
   .form-title { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text); }
   .field { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: var(--font-size-sm); color: var(--color-text); outline: none; font-family: inherit; }

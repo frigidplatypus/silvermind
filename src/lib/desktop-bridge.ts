@@ -29,11 +29,12 @@ export async function addSpaceDesktop(
 
 export async function updateSpaceDesktop(
   name: string,
+  newName: string,
   url: string,
   defaultPage?: string,
   inboxPage?: string,
 ): Promise<SpaceInfo[]> {
-  return go().UpdateSpace(name, url, defaultPage || '', inboxPage || '');
+  return go().UpdateSpace(name, newName, url, defaultPage || '', inboxPage || '');
 }
 
 export async function removeSpaceDesktop(name: string): Promise<SpaceInfo[]> {
