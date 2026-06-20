@@ -5,17 +5,29 @@
   import TaskList from '$lib/components/TaskList.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
 
+  let { onTaskTap: externalOnTaskTap }: { onTaskTap?: (t: Task) => void } = $props();
+
   let selectedTask = $state<Task | null>(null);
 
   onMount(() => { loadInbox(); });
+
+  function handleTaskTap(t: Task) {
+    if (externalOnTaskTap) {
+      externalOnTaskTap(t);
+    } else {
+      selectedTask = t;
+    }
+  }
 
   function handleDetailClose() { selectedTask = null; }
   function handleTaskChanged(_t: Task) { selectedTask = null; loadInbox(); }
 </script>
 
 <div class="inbox-view">
-  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} onTaskTap={(t) => (selectedTask = t)} onRefresh={loadInbox} emptyMessage="All tasks complete" />
-  <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
+  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} onTaskTap={handleTaskTap} onRefresh={loadInbox} emptyMessage="All tasks complete" />
+  {#if !externalOnTaskTap}
+    <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
+  {/if}
 </div>
 
 <style>

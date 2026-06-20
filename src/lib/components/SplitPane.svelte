@@ -4,9 +4,11 @@
   let {
     left,
     right,
+    showRight = false,
   }: {
     left: import('svelte').Snippet;
-    right: import('svelte').Snippet;
+    right?: import('svelte').Snippet;
+    showRight?: boolean;
   } = $props();
 
   let dragging = $state(false);
@@ -36,22 +38,24 @@
   }
 </script>
 
-<div class="split-pane" class:dragging>
-  <div class="split-left" style="width: {ratio * 100}%">
+<div class="split-pane" class:dragging class:has-right={showRight}>
+  <div class="split-left" style="width: {showRight ? ratio * 100 : 100}%">
     {@render left()}
   </div>
-  <div
-    class="split-divider"
-    role="separator"
-    aria-label="Resize panels"
-    tabindex="0"
-    onpointerdown={onPointerDown}
-    onpointermove={onPointerMove}
-    onpointerup={onPointerUp}
-  ></div>
-  <div class="split-right" style="width: {(1 - ratio) * 100}%">
-    {@render right()}
-  </div>
+  {#if showRight}
+    <div
+      class="split-divider"
+      role="separator"
+      aria-label="Resize panels"
+      tabindex="0"
+      onpointerdown={onPointerDown}
+      onpointermove={onPointerMove}
+      onpointerup={onPointerUp}
+    ></div>
+    <div class="split-right" style="width: {(1 - ratio) * 100}%">
+      {#if right}{@render right()}{/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -64,6 +68,8 @@
     overflow-y: auto;
     overflow-x: hidden;
   }
+  .split-left { border-right: 1px solid var(--color-separator); }
+  .has-right .split-left { border-right: none; }
   .split-divider {
     width: 4px;
     background: var(--color-separator);
@@ -74,7 +80,5 @@
   .split-divider:hover, .dragging .split-divider {
     background: var(--color-accent);
   }
-  .dragging {
-    user-select: none;
-  }
+  .dragging { user-select: none; }
 </style>

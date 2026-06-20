@@ -2,6 +2,7 @@
   import Sidebar from './Sidebar.svelte';
   import SplitPane from './SplitPane.svelte';
   import TaskDetail from './TaskDetail.svelte';
+  import TaskEditor from './TaskEditor.svelte';
   import InboxPage from '../../routes/inbox/+page.svelte';
   import TodayPage from '../../routes/today/+page.svelte';
   import SettingsPage from '../../routes/settings/+page.svelte';
@@ -18,6 +19,7 @@
   } = $props();
 
   let prevView = $state(activeView);
+  let editing = $state(false);
 
   $effect(() => {
     if (activeView !== prevView) {
@@ -26,12 +28,26 @@
     }
   });
 
+  function handleTaskTap(task: any) {
+    setSelectedTaskId(`${task.page}/${task.position}`);
+  }
+
   function handleDetailClose() {
     setSelectedTaskId(null);
     loadInbox();
   }
 
   function handleTaskChanged() {
+    setSelectedTaskId(null);
+    loadInbox();
+  }
+
+  function handleEdit() {
+    editing = true;
+  }
+
+  function handleEditSaved() {
+    editing = false;
     setSelectedTaskId(null);
     loadInbox();
   }
@@ -49,26 +65,28 @@
     <div class="desktop-top-bar">
       <QuickCapture />
     </div>
-    <SplitPane>
+    <SplitPane showRight={!!selectedTask}>
       {#snippet left()}
         {#if activeView === 'inbox'}
-          <InboxPage />
+          <InboxPage onTaskTap={handleTaskTap} />
         {:else if activeView === 'today'}
-          <TodayPage />
+          <TodayPage onTaskTap={handleTaskTap} />
         {:else}
           <SettingsPage />
         {/if}
       {/snippet}
       {#snippet right()}
         {#if selectedTask}
-          <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
-        {:else}
-          <div class="empty-detail">Select a task to see details</div>
+          <TaskDetail task={selectedTask} variant="panel" onclose={handleDetailClose} ontaskchanged={handleTaskChanged} onedit={handleEdit} />
         {/if}
       {/snippet}
     </SplitPane>
   </div>
 </div>
+
+{#if editing && selectedTask}
+  <TaskEditor task={selectedTask} mode="modal" onclose={() => (editing = false)} onsaved={handleEditSaved} />
+{/if}
 
 <style>
   .desktop-shell {
@@ -86,15 +104,5 @@
   .desktop-top-bar {
     padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--color-separator);
-  }
-  .empty-detail {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--color-text-tertiary);
-    font-size: var(--font-size-sm);
-    padding: 2rem;
-    text-align: center;
   }
 </style>

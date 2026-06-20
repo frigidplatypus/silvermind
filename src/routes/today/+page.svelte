@@ -5,6 +5,8 @@
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
 
+  let { onTaskTap: externalOnTaskTap }: { onTaskTap?: (t: Task) => void } = $props();
+
   let overdue = $state<Task[]>([]);
   let dueToday = $state<Task[]>([]);
   let scheduledToday = $state<Task[]>([]);
@@ -13,24 +15,35 @@
   onMount(async () => { await refresh(); });
   async function refresh() { const d = await loadToday(); overdue = d.overdue; dueToday = d.due_today; scheduledToday = d.scheduled_today; }
   function tid(t: Task) { return `${t.page}/${t.position}`; }
+
+  function handleTaskTap(t: Task) {
+    if (externalOnTaskTap) {
+      externalOnTaskTap(t);
+    } else {
+      selectedTask = t;
+    }
+  }
+
   function handleDetailClose() { selectedTask = null; }
   function handleTaskChanged(_t: Task) { selectedTask = null; refresh(); }
 </script>
 
 <div class="today-page">
   <section><h2 class="heading overdue">Overdue</h2>
-    {#each overdue as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => (selectedTask = t)} />{/each}
+    {#each overdue as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
     {#if overdue.length === 0}<p class="empty">No overdue tasks</p>{/if}
   </section>
   <section><h2 class="heading">Due Today</h2>
-    {#each dueToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => (selectedTask = t)} />{/each}
+    {#each dueToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
     {#if dueToday.length === 0}<p class="empty">No tasks due today</p>{/if}
   </section>
   <section><h2 class="heading">Scheduled Today</h2>
-    {#each scheduledToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => (selectedTask = t)} />{/each}
+    {#each scheduledToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
     {#if scheduledToday.length === 0}<p class="empty">No tasks scheduled for today</p>{/if}
   </section>
-  <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
+  {#if !externalOnTaskTap}
+    <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
+  {/if}
 </div>
 
 <style>
