@@ -34,6 +34,22 @@
   });
 
   $effect(() => {
+    function handleLinkClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+      if (!link || !link.href) return;
+      if (link.protocol === 'http:' || link.protocol === 'https:') {
+        if (!link.href.startsWith('http://127.0.0.1') && !link.href.startsWith('http://localhost')) {
+          e.preventDefault();
+          window.open(link.href, '_blank');
+        }
+      }
+    }
+    document.addEventListener('click', handleLinkClick);
+    return () => document.removeEventListener('click', handleLinkClick);
+  });
+
+  $effect(() => {
     const spaceId = getActiveId();
     if (spaceId) { loadInbox(); loadTaskNames(); }
   });

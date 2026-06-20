@@ -1,7 +1,13 @@
 <script lang="ts">
-  import { marked } from 'marked';
+  import { marked, Renderer } from 'marked';
 
   let { text, inline = false }: { text: string; inline?: boolean } = $props();
+
+  const renderer = new Renderer();
+  renderer.link = ({ href, title, text: linkText }) => {
+    const titleAttr = title ? ` title="${title.replace(/"/g, '&quot;')}"` : '';
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer"${titleAttr}>${linkText}</a>`;
+  };
 
   // Strip inline scripts, event handlers, and iframes for safety
   function sanitize(html: string): string {
@@ -12,7 +18,9 @@
       .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
   }
 
-  const html = $derived(sanitize(inline ? marked.parseInline(text) as string : marked.parse(text) as string));
+  const html = $derived(sanitize(
+    (inline ? marked.parseInline(text, { renderer }) : marked.parse(text, { renderer })) as string
+  ));
 </script>
 
 {#if inline}
