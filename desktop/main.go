@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/wailsapp/wails/v2"
@@ -133,5 +134,11 @@ func (a *App) SetActiveSpace(name string) ([]SpaceInfo, error) {
 
 func (a *App) GetConfigPath() string {
 	return a.config.configPath()
+}
+
+func (a *App) OpenURL(url string) {
+	if err := exec.Command("xdg-open", url).Start(); err != nil {
+		log.Printf("[silvermind] OpenURL failed: %v", err)
+	}
 }
 

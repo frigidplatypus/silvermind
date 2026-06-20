@@ -41,7 +41,17 @@
       if (link.protocol === 'http:' || link.protocol === 'https:') {
         if (!link.href.startsWith('http://127.0.0.1') && !link.href.startsWith('http://localhost')) {
           e.preventDefault();
-          window.open(link.href, '_blank');
+          const goApp = (window as any).go?.main?.App;
+          if (goApp?.OpenURL) {
+            goApp.OpenURL(link.href);
+          } else {
+            const wailsRuntime = (window as any).runtime;
+            if (wailsRuntime?.BrowserOpenURL) {
+              wailsRuntime.BrowserOpenURL(link.href);
+            } else {
+              window.open(link.href, '_blank');
+            }
+          }
         }
       }
     }
