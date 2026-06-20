@@ -1,8 +1,9 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading } from '$lib/stores/space.svelte';
+  import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading, loadSpaces } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
+  import { isDesktopApp, setActiveSpaceDesktop } from '$lib/desktop-bridge';
 
   let {
     activeView,
@@ -22,9 +23,18 @@
 
   const activeSpace = $derived(getSpacesList().find((s) => s.id === getActiveId()));
 
-  function selectSpace(spaceId: string) {
-    setActiveSpace(spaceId);
+  async function selectSpace(spaceId: string) {
     spaceOpen = false;
+    const space = getSpacesList().find((s) => s.id === spaceId);
+    if (!space) return;
+    if (isDesktopApp()) {
+      try {
+        await setActiveSpaceDesktop(space.name);
+        await loadSpaces();
+      } catch { /* handled by loadSpaces fallback */ }
+    } else {
+      setActiveSpace(spaceId);
+    }
     loadInbox();
     loadTaskNames();
   }
