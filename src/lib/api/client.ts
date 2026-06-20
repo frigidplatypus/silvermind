@@ -1,5 +1,8 @@
-// Vite proxies /api → sbtask serve (avoids CORS issues on remote devices)
-const API_BASE = '/api';
+// Vite proxies /api → sbtask serve in dev; desktop uses direct localhost:7433
+const SBTASK_PORT = 7433;
+const API_BASE = typeof window !== 'undefined' && (window as any).go?.main?.App
+  ? `http://127.0.0.1:${SBTASK_PORT}`
+  : '/api';
 
 let _activeSpace = '';
 
