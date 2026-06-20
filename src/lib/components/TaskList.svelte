@@ -1,16 +1,19 @@
 <script lang="ts">
   import type { Task } from '$lib/types/task';
   import TaskRow from './TaskRow.svelte';
+  import Icon from './Icon.svelte';
 
   let {
     tasks,
     isLoading = false,
+    error = null,
     onTaskTap,
     onRefresh,
     emptyMessage = 'No tasks',
   }: {
     tasks: Task[];
     isLoading?: boolean;
+    error?: string | null;
     onTaskTap?: (task: Task) => void;
     onRefresh?: () => Promise<void>;
     emptyMessage?: string;
@@ -61,7 +64,15 @@
     <div class="refresh-indicator" style="height:{pullDistance}px;opacity:{pullDistance/60}">Pull to refresh</div>
   {/if}
 
-  {#if isLoading}
+  {#if error}
+    <div class="error-state" role="alert">
+      <Icon name="alert-triangle" size="1.25rem" />
+      <p class="error-message">{error}</p>
+      {#if onRefresh}
+        <button class="retry-btn" onclick={() => onRefresh()}>Retry</button>
+      {/if}
+    </div>
+  {:else if isLoading}
     <div class="loading-state">Loading tasks…</div>
   {:else if tasks.length === 0}
     <div class="empty-state">{emptyMessage}</div>
@@ -76,4 +87,7 @@
   .task-list-container { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .refresh-indicator { display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
   .loading-state, .empty-state { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--color-text-secondary); }
+  .error-state { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2rem 1.5rem; text-align: center; color: var(--color-danger); }
+  .error-message { font-size: var(--font-size-sm); line-height: 1.5; word-break: break-word; max-width: 400px; }
+  .retry-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-danger); color: #fff; font-weight: 600; font-size: var(--font-size-sm); }
 </style>

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { loadToday } from '$lib/stores/tasks.svelte';
+  import { loadToday, getTasksError } from '$lib/stores/tasks.svelte';
   import type { Task } from '$lib/types/task';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
+  import Icon from '$lib/components/Icon.svelte';
 
   let { onTaskTap: externalOnTaskTap }: { onTaskTap?: (t: Task) => void } = $props();
 
@@ -29,6 +30,13 @@
 </script>
 
 <div class="today-page">
+  {#if getTasksError()}
+    <div class="error-state" role="alert">
+      <Icon name="alert-triangle" size="1.25rem" />
+      <p class="error-message">{getTasksError()}</p>
+      <button class="retry-btn" onclick={refresh}>Retry</button>
+    </div>
+  {/if}
   <section><h2 class="heading overdue">Overdue</h2>
     {#each overdue as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
     {#if overdue.length === 0}<p class="empty">No overdue tasks</p>{/if}
@@ -51,4 +59,7 @@
   .heading { padding: 0.75rem 1rem 0.375rem; font-size: var(--font-size-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); background: var(--color-bg-secondary); }
   .heading.overdue { color: var(--color-danger); }
   .empty { padding: 0.75rem 1rem; color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
+  .error-state { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2rem 1.5rem; text-align: center; color: var(--color-danger); }
+  .error-message { font-size: var(--font-size-sm); line-height: 1.5; word-break: break-word; }
+  .retry-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-danger); color: #fff; font-weight: 600; font-size: var(--font-size-sm); }
 </style>

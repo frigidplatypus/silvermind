@@ -32,9 +32,10 @@ class ApiClientError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let urlPath = path;
-  if (_activeSpace) {
+  const activeSpace = _activeSpace;
+  if (activeSpace) {
     const sep = path.includes('?') ? '&' : '?';
-    urlPath = `${path}${sep}space=${encodeURIComponent(_activeSpace)}`;
+    urlPath = `${path}${sep}space=${encodeURIComponent(activeSpace)}`;
   }
   const url = `${API_BASE}${urlPath}`;
 
@@ -51,7 +52,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return undefined as T;
   }
 
-  const body = await res.json();
+  let body: any;
+  try {
+    body = await res.json();
+  } catch {
+    const text = await res.text().catch(() => '');
+    throw new ApiClientError(res.status, {
+      error: {
+        code: 'PARSE_ERROR',
+        message: text ? `Server returned: ${text.slice(0, 200)}` : `HTTP ${res.status} ${res.statusText}`,
+      },
+    });
+  }
 
   if (!res.ok) {
     throw new ApiClientError(res.status, body);

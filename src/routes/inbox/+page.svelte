@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { loadInbox, getTasks, getTasksLoading } from '$lib/stores/tasks.svelte';
+  import { loadInbox, getTasks, getTasksLoading, getTasksError } from '$lib/stores/tasks.svelte';
   import type { Task } from '$lib/types/task';
   import TaskList from '$lib/components/TaskList.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
@@ -24,7 +24,7 @@
 </script>
 
 <div class="inbox-view">
-  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} onTaskTap={handleTaskTap} onRefresh={loadInbox} emptyMessage="All tasks complete" />
+  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} error={getTasksError()} onTaskTap={handleTaskTap} onRefresh={loadInbox} emptyMessage="All tasks complete" />
   {#if !externalOnTaskTap}
     <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
   {/if}
