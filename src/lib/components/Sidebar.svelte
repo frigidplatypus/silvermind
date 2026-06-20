@@ -1,6 +1,8 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading } from '$lib/stores/space.svelte';
+  import { loadInbox } from '$lib/stores/tasks.svelte';
+  import { loadTaskNames } from '$lib/stores/tasknames.svelte';
 
   let {
     activeView,
@@ -23,6 +25,8 @@
   function selectSpace(spaceId: string) {
     setActiveSpace(spaceId);
     spaceOpen = false;
+    loadInbox();
+    loadTaskNames();
   }
 </script>
 
