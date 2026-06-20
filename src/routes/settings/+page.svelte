@@ -94,6 +94,7 @@
     if (isDesktop) {
       try {
         await setActiveSpaceDesktop(name);
+        setActiveSpace(name);
         await loadSpaces();
       } catch (e: any) {
         const msg = e?.error || e?.message || String(e);
