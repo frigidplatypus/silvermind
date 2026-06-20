@@ -30,6 +30,7 @@
     if (isDesktopApp()) {
       try {
         await setActiveSpaceDesktop(space.name);
+        setActiveSpace(spaceId);
         await loadSpaces();
       } catch { /* handled by loadSpaces fallback */ }
     } else {
