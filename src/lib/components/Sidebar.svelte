@@ -3,15 +3,20 @@
   import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading, loadSpaces } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
+  import { getQueryPagesList, getQueryPagesLoading, loadQueryPages } from '$lib/stores/queries.svelte';
   import { isDesktopApp, setActiveSpaceDesktop } from '$lib/desktop-bridge';
 
   let {
     activeView,
     onNavigate,
   }: {
-    activeView: 'inbox' | 'today' | 'settings';
+    activeView: string;
     onNavigate: (view: string) => void;
   } = $props();
+
+  $effect(() => {
+    loadQueryPages();
+  });
 
   let spaceOpen = $state(false);
 
@@ -89,6 +94,36 @@
       <span>{item.label}</span>
     </button>
   {/each}
+
+  {#if getQueryPagesList().length > 0}
+    <div class="sidebar-section-label">Queries</div>
+    {#each getQueryPagesList() as qp}
+      <div class="query-page-group">
+        <button
+          class="sidebar-item query-page-toggle"
+          class:active={activeView.startsWith(`queries:${qp.page}`)}
+          onclick={() => onNavigate(`queries:${qp.page}`)}
+        >
+          <Icon name="search" />
+          <span class="query-page-name">{qp.page.split('/').pop()}</span>
+        </button>
+        {#each qp.blocks as block}
+          <button
+            class="sidebar-item sidebar-item-child"
+            class:active={activeView === `queries:${qp.page}:${block.number}`}
+            onclick={() => onNavigate(`queries:${qp.page}:${block.number}`)}
+          >
+            <Icon name="chevron-right" size="0.75rem" />
+            <span>{block.title}</span>
+          </button>
+        {/each}
+      </div>
+    {/each}
+  {/if}
+
+  {#if getQueryPagesLoading()}
+    <div class="query-loading">Loading queries…</div>
+  {/if}
 </nav>
 
 {#if spaceOpen}
@@ -223,5 +258,30 @@
     position: fixed;
     inset: 0;
     z-index: 0;
+  }
+  .query-page-group {
+    margin-bottom: 0.125rem;
+  }
+  .query-page-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sidebar-item-child {
+    padding-left: 2rem;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+  }
+  .sidebar-item-child.active {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .query-page-toggle.active {
+    font-weight: 600;
+  }
+  .query-loading {
+    padding: 0.5rem 0.75rem;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
   }
 </style>
