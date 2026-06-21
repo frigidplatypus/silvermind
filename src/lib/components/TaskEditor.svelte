@@ -89,7 +89,7 @@
       const fields: Record<string, unknown> = {};
       if (text !== task.text) fields.text = text;
       if (status !== (task.status || '')) fields.status = status;
-      if (priority !== (task.priority || 'none')) fields.priority = priority;
+      if (priority !== (task.priority || 'none')) fields.priority = priority === 'none' ? '' : priority;
       if (due !== (task.due || '')) fields.due = due || '';
       if (scheduled !== (task.scheduled || '')) fields.scheduled = scheduled || '';
       if (recur !== (task.recur || '')) fields.recur = recur || '';
@@ -106,7 +106,10 @@
       notifySuccess();
       onsaved?.(updated);
       onclose();
-    } catch { } finally { isSaving = false; }
+    } catch (e) {
+      console.error('Save failed', e);
+      alert(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { isSaving = false; }
   }
 
   async function handleToggleDone() {
