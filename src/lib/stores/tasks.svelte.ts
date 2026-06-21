@@ -54,7 +54,7 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
 
 export async function addTask(text: string): Promise<Task | null> {
   try {
-    const task = await createTask({ text, page: 'Tasks' });
+    const task = await createTask({ text });
     await loadInbox();
     return task;
   } catch (e) {

@@ -9,8 +9,8 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
 }
 
 export async function createTask(input: Record<string, unknown>): Promise<Task> {
-  // sbtask serve: POST /tasks returns the created task
-  return api.post<Task>('/tasks', input);
+  // sbtask serve: POST /inbox creates a task on the space's configured inbox page
+  return api.post<Task>('/inbox', input);
 }
 
 export async function updateTask(page: string, position: number, fields: Record<string, unknown>): Promise<Task> {

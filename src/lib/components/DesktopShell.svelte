@@ -88,9 +88,15 @@
 
   const selectedId = $derived(getSelectedTaskId());
   const allTasks = $derived(getTasks());
-  const selectedTask = $derived(
-    selectedId ? allTasks.find((t: any) => `${t.page}/${t.position}` === selectedId) ?? null : null,
-  );
+  const queryTasksList = $derived(getCurrentQueryTasks());
+  const selectedTask = $derived.by(() => {
+    if (!selectedId) return null;
+    // Search inbox/today tasks first
+    let found = allTasks.find((t: any) => `${t.page}/${t.position}` === selectedId);
+    if (found) return found;
+    // Fall back to query result tasks
+    return queryTasksList.find((t: any) => `${t.page}/${t.position}` === selectedId) ?? null;
+  });
 
   const isQueryView = $derived(activeView.startsWith('queries:'));
   const queryTitle = $derived(getCurrentQueryTitle());
