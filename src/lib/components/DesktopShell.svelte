@@ -53,6 +53,10 @@
     loadInbox();
   }
 
+  function handleQueryTaskTap(task: any) {
+    setSelectedTaskId(`${task.page}/${task.position}`);
+  }
+
   function handleEdit() {
     editing = true;
   }
@@ -82,17 +86,24 @@
       <QuickCapture />
     </div>
     {#if isQueryView}
-      <div class="query-view">
-        <div class="query-header">
-          <Icon name="search" size="1rem" />
-          <span class="query-title">{queryTitle ?? 'Query'}</span>
-        </div>
-        {#if queryLoading}
-          <div class="query-loading">Running query…</div>
-        {:else}
-          <TaskList tasks={queryTasks} emptyMessage="No tasks found" />
-        {/if}
+      <div class="query-header">
+        <Icon name="search" size="1rem" />
+        <span class="query-title">{queryTitle ?? 'Query'}</span>
       </div>
+      <SplitPane showRight={!!selectedTask}>
+        {#snippet left()}
+          {#if queryLoading}
+            <div class="query-loading">Running query…</div>
+          {:else}
+            <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} emptyMessage="No tasks found" />
+          {/if}
+        {/snippet}
+        {#snippet right()}
+          {#if selectedTask}
+            <TaskDetail task={selectedTask} variant="panel" onclose={handleDetailClose} ontaskchanged={handleTaskChanged} onedit={handleEdit} />
+          {/if}
+        {/snippet}
+      </SplitPane>
     {:else}
       <SplitPane showRight={!!selectedTask}>
         {#snippet left()}
@@ -134,12 +145,6 @@
   .desktop-top-bar {
     padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--color-separator);
-  }
-  .query-view {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
   }
   .query-header {
     display: flex;
