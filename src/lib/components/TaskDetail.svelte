@@ -18,12 +18,16 @@
 
   async function toggleDone() {
     if (!task) return;
-    const updated = task.done
-      ? await undoTask(task.page, task.position)
-      : await markTaskDone(task.page, task.position);
-    notifySuccess();
-    ontaskchanged?.(updated);
-    onclose();
+    try {
+      const updated = task.done
+        ? await undoTask(task.page, task.position)
+        : await markTaskDone(task.page, task.position);
+      notifySuccess();
+      ontaskchanged?.(updated);
+      onclose();
+    } catch (e) {
+      console.error('[silvermind] toggleDone failed:', e);
+    }
   }
   const doneIcon = $derived(task?.done ? 'rotate-ccw' : 'check');
   const doneLabel = $derived(task?.done ? 'Undo' : 'Mark Done');
