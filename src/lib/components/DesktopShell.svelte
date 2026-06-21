@@ -53,6 +53,21 @@
     loadInbox();
   }
 
+  function handleQueryDetailClose() {
+    setSelectedTaskId(null);
+  }
+
+  function handleQueryTaskChanged() {
+    setSelectedTaskId(null);
+    // Re-run the current query to refresh results
+    if (activeView.startsWith('queries:')) {
+      const parts = activeView.split(':');
+      const page = parts[1];
+      const index = parts[2] ? parseInt(parts[2]) : undefined;
+      runQuery(page, index);
+    }
+  }
+
   function handleQueryTaskTap(task: any) {
     setSelectedTaskId(`${task.page}/${task.position}`);
   }
@@ -64,7 +79,11 @@
   function handleEditSaved() {
     editing = false;
     setSelectedTaskId(null);
-    loadInbox();
+    if (isQueryView) {
+      handleQueryTaskChanged();
+    } else {
+      loadInbox();
+    }
   }
 
   const selectedId = $derived(getSelectedTaskId());
@@ -100,7 +119,7 @@
         {/snippet}
         {#snippet right()}
           {#if selectedTask}
-            <TaskDetail task={selectedTask} variant="panel" onclose={handleDetailClose} ontaskchanged={handleTaskChanged} onedit={handleEdit} />
+            <TaskDetail task={selectedTask} variant="panel" onclose={handleQueryDetailClose} ontaskchanged={handleQueryTaskChanged} onedit={handleEdit} />
           {/if}
         {/snippet}
       </SplitPane>
