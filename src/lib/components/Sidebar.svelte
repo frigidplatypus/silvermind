@@ -127,6 +127,8 @@
   </div>
   {#if getQueryPagesLoading()}
     <div class="query-loading">Checking for queries…</div>
+  {:else if getQueryPagesError()}
+    <div class="query-error">{getQueryPagesError()}</div>
   {:else if getQueryPagesList().length > 0}
     {#each getQueryPagesList() as qp}
       <div class="query-page-group">
@@ -310,6 +312,12 @@
     padding: 0.5rem 0.75rem;
     font-size: var(--font-size-sm);
     color: var(--color-text-tertiary);
+  }
+  .query-error {
+    padding: 0.5rem 0.75rem;
+    font-size: var(--font-size-xs);
+    color: var(--color-danger);
+    line-height: 1.4;
   }
   .refresh-btn {
     padding: 0.125rem;

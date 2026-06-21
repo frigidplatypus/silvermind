@@ -68,6 +68,10 @@ func (c *ConfigManager) migrate() {
 		}
 	}
 	// Save to our path
+	if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
+		log.Printf("[silvermind] config dir creation failed: %v", err)
+		return
+	}
 	if err := config.SaveConfig(c.path, sbtaskCfg); err != nil {
 		log.Printf("[silvermind] config migration failed: %v", err)
 		return
@@ -84,6 +88,9 @@ func (c *ConfigManager) load() (*config.ConfigFile, error) {
 }
 
 func (c *ConfigManager) save(cfg *config.ConfigFile) error {
+	if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
+	}
 	return config.SaveConfig(c.path, cfg)
 }
 
