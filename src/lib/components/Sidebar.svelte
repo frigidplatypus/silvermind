@@ -20,6 +20,30 @@
 
   let spaceOpen = $state(false);
 
+  const activeSpaceId = $derived(getActiveId());
+
+  $effect(() => {
+    loadQueryPages();
+  });
+
+  // Reload query pages when space changes
+  $effect(() => {
+    if (activeSpaceId) {
+      loadQueryPages();
+    }
+  });
+
+  let refreshingQueries = $state(false);
+
+  async function handleRefreshQueries() {
+    refreshingQueries = true;
+    try {
+      await loadQueryPages();
+    } finally {
+      refreshingQueries = false;
+    }
+  }
+
   const items = $derived([
     { id: 'inbox', label: 'Inbox', icon: 'inbox' },
     { id: 'today', label: 'Today', icon: 'calendar' },
@@ -95,8 +119,15 @@
     </button>
   {/each}
 
-  {#if getQueryPagesList().length > 0}
-    <div class="sidebar-section-label">Queries</div>
+  <div class="sidebar-section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
+    <span>Queries</span>
+    <button class="refresh-btn" onclick={handleRefreshQueries} aria-label="Refresh query pages" disabled={refreshingQueries}>
+      <Icon name="rotate-cw" size="0.75rem" />
+    </button>
+  </div>
+  {#if getQueryPagesLoading()}
+    <div class="query-loading">Checking for queries…</div>
+  {:else if getQueryPagesList().length > 0}
     {#each getQueryPagesList() as qp}
       <div class="query-page-group">
         <button
@@ -119,10 +150,6 @@
         {/each}
       </div>
     {/each}
-  {/if}
-
-  {#if getQueryPagesLoading()}
-    <div class="query-loading">Loading queries…</div>
   {/if}
 </nav>
 
@@ -284,4 +311,14 @@
     font-size: var(--font-size-sm);
     color: var(--color-text-tertiary);
   }
+  .refresh-btn {
+    padding: 0.125rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .refresh-btn:hover { color: var(--color-accent); }
+  .refresh-btn:disabled { opacity: 0.4; }
 </style>
