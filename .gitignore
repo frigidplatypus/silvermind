@@ -36,3 +36,4 @@ android/
 # Build artifacts
 *.tsbuildinfo
 result
+desktop/silvermind-desktop

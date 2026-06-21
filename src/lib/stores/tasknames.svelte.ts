@@ -7,6 +7,7 @@ export function getTaskNames(): string[] { return taskNames; }
 export function isLoaded(): boolean { return loaded; }
 
 export async function loadTaskNames(): Promise<void> {
+  if (loaded) return;
   try {
     const tasks = await getTasks({ limit: '500' });
     const names = new Set<string>();

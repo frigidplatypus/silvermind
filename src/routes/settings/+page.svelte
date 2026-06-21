@@ -10,6 +10,7 @@
   let isDesktop = $state(false);
   let newName = $state('');
   let newUrl = $state('');
+  let newAuthToken = $state('');
   let saving = $state(false);
   let error = $state<string | null>(null);
   let editingSpace = $state<string | null>(null);
@@ -17,6 +18,9 @@
   let editUrl = $state('');
   let editDefaultPage = $state('');
   let editInboxPage = $state('');
+  let editAuthToken = $state('');
+  let showEditToken = $state(false);
+  let showNewToken = $state(false);
 
   $effect(() => {
     isDesktop = isDesktopApp();
@@ -30,6 +34,8 @@
     editUrl = space.url;
     editDefaultPage = '';
     editInboxPage = '';
+    editAuthToken = '';
+    showEditToken = false;
   }
 
   function cancelEdit() {
@@ -43,7 +49,7 @@
     saving = true;
     error = null;
     try {
-      await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage);
+      await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage, editAuthToken);
       editingSpace = null;
       await loadSpaces();
     } catch (e: any) {
@@ -62,9 +68,10 @@
     saving = true;
     error = null;
     try {
-      await addSpaceDesktop(name, url);
+      await addSpaceDesktop(name, url, '', '', newAuthToken);
       newName = '';
       newUrl = '';
+      newAuthToken = '';
       await loadSpaces();
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
@@ -142,6 +149,13 @@
               <input id="edit-dp-{space.name}" type="text" class="field" bind:value={editDefaultPage} placeholder="Tasks" disabled={saving} />
               <label class="field-label" for="edit-ip-{space.name}">Inbox page</label>
               <input id="edit-ip-{space.name}" type="text" class="field" bind:value={editInboxPage} placeholder="Inbox" disabled={saving} />
+              <label class="field-label" for="edit-token-{space.name}" style="margin-top:0.25rem">
+                Auth token
+                <button class="field-toggle" onclick={() => (showEditToken = !showEditToken)} type="button" aria-label={showEditToken ? 'Hide token' : 'Show token'}>
+                  <Icon name={showEditToken ? 'eye-off' : 'eye'} size="1rem" />
+                </button>
+              </label>
+              <input id="edit-token-{space.name}" type={showEditToken ? 'text' : 'password'} class="field" bind:value={editAuthToken} placeholder="Leave empty to keep or clear" disabled={saving} />
               <div class="edit-actions">
                 <button class="action-btn cancel" onclick={cancelEdit} disabled={saving}>Cancel</button>
                 <button class="action-btn save" onclick={() => handleEditSave(space.name)} disabled={saving || !editName.trim() || !editUrl.trim()}>
@@ -183,6 +197,13 @@
         <h4 class="form-title">Add Space</h4>
         <input type="text" class="field" placeholder="Space name" bind:value={newName} disabled={saving} />
         <input type="text" class="field" placeholder="Space URL" bind:value={newUrl} disabled={saving} />
+        <label class="field-label" style="margin-top:0.25rem">
+          Auth token
+          <button class="field-toggle" onclick={() => (showNewToken = !showNewToken)} type="button" aria-label={showNewToken ? 'Hide token' : 'Show token'}>
+            <Icon name={showNewToken ? 'eye-off' : 'eye'} size="1rem" />
+          </button>
+        </label>
+        <input type={showNewToken ? 'text' : 'password'} class="field" placeholder="Auth token (optional)" bind:value={newAuthToken} disabled={saving} />
         <button class="add-btn" onclick={handleAddSpace} disabled={saving || !newName.trim() || !newUrl.trim()}>
           {saving ? 'Adding…' : 'Add Space'}
         </button>
@@ -233,5 +254,7 @@
   .field:focus { border-color: var(--color-accent); }
   .add-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: white; font-weight: 600; font-size: var(--font-size-sm); }
   .add-btn:disabled { opacity: 0.4; }
+  .field-toggle { background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 0; display: inline-flex; align-items: center; margin-left: 0.25rem; }
+  .field-toggle:hover { color: var(--color-text-secondary); }
   .about-text { font-size: var(--font-size-sm); color: var(--color-text-tertiary); }
 </style>

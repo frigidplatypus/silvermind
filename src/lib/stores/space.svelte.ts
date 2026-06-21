@@ -39,6 +39,7 @@ export async function loadSpaces(): Promise<void> {
       name: s.name || s.url,
       url: s.url,
       active: s.active ?? false,
+      is_default: s.is_default ?? false,
     }));
     const value = restore(ACTIVE_SPACE_KEY);
     if (value && spacesVal.some((s) => s.id === value)) {

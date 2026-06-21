@@ -1,20 +1,41 @@
-// Haptics wrapper — no-ops gracefully when Capacitor is unavailable (browser, non-iOS)
-
-async function callHaptics(method: string, style: number): Promise<void> {
+export async function impactLight(): Promise<void> {
   try {
-    const m = await import('@capacitor/haptics');
-    const h = new m.Haptics();
-    if (method === 'impact') {
-      await (h as any).impact({ style });
-    } else {
-      await (h as any).notification({ type: style });
-    }
+    const { Haptics } = await import('@capacitor/haptics') as any;
+    await Haptics.impact({ style: 'LIGHT' });
   } catch { /* no haptics available */ }
 }
 
-export function impactLight() { callHaptics('impact', 0); }
-export function impactMedium() { callHaptics('impact', 1); }
-export function impactHeavy() { callHaptics('impact', 2); }
-export function notifySuccess() { callHaptics('notification', 0); }
-export function notifyError() { callHaptics('notification', 1); }
-export function notifyWarning() { callHaptics('notification', 2); }
+export async function impactMedium(): Promise<void> {
+  try {
+    const { Haptics } = await import('@capacitor/haptics') as any;
+    await Haptics.impact({ style: 'MEDIUM' });
+  } catch { /* no haptics available */ }
+}
+
+export async function impactHeavy(): Promise<void> {
+  try {
+    const { Haptics } = await import('@capacitor/haptics') as any;
+    await Haptics.impact({ style: 'HEAVY' });
+  } catch { /* no haptics available */ }
+}
+
+export async function notifySuccess(): Promise<void> {
+  try {
+    const { Haptics } = await import('@capacitor/haptics') as any;
+    await Haptics.notification({ type: 'SUCCESS' });
+  } catch { /* no haptics available */ }
+}
+
+export async function notifyError(): Promise<void> {
+  try {
+    const { Haptics } = await import('@capacitor/haptics') as any;
+    await Haptics.notification({ type: 'ERROR' });
+  } catch { /* no haptics available */ }
+}
+
+export async function notifyWarning(): Promise<void> {
+  try {
+    const { Haptics } = await import('@capacitor/haptics') as any;
+    await Haptics.notification({ type: 'WARNING' });
+  } catch { /* no haptics available */ }
+}

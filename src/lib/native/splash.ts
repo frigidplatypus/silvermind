@@ -1,12 +1,13 @@
-// SplashScreen wrapper — no-ops gracefully when Capacitor is unavailable
-
-async function callSplash(method: string, arg?: any): Promise<void> {
+export async function showSplash(): Promise<void> {
   try {
-    const m = await import('@capacitor/splash-screen');
-    const ss = new m.SplashScreen();
-    await (ss as any)[method](arg);
+    const { SplashScreen } = await import('@capacitor/splash-screen') as any;
+    await SplashScreen.show({ fadeInDuration: 0 });
   } catch { /* no splash available */ }
 }
 
-export function showSplash() { return callSplash('show', { fadeInDuration: 0 }); }
-export function hideSplash() { return callSplash('hide', { fadeOutDuration: 300 }); }
+export async function hideSplash(): Promise<void> {
+  try {
+    const { SplashScreen } = await import('@capacitor/splash-screen') as any;
+    await SplashScreen.hide({ fadeOutDuration: 300 });
+  } catch { /* no splash available */ }
+}

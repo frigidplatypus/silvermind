@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Sidebar from './Sidebar.svelte';
   import SplitPane from './SplitPane.svelte';
   import TaskDetail from './TaskDetail.svelte';
@@ -12,6 +13,12 @@
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
   import { getTasks, loadInbox } from '$lib/stores/tasks.svelte';
   import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults } from '$lib/stores/queries.svelte';
+  import { markTaskDone, undoTask } from '$lib/api/tasks';
+  import type { Task } from '$lib/types/task';
+  import SearchBar from './SearchBar.svelte';
+  import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
+  import GlobalPage from '../../routes/global/+page.svelte';
+  import { getGlobalTasks, loadGlobalView } from '$lib/stores/global.svelte';
 
   let {
     activeView,
@@ -51,6 +58,7 @@
   function handleTaskChanged() {
     setSelectedTaskId(null);
     loadInbox();
+    if (activeView === 'global') loadGlobalView();
   }
 
   function handleQueryDetailClose() {
@@ -102,6 +110,122 @@
   const queryTitle = $derived(getCurrentQueryTitle());
   const queryTasks = $derived(getCurrentQueryTasks());
   const queryLoading = $derived(getQueryLoading());
+
+  function isEditing(): boolean {
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = (el as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if ((el as HTMLElement).isContentEditable) return true;
+    return false;
+  }
+
+  function getCurrentTasks(): Task[] {
+    const searchActive = getIsActive();
+    if (searchActive) return getResults();
+    if (activeView === 'inbox') return allTasks;
+    if (activeView === 'global') return getGlobalTasks();
+    if (activeView.startsWith('queries:')) return queryTasksList;
+    return [];
+  }
+
+  function handleSearchResultTap(t: Task) {
+    setSelectedTaskId(`${t.page}/${t.position}`);
+  }
+
+  function scrollToTask(task: Task): void {
+    const id = `task-${task.page}/${task.position}`;
+    document.getElementById(id)?.scrollIntoView({ block: 'nearest' });
+  }
+
+  onMount(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      if (isEditing()) return;
+
+      switch (e.key) {
+        case 'n': {
+          e.preventDefault();
+          document.getElementById('quick-input')?.focus();
+          break;
+        }
+        case '/': {
+          e.preventDefault();
+          activateSearch(activeView === 'global' ? 'global' : 'active');
+          setTimeout(() => document.getElementById('search-input')?.focus(), 0);
+          break;
+        }
+        case 'j':
+        case 'ArrowDown': {
+          e.preventDefault();
+          const tasks = getCurrentTasks();
+          if (tasks.length === 0) return;
+          const curId = getSelectedTaskId();
+          const curIdx = curId ? tasks.findIndex((t) => `${t.page}/${t.position}` === curId) : -1;
+          const nextIdx = Math.min(curIdx + 1, tasks.length - 1);
+          if (nextIdx >= 0) {
+            setSelectedTaskId(`${tasks[nextIdx].page}/${tasks[nextIdx].position}`);
+            scrollToTask(tasks[nextIdx]);
+          }
+          break;
+        }
+        case 'k':
+        case 'ArrowUp': {
+          e.preventDefault();
+          const tasks = getCurrentTasks();
+          if (tasks.length === 0) return;
+          const curId = getSelectedTaskId();
+          const curIdx = curId ? tasks.findIndex((t) => `${t.page}/${t.position}` === curId) : 0;
+          const prevIdx = Math.max(curIdx - 1, 0);
+          if (prevIdx >= 0) {
+            setSelectedTaskId(`${tasks[prevIdx].page}/${tasks[prevIdx].position}`);
+            scrollToTask(tasks[prevIdx]);
+          }
+          break;
+        }
+        case 'e': {
+          const id = getSelectedTaskId();
+          if (!id) return;
+          e.preventDefault();
+          editing = true;
+          break;
+        }
+        case 'd': {
+          const id = getSelectedTaskId();
+          if (!id) return;
+          e.preventDefault();
+          const [page, posStr] = id.split('/');
+          const pos = parseInt(posStr);
+          if (isNaN(pos)) return;
+          markTaskDone(page, pos).then(() => {
+            loadInbox();
+            if (isQueryView) handleQueryTaskChanged();
+          }).catch((e2) => alert(`Done failed: ${e2.message}`));
+          break;
+        }
+        case 'u': {
+          const id = getSelectedTaskId();
+          if (!id) return;
+          e.preventDefault();
+          const [page, posStr] = id.split('/');
+          const pos = parseInt(posStr);
+          if (isNaN(pos)) return;
+          undoTask(page, pos).then(() => {
+            loadInbox();
+            if (isQueryView) handleQueryTaskChanged();
+          }).catch((e2) => alert(`Undo failed: ${e2.message}`));
+          break;
+        }
+        case 'Escape': {
+          setSelectedTaskId(null);
+          (document.activeElement as HTMLElement)?.blur();
+          break;
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeydown);
+    return () => document.removeEventListener('keydown', handleKeydown);
+  });
 </script>
 
 <div class="desktop-shell">
@@ -110,7 +234,20 @@
     <div class="desktop-top-bar">
       <QuickCapture />
     </div>
-    {#if isQueryView}
+    <SearchBar />
+    {#if getIsActive()}
+      <div class="search-results">
+        {#if getQuery() && getResults().length === 0 && !getIsSearching()}
+          <div class="search-empty">No results for &ldquo;{getQuery()}&rdquo;</div>
+        {:else if getQuery() && getIsSearching()}
+          <div class="search-status">Searching&hellip;</div>
+        {:else if getResults().length > 0}
+          <TaskList tasks={getResults()} onTaskTap={handleSearchResultTap} emptyMessage="No results" />
+        {:else}
+          <div class="search-empty">Type to search tasks</div>
+        {/if}
+      </div>
+    {:else if isQueryView}
       <div class="query-header">
         <Icon name="search" size="1rem" />
         <span class="query-title">{queryTitle ?? 'Query'}</span>
@@ -136,6 +273,8 @@
             <InboxPage onTaskTap={handleTaskTap} />
           {:else if activeView === 'today'}
             <TodayPage onTaskTap={handleTaskTap} />
+          {:else if activeView === 'global'}
+            <GlobalPage onTaskTap={handleTaskTap} />
           {:else}
             <SettingsPage />
           {/if}
@@ -193,5 +332,17 @@
     justify-content: center;
     padding: 3rem 1rem;
     color: var(--color-text-secondary);
+  }
+  .search-results {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .search-empty, .search-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
   }
 </style>

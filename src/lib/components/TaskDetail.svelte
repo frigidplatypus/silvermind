@@ -27,6 +27,7 @@
       onclose();
     } catch (e) {
       console.error('[silvermind] toggleDone failed:', e);
+      alert(`Toggle done failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
   const doneIcon = $derived(task?.done ? 'rotate-ccw' : 'check');

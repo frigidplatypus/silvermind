@@ -7,6 +7,7 @@ export function getTagNames(): string[] { return tagNames; }
 export function isLoaded(): boolean { return loaded; }
 
 export async function loadTagNames(): Promise<void> {
+  if (loaded) return;
   try {
     const tasks = await getTasks({ limit: '500' });
     const tags = new Set<string>();

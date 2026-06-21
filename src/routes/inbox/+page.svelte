@@ -24,7 +24,7 @@
 </script>
 
 <div class="inbox-view">
-  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} error={getTasksError()} onTaskTap={handleTaskTap} onRefresh={loadInbox} emptyMessage="All tasks complete" />
+  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} error={getTasksError()} onTaskTap={handleTaskTap} onRefresh={async () => { loadInbox(); }} emptyMessage="All tasks complete" />
   {#if !externalOnTaskTap}
     <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
   {/if}

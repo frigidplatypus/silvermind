@@ -31,6 +31,7 @@ export async function loadInbox(): Promise<Task[]> {
   _lastError = null;
   try {
     _tasks = await getInbox();
+    ensurePolling();
   } catch (e) {
     _lastError = formatError(e);
   } finally {
@@ -60,5 +61,54 @@ export async function addTask(text: string): Promise<Task | null> {
   } catch (e) {
     _lastError = formatError(e);
     return null;
+  }
+}
+
+/* ── background polling ── */
+
+const POLL_INTERVAL = 30_000;
+
+let _pollTimer: ReturnType<typeof setInterval> | null = null;
+let _pollInFlight = false;
+
+function tasksEqual(a: Task[], b: Task[]): boolean {
+  if (a.length !== b.length) return false;
+  const mapB = new Map<string, Task>();
+  for (const t of b) mapB.set(`${t.page}/${t.position}`, t);
+  for (const ta of a) {
+    const tb = mapB.get(`${ta.page}/${ta.position}`);
+    if (!tb) return false;
+    if (ta.text !== tb.text || ta.done !== tb.done ||
+      ta.status !== tb.status || ta.due !== tb.due ||
+      ta.priority !== tb.priority) return false;
+    if (JSON.stringify(ta.tags) !== JSON.stringify(tb.tags)) return false;
+  }
+  return true;
+}
+
+async function pollInbox(): Promise<void> {
+  if (_isLoading || _pollInFlight) return;
+  _pollInFlight = true;
+  try {
+    const fresh = await getInbox();
+    if (!tasksEqual(_tasks, fresh)) {
+      _tasks = fresh;
+    }
+  } catch {
+    /* silently ignore background poll errors */
+  } finally {
+    _pollInFlight = false;
+  }
+}
+
+function ensurePolling(): void {
+  if (_pollTimer) return;
+  _pollTimer = setInterval(pollInbox, POLL_INTERVAL);
+}
+
+export function stopPolling(): void {
+  if (_pollTimer) {
+    clearInterval(_pollTimer);
+    _pollTimer = null;
   }
 }

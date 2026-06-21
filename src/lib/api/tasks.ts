@@ -28,3 +28,13 @@ export async function undoTask(page: string, position: number): Promise<Task> {
 export async function deleteTask(page: string, position: number): Promise<void> {
   return api.delete<void>(`/tasks/${encodeURIComponent(page)}/${position}`);
 }
+
+export async function searchTasks(query: string): Promise<TaskListResponse> {
+  if (!query.trim()) return [];
+  return api.get<TaskListResponse>(`/tasks?search=${encodeURIComponent(query)}&limit=50`);
+}
+
+export async function getTasksForSpace(spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
+  const qs = params ? '&' + new URLSearchParams(params).toString() : '';
+  return api.get<TaskListResponse>(`/tasks?space_url=${encodeURIComponent(spaceUrl)}&limit=500${qs}`);
+}

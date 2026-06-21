@@ -48,6 +48,7 @@
   const items = $derived([
     { id: 'inbox', label: 'Inbox', icon: 'inbox' },
     { id: 'today', label: 'Today', icon: 'calendar' },
+    { id: 'global', label: 'All Tasks', icon: 'globe' },
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ]);
 

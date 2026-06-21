@@ -117,7 +117,7 @@ func (c *ConfigManager) ListSpaces() []SpaceInfo {
 	return toSpaces(cfg)
 }
 
-func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		log.Printf("[silvermind] AddSpace load error: %v", err)
@@ -140,6 +140,7 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]Sp
 	}
 	cfg.Spaces[name] = config.SpaceConfig{
 		Space:       url,
+		AuthToken:   authToken,
 		DefaultPage: defaultPage,
 		InboxPage:   inboxPage,
 	}
@@ -154,7 +155,7 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage string) ([]Sp
 	return toSpaces(cfg), nil
 }
 
-func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -172,6 +173,8 @@ func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage s
 	if inboxPage != "" {
 		sp.InboxPage = inboxPage
 	}
+	// authToken is always set on update (empty string clears it)
+	sp.AuthToken = authToken
 	if newName == "" {
 		newName = name
 	}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { getServiceState } from '$lib/stores/service.svelte';
   import { getActiveId } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
@@ -14,11 +15,47 @@
   import Icon from '$lib/components/Icon.svelte';
   import InboxPage from './inbox/+page.svelte';
   import TodayPage from './today/+page.svelte';
+  import GlobalPage from './global/+page.svelte';
   import SettingsPage from './settings/+page.svelte';
   import { goto } from '$lib/router';
+  import SearchBar from '$lib/components/SearchBar.svelte';
+  import TaskList from '$lib/components/TaskList.svelte';
+  import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
 
   let { activeTab = 'inbox' }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
+
+  function isEditing(): boolean {
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = (el as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if ((el as HTMLElement).isContentEditable) return true;
+    return false;
+  }
+
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    if (isEditing()) return;
+    switch (e.key) {
+      case 'n': {
+        e.preventDefault();
+        document.getElementById('quick-input')?.focus();
+        break;
+      }
+      case '/': {
+        e.preventDefault();
+        activateSearch(currentTab === 'global' ? 'global' : 'active');
+        setTimeout(() => document.getElementById('search-input')?.focus(), 0);
+        break;
+      }
+      case 'Escape': {
+        (document.activeElement as HTMLElement)?.blur();
+        break;
+      }
+    }
+  }
+
+  $effect(() => { document.addEventListener('keydown', handleGlobalKeydown); return () => document.removeEventListener('keydown', handleGlobalKeydown); });
 
   $effect(() => {
     function check() { setDesktopMode(window.innerWidth >= 800); }
@@ -75,13 +112,31 @@
     <ServiceErrorBanner />
     <header class="app-header" style="padding-top: var(--safe-area-top)">
       <div class="header-content">
-        <h1 class="app-title">{currentTab === 'inbox' ? 'Inbox' : currentTab === 'today' ? 'Today' : 'Settings'}</h1>
-        {#if currentTab !== 'settings'}<SpaceSwitcher />{/if}
+        {#if getIsActive()}
+          <button class="search-back-btn" onclick={() => deactivateSearch()} aria-label="Back">&larr;</button>
+        {/if}
+        <h1 class="app-title">{getIsActive() ? 'Search' : currentTab === 'inbox' ? 'Inbox' : currentTab === 'today' ? 'Today' : currentTab === 'global' ? 'All Tasks' : 'Settings'}</h1>
+        {#if !getIsActive() && currentTab !== 'settings'}<SpaceSwitcher />{/if}
       </div>
     </header>
-    <main class="app-main">
-      {#if currentTab === 'inbox'}<InboxPage />{:else if currentTab === 'today'}<TodayPage />{:else}<SettingsPage />{/if}
-    </main>
+    {#if getIsActive()}
+      <SearchBar />
+      <main class="app-main search-active">
+        {#if getQuery() && getResults().length === 0 && !getIsSearching()}
+          <div class="search-empty">No results for &ldquo;{getQuery()}&rdquo;</div>
+        {:else if getResults().length > 0}
+          <TaskList tasks={getResults()} emptyMessage="No results" />
+        {:else if getIsSearching()}
+          <div class="search-empty">Searching&hellip;</div>
+        {:else}
+          <div class="search-empty">Type to search tasks</div>
+        {/if}
+      </main>
+    {:else}
+      <main class="app-main">
+        {#if currentTab === 'inbox'}<InboxPage />{:else if currentTab === 'today'}<TodayPage />{:else if currentTab === 'global'}<GlobalPage />{:else}<SettingsPage />{/if}
+      </main>
+    {/if}
     <nav class="tab-bar" role="tablist" aria-label="Main navigation" style="padding-bottom: var(--safe-area-bottom)">
       <button class="tab-button" class:active={currentTab === 'inbox'} role="tab" aria-selected={currentTab === 'inbox'} onclick={() => navigate('inbox')}>
         <span class="tab-icon"><Icon name="inbox" /></span><span class="tab-label">Inbox</span>
@@ -89,11 +144,14 @@
       <button class="tab-button" class:active={currentTab === 'today'} role="tab" aria-selected={currentTab === 'today'} onclick={() => navigate('today')}>
         <span class="tab-icon"><Icon name="calendar" /></span><span class="tab-label">Today</span>
       </button>
+      <button class="tab-button" class:active={currentTab === 'global'} role="tab" aria-selected={currentTab === 'global'} onclick={() => navigate('global')}>
+        <span class="tab-icon"><Icon name="globe" /></span><span class="tab-label">All</span>
+      </button>
       <button class="tab-button" class:active={currentTab === 'settings'} role="tab" aria-selected={currentTab === 'settings'} onclick={() => navigate('settings')}>
         <span class="tab-icon"><Icon name="settings" /></span><span class="tab-label">Settings</span>
       </button>
     </nav>
-    {#if currentTab !== 'settings'}<div class="quick-capture-container"><QuickCapture /></div>{/if}
+    {#if currentTab !== 'settings' && !getIsActive()}<div class="quick-capture-container"><QuickCapture /></div>{/if}
   </div>
 {/if}
 
@@ -108,4 +166,7 @@
   .tab-button.active .tab-label { color: var(--color-accent); font-weight: 600; }
   .tab-icon { font-size: 1.25rem; } .tab-label { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
   .quick-capture-container { flex-shrink: 0; background: var(--color-bg); }
+  .search-back-btn { background: none; border: none; font-size: 1.25rem; color: var(--color-accent); padding: 0; cursor: pointer; }
+  .main.search-active { overflow-y: auto; }
+  .search-empty { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 </style>

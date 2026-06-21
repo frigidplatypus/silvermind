@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { loadToday, getTasksError } from '$lib/stores/tasks.svelte';
+  import { getToday } from '$lib/api/today';
   import type { Task } from '$lib/types/task';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
@@ -13,8 +14,28 @@
   let scheduledToday = $state<Task[]>([]);
   let selectedTask = $state<Task | null>(null);
 
-  onMount(async () => { await refresh(); });
+  let _pollTimer: ReturnType<typeof setInterval> | null = null;
+  onMount(async () => {
+    await refresh();
+    _pollTimer = setInterval(async () => {
+      try {
+        const fresh = await getToday();
+        const cur = { overdue, dueToday, scheduledToday };
+        const cmp = { overdue: fresh.overdue, due_today: fresh.due_today, scheduled_today: fresh.scheduled_today };
+        if (JSON.stringify(cmp) !== JSON.stringify(cur)) {
+          overdue = fresh.overdue;
+          dueToday = fresh.due_today;
+          scheduledToday = fresh.scheduled_today;
+        }
+      } catch {
+        /* silently ignore */
+      }
+    }, 30_000);
+  });
+  onDestroy(() => { if (_pollTimer) clearInterval(_pollTimer); });
+
   async function refresh() { const d = await loadToday(); overdue = d.overdue; dueToday = d.due_today; scheduledToday = d.scheduled_today; }
+
   function tid(t: Task) { return `${t.page}/${t.position}`; }
 
   function handleTaskTap(t: Task) {

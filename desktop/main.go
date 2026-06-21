@@ -88,9 +88,9 @@ func (a *App) ListSpaces() []SpaceInfo {
 	return nil
 }
 
-func (a *App) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+func (a *App) AddSpace(name, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
 	if a.config != nil {
-		spaces, err := a.config.AddSpace(name, url, defaultPage, inboxPage)
+		spaces, err := a.config.AddSpace(name, url, defaultPage, inboxPage, authToken)
 		if err == nil {
 			a.RestartSbtask()
 		}
@@ -99,9 +99,9 @@ func (a *App) AddSpace(name, url, defaultPage, inboxPage string) ([]SpaceInfo, e
 	return nil, nil
 }
 
-func (a *App) UpdateSpace(name, newName, url, defaultPage, inboxPage string) ([]SpaceInfo, error) {
+func (a *App) UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
 	if a.config != nil {
-		spaces, err := a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage)
+		spaces, err := a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken)
 		if err == nil {
 			a.RestartSbtask()
 		}

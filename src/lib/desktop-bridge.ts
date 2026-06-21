@@ -23,8 +23,9 @@ export async function addSpaceDesktop(
   url: string,
   defaultPage?: string,
   inboxPage?: string,
+  authToken?: string,
 ): Promise<SpaceInfo[]> {
-  return go().AddSpace(name, url, defaultPage || '', inboxPage || '');
+  return go().AddSpace(name, url, defaultPage || '', inboxPage || '', authToken || '');
 }
 
 export async function updateSpaceDesktop(
@@ -33,8 +34,9 @@ export async function updateSpaceDesktop(
   url: string,
   defaultPage?: string,
   inboxPage?: string,
+  authToken?: string,
 ): Promise<SpaceInfo[]> {
-  return go().UpdateSpace(name, newName, url, defaultPage || '', inboxPage || '');
+  return go().UpdateSpace(name, newName, url, defaultPage || '', inboxPage || '', authToken || '');
 }
 
 export async function removeSpaceDesktop(name: string): Promise<SpaceInfo[]> {

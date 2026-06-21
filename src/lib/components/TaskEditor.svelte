@@ -48,7 +48,7 @@
 
   function addTag(name: string) {
     const trimmed = name.trim().replace(/^#/, '');
-    if (trimmed && /^[\w\-\/]+$/.test(trimmed) && !tags.includes(trimmed)) {
+    if (trimmed && /^[\w\-\/.:]+$/.test(trimmed) && !tags.includes(trimmed)) {
       tags = [...tags, trimmed];
     }
   }
@@ -120,7 +120,10 @@
       notifySuccess();
       onsaved?.(updated);
       onclose();
-    } catch { }
+    } catch (e) {
+      console.error('Toggle done failed', e);
+      alert(`Toggle done failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   async function handleDelete() {
@@ -129,7 +132,10 @@
       notifySuccess();
       onsaved?.(task);
       onclose();
-    } catch { }
+    } catch (e) {
+      console.error('Delete failed', e);
+      alert(`Delete failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 </script>
 

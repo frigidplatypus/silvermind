@@ -1,4 +1,4 @@
-type Theme = 'system' | 'light' | 'dark';
+export type Theme = 'system' | 'light' | 'dark';
 
 let current = $state<Theme>('system');
 
