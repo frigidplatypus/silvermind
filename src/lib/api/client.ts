@@ -21,12 +21,17 @@ class ApiClientError extends Error {
   status: number;
   details?: Record<string, unknown>;
 
-  constructor(status: number, body: ApiError) {
-    super(body.error.message);
+  constructor(status: number, body: any) {
+    // sbtask serve sends {error: "message", code: "xxx"}
+    // We normalize to {error: {code, message}} for consistency
+    const errorBody = typeof body?.error === 'string'
+      ? { code: body.code || 'UNKNOWN', message: body.error }
+      : body?.error ?? { code: 'UNKNOWN', message: String(status) };
+    super(errorBody.message);
     this.name = 'ApiClientError';
-    this.code = body.error.code;
+    this.code = errorBody.code;
     this.status = status;
-    this.details = body.error.details;
+    this.details = errorBody.details;
   }
 }
 
