@@ -21,8 +21,9 @@
   import SearchBar from '$lib/components/SearchBar.svelte';
   import TaskList from '$lib/components/TaskList.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
+  import { getDefaultView } from '$lib/stores/landing.svelte';
 
-  let { activeTab = 'inbox' }: { activeTab?: string } = $props();
+  let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
 
   function isEditing(): boolean {

@@ -12,6 +12,13 @@
     task.priority === 'high' ? 'High priority' : task.priority === 'medium' ? 'Medium priority' : task.priority === 'low' ? 'Low priority' : 'No priority',
   );
 
+  const statusLabel = $derived.by(() => {
+    if (task.done) return null;
+    if (task.status === 'waiting') return { text: 'Waiting', cl: 'status-waiting' };
+    if (task.status === 'maybe') return { text: 'Maybe', cl: 'status-maybe' };
+    return null;
+  });
+
   const dueLabel = $derived.by(() => {
     if (!task.due_parsed?.date) return null;
     const d = new Date(task.due_parsed.date + 'T00:00:00');
@@ -44,6 +51,9 @@
     </div>
   </div>
   <div class="task-row-right">
+    {#if statusLabel}
+      <span class="status-chip" class:status-waiting={statusLabel.cl === 'status-waiting'} class:status-maybe={statusLabel.cl === 'status-maybe'}>{statusLabel.text}</span>
+    {/if}
     {#if dueLabel}
       <span class="task-due" class:overdue={dueLabel.class === 'overdue'} class:today={dueLabel.class === 'today'}>{dueLabel.text}</span>
     {/if}
@@ -69,5 +79,8 @@
   .task-due { font-size: var(--font-size-xs); font-weight: 500; padding: 0.125rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-bg-tertiary); color: var(--color-text-secondary); white-space: nowrap; }
   .task-due.overdue { background: var(--color-danger-light); color: var(--color-danger); }
   .task-due.today { background: var(--color-warning-light); color: var(--color-warning); }
+  .status-chip { font-size: var(--font-size-xs); font-weight: 600; padding: 0.125rem 0.5rem; border-radius: var(--radius-sm); white-space: nowrap; }
+  .status-chip.status-waiting { background: var(--color-warning-light); color: var(--color-warning); }
+  .status-chip.status-maybe { background: var(--color-accent-light); color: var(--color-accent); }
   .page-tag { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
 </style>

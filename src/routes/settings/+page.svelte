@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getTheme, setTheme } from '$lib/stores/theme.svelte';
+  import { getDefaultView, setDefaultView } from '$lib/stores/landing.svelte';
   import { getSpacesList, loadSpaces, setActiveSpace } from '$lib/stores/space.svelte';
   import type { Theme } from '$lib/stores/theme.svelte';
   import type { Space } from '$lib/types/space';
@@ -7,6 +8,7 @@
   import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop } from '$lib/desktop-bridge';
 
   let currentTheme = $state<Theme>(getTheme());
+  let currentDefault = $state<string>(getDefaultView());
   let isDesktop = $state(false);
   let newName = $state('');
   let newUrl = $state('');
@@ -27,6 +29,7 @@
   });
 
   function onThemeChange(t: Theme) { currentTheme = t; setTheme(t); }
+  function onDefaultChange(v: string) { currentDefault = v; setDefaultView(v); }
 
   function startEdit(space: Space) {
     editingSpace = space.name;
@@ -124,6 +127,18 @@
         <button class="theme-btn" class:active={currentTheme === t} onclick={() => onThemeChange(t)}>
           <Icon name={t === 'system' ? 'monitor' : t === 'light' ? 'sun' : 'moon'} size="1.5rem" />
           <span class="theme-label">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
+        </button>
+      {/each}
+    </div>
+  </section>
+
+  <section class="section">
+    <h3 class="section-title">Startup</h3>
+    <div class="default-picker">
+      {#each [{ id: 'inbox', icon: 'inbox', label: 'Inbox' }, { id: 'today', icon: 'calendar', label: 'Today' }, { id: 'global', icon: 'globe', label: 'All Tasks' }] as item}
+        <button class="default-btn" class:active={currentDefault === item.id} onclick={() => onDefaultChange(item.id)}>
+          <Icon name={item.icon} size="1.5rem" />
+          <span class="default-label">{item.label}</span>
         </button>
       {/each}
     </div>
@@ -231,6 +246,10 @@
   .theme-btn i { font-size: 1.5rem; }
   .theme-btn.active { border-color: var(--color-accent); background: var(--color-accent-light); color: var(--color-accent); }
   .theme-label { font-weight: 500; }
+  .default-picker { display: flex; gap: 0.5rem; }
+  .default-btn { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; flex: 1; padding: 0.75rem 0.25rem; border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-sm); color: var(--color-text-secondary); border: 2px solid transparent; cursor: pointer; }
+  .default-btn.active { border-color: var(--color-accent); background: var(--color-accent-light); color: var(--color-accent); }
+  .default-label { font-weight: 500; }
   .space-list { display: flex; flex-direction: column; gap: 0.5rem; }
   .space-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: var(--radius-md); background: var(--color-bg-secondary); gap: 0.75rem; }
   .space-info { display: flex; flex-direction: column; gap: 0.125rem; flex: 1; min-width: 0; }
