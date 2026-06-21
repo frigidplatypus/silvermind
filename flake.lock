@@ -103,11 +103,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1782013836,
-        "narHash": "sha256-6/Ztx3EZ5QyePhsZdS7DSrFTdjYaLIP4npExKQb8fcA=",
+        "lastModified": 1782014134,
+        "narHash": "sha256-vw1YgrP+IqBvOmzTSQJa1HBW6LnizgfGAsAFyrxMdtI=",
         "ref": "refs/heads/main",
-        "rev": "d8faf27267658063ee96817ddc1354565ab45870",
-        "revCount": 31,
+        "rev": "6637c77e639cc346f84c5bbf17e770460b6af3ad",
+        "revCount": 32,
         "type": "git",
         "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       },
