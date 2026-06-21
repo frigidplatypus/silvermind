@@ -122,12 +122,17 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "path": "/home/justin/development/go/sbtask",
-        "type": "path"
+        "lastModified": 1782020233,
+        "narHash": "sha256-9eDkfQBd1qpSQNgy8m4z3PUBjtt7zwhhRZ7rUsuX3P0=",
+        "ref": "refs/heads/main",
+        "rev": "4272b599ef22dda8934c2be29b8cb7c9f9f1a1c1",
+        "revCount": 40,
+        "type": "git",
+        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       },
       "original": {
-        "path": "/home/justin/development/go/sbtask",
-        "type": "path"
+        "type": "git",
+        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       }
     },
     "systems": {

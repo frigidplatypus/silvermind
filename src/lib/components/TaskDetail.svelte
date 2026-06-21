@@ -91,6 +91,14 @@
             </div>
           </div>
         {/if}
+        {#if task.extra_attrs && Object.keys(task.extra_attrs).length > 0}
+          {#each Object.entries(task.extra_attrs) as [key, val]}
+            <div class="meta-row">
+              <span class="meta-label">{key}</span>
+              <span class="meta-value">{val}</span>
+            </div>
+          {/each}
+        {/if}
       </div>
 
       <button class="done-btn" class:is-done={task.done} onclick={toggleDone} aria-label={doneLabel}>
@@ -151,6 +159,14 @@
                 {/each}
               </div>
             </div>
+          {/if}
+          {#if task.extra_attrs && Object.keys(task.extra_attrs).length > 0}
+            {#each Object.entries(task.extra_attrs) as [key, val]}
+              <div class="meta-row">
+                <span class="meta-label">{key}</span>
+                <span class="meta-value">{val}</span>
+              </div>
+            {/each}
           {/if}
         </div>
 

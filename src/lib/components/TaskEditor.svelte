@@ -34,6 +34,7 @@
   let tagQuery = $state('');
   let tagFocused = $state(false);
   let tagSelectedIndex = $state(0);
+  let extraAttrs = $state<Record<string, string>>({ ...(task.extra_attrs || {}) });
 
   const taskNames = $derived(getTaskNames());
   const allTagNames = $derived(getTagNames());
@@ -100,6 +101,9 @@
       const oldTags = (task.tags || []).join(',');
       const newTags = tags.join(',');
       if (newTags !== oldTags) fields.tags = tags;
+      const oldExtra = JSON.stringify(task.extra_attrs || {});
+      const newExtra = JSON.stringify(extraAttrs);
+      if (newExtra !== oldExtra) fields.extra_attrs = { ...extraAttrs };
 
       if (Object.keys(fields).length === 0) { onclose(); return; }
       const updated = await updateTask(task.page, task.position, fields);
@@ -225,6 +229,22 @@
         {/each}
       </div>
     {/if}
+
+    <label class="field-label">Custom Attributes</label>
+    <div class="extra-attrs">
+      {#each Object.keys(extraAttrs) as key}
+        <div class="extra-attr-row">
+          <input type="text" class="field extra-key" value={key} placeholder="key"
+            oninput={(e) => { const v = (e.target as HTMLInputElement).value; const val = extraAttrs[key]; delete extraAttrs[key]; extraAttrs[v] = val; extraAttrs = { ...extraAttrs }; }}
+          />
+          <input type="text" class="field extra-val" value={extraAttrs[key]} placeholder="value"
+            oninput={(e) => { extraAttrs[key] = (e.target as HTMLInputElement).value; extraAttrs = { ...extraAttrs }; }}
+          />
+          <button class="extra-remove" onclick={() => { delete extraAttrs[key]; extraAttrs = { ...extraAttrs }; }} aria-label="Remove attribute"><Icon name="x" size="0.875rem" /></button>
+        </div>
+      {/each}
+      <button class="extra-add" onclick={() => { extraAttrs[''] = ''; extraAttrs = { ...extraAttrs }; }}>+ Add attribute</button>
+    </div>
   {/if}
 
   <div class="meta-row"><span class="meta-label">Page</span><span class="meta-value">{task.page}</span></div>
@@ -315,6 +335,12 @@
   .tag-autocomplete { position: relative; }
   .tag-field { padding: 0.5rem 0.625rem; font-size: var(--font-size-sm); }
   .tag-field::placeholder { color: var(--color-text-tertiary); }
+  .extra-attrs { display: flex; flex-direction: column; gap: 0.375rem; }
+  .extra-attr-row { display: flex; gap: 0.375rem; align-items: center; }
+  .extra-key { flex: 0 0 7rem; padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); font-family: monospace; }
+  .extra-val { flex: 1; padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }
+  .extra-remove { padding: 0.25rem; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; }
+  .extra-add { padding: 0.375rem 0.75rem; font-size: var(--font-size-xs); color: var(--color-accent); font-weight: 500; align-self: flex-start; }
   .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-sm); }
   .meta-label { color: var(--color-text-secondary); }
   .meta-value { color: var(--color-text); }

@@ -16,6 +16,7 @@ export interface Task {
   depends_on?: string[];
   blocked: boolean;
   recur?: string;
+  extra_attrs?: Record<string, string>;
 }
 
 export interface NewTaskInput {

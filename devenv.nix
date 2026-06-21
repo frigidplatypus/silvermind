@@ -29,15 +29,6 @@
   languages.go = {
     enable = true;
   };
-  languages.javascript = {
-    enable = true;
-    npm.enable = false;
-    pnpm.enable = true;
-  };
-
-  languages.go = {
-    enable = true;
-  };
 
   # https://devenv.sh/processes/
   processes.sbtask.exec = "sbtask --config ${config.env.DEVENV_ROOT}/sbtask-config.yaml serve --port 7433 --host 0.0.0.0";
