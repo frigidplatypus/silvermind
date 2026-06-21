@@ -3,6 +3,7 @@
   import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading, loadSpaces } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
+  import { loadTagNames } from '$lib/stores/tagnames.svelte';
   import { getQueryPagesList, getQueryPagesLoading, getQueryPagesError, loadQueryPages } from '$lib/stores/queries.svelte';
   import { isDesktopApp, setActiveSpaceDesktop } from '$lib/desktop-bridge';
 
@@ -67,6 +68,7 @@
     }
     loadInbox();
     loadTaskNames();
+    loadTagNames();
   }
 </script>
 

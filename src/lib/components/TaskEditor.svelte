@@ -3,6 +3,7 @@
   import { updateTask, markTaskDone, undoTask, deleteTask } from '$lib/api/tasks';
   import { notifySuccess } from '$lib/native/haptics';
   import { getTaskNames, loadTaskNames } from '$lib/stores/tasknames.svelte';
+  import { getTagNames, loadTagNames } from '$lib/stores/tagnames.svelte';
   import Icon from './Icon.svelte';
   import Autocomplete from './Autocomplete.svelte';
 
@@ -29,8 +30,58 @@
   let showAdvanced = $state(!!(task.recur || (task.depends_on && task.depends_on.length > 0) || task.parent));
   let isSaving = $state(false);
   let showDeleteConfirm = $state(false);
+  let tags = $state<string[]>([...(task.tags || [])]);
+  let tagQuery = $state('');
+  let tagFocused = $state(false);
+  let tagSelectedIndex = $state(0);
 
   const taskNames = $derived(getTaskNames());
+  const allTagNames = $derived(getTagNames());
+  const tagFiltered = $derived(
+    tagQuery.trim()
+      ? allTagNames
+          .filter((t) => t.toLowerCase().includes(tagQuery.toLowerCase()))
+          .filter((t) => !tags.includes(t))
+          .slice(0, 8)
+      : [],
+  );
+
+  function addTag(name: string) {
+    const trimmed = name.trim().replace(/^#/, '');
+    if (trimmed && /^[\w\-\/]+$/.test(trimmed) && !tags.includes(trimmed)) {
+      tags = [...tags, trimmed];
+    }
+  }
+
+  function removeTag(name: string) {
+    tags = tags.filter((t) => t !== name);
+  }
+
+  function handleTagKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); tagSelectedIndex = Math.min(tagSelectedIndex + 1, tagFiltered.length - 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); tagSelectedIndex = Math.max(tagSelectedIndex - 1, 0); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (tagFiltered[tagSelectedIndex]) {
+        addTag(tagFiltered[tagSelectedIndex]);
+      } else if (tagQuery.trim()) {
+        addTag(tagQuery);
+      }
+      tagQuery = '';
+      tagSelectedIndex = 0;
+    } else if (e.key === 'Escape') {
+      tagFocused = false;
+    }
+  }
+
+  function handleTagSelect(item: string) {
+    addTag(item);
+    tagQuery = '';
+    tagSelectedIndex = 0;
+    tagFocused = false;
+  }
+
+  $effect(() => { loadTagNames(); });
 
   async function handleSave() {
     isSaving = true;
@@ -46,6 +97,9 @@
       const newDeps = deps.join(',');
       if (newDeps !== oldDeps) fields.depends_on = deps;
       if (parent !== (task.parent || '')) fields.parent = parent || '';
+      const oldTags = (task.tags || []).join(',');
+      const newTags = tags.join(',');
+      if (newTags !== oldTags) fields.tags = tags;
 
       if (Object.keys(fields).length === 0) { onclose(); return; }
       const updated = await updateTask(task.page, task.position, fields);
@@ -94,6 +148,35 @@
     <option value="medium">Medium</option>
     <option value="high">High</option>
   </select>
+
+  <label class="field-label" for="edit-tags">Tags</label>
+  <div class="tag-input-wrapper">
+    {#if tags.length > 0}
+      <div class="chip-row tag-chips">
+        {#each tags as tag}
+          <span class="chip"><Icon name="tag" size="0.75rem" /> {tag} <button class="chip-remove" onclick={() => removeTag(tag)} aria-label="Remove {tag}">×</button></span>
+        {/each}
+      </div>
+    {/if}
+    <div class="tag-autocomplete">
+      <input id="edit-tags" type="text" class="field tag-field" bind:value={tagQuery} placeholder="Add tag…"
+        onfocus={() => { tagFocused = true; tagSelectedIndex = 0; }}
+        onblur={() => setTimeout(() => (tagFocused = false), 150)}
+        onkeydown={handleTagKeydown}
+        autocomplete="off"
+      />
+      {#if tagFocused && tagFiltered.length > 0}
+        <ul class="ac-dropdown" role="listbox">
+          {#each tagFiltered as item, i}
+            <li class="ac-item" class:selected={i === tagSelectedIndex} role="option" aria-selected={i === tagSelectedIndex}
+              onpointerdown={(e) => { e.preventDefault(); handleTagSelect(item); }}>
+              {item}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
+  </div>
 
   <label class="field-label" for="edit-due">Due date</label>
   <input id="edit-due" type="text" class="field" bind:value={due} placeholder="2026-06-25 or tomorrow" />
@@ -214,7 +297,15 @@
   .advanced-toggle { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0; font-size: var(--font-size-sm); color: var(--color-accent); font-weight: 500; }
   .chip-row { display: flex; flex-wrap: wrap; gap: 0.375rem; }
   .chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-bg-tertiary); font-size: var(--font-size-xs); color: var(--color-text); }
+  .ac-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 350; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: 0 4px 12px var(--color-shadow); max-height: 14rem; overflow-y: auto; margin-top: 0.25rem; list-style: none; padding: 0.25rem; }
+  .ac-item { padding: 0.5rem 0.75rem; font-size: var(--font-size-sm); color: var(--color-text); border-radius: var(--radius-sm); cursor: pointer; }
+  .ac-item.selected, .ac-item:hover { background: var(--color-accent-light); color: var(--color-accent); }
   .chip-remove { padding: 0 0.125rem; font-size: 0.875rem; color: var(--color-text-secondary); }
+  .tag-input-wrapper { display: flex; flex-direction: column; gap: 0.375rem; }
+  .tag-chips { margin-bottom: 0.125rem; }
+  .tag-autocomplete { position: relative; }
+  .tag-field { padding: 0.5rem 0.625rem; font-size: var(--font-size-sm); }
+  .tag-field::placeholder { color: var(--color-text-tertiary); }
   .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-sm); }
   .meta-label { color: var(--color-text-secondary); }
   .meta-value { color: var(--color-text); }

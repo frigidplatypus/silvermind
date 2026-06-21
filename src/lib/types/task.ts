@@ -25,4 +25,5 @@ export interface NewTaskInput {
   scheduled?: string;
   priority?: string;
   name?: string;
+  tags?: string[];
 }

@@ -3,6 +3,7 @@
   import { getActiveId } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
+  import { loadTagNames } from '$lib/stores/tagnames.svelte';
   import { getIsDesktop, setDesktopMode } from '$lib/stores/desktop.svelte';
   import { hideSplash } from '$lib/native/splash';
   import { setDarkStyle } from '$lib/native/status-bar';
@@ -61,7 +62,7 @@
 
   $effect(() => {
     const spaceId = getActiveId();
-    if (spaceId) { loadInbox(); loadTaskNames(); }
+    if (spaceId) { loadInbox(); loadTaskNames(); loadTagNames(); }
   });
 
   function navigate(tab: string) { currentTab = tab; goto(`/${tab}`); }
