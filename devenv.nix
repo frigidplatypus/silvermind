@@ -9,6 +9,7 @@
     go
     gopls
     delve
+    just
     nodejs-slim_22
     pnpm
     wails
