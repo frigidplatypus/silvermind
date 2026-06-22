@@ -12,7 +12,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        # ── Silvermind desktop app ──────────────────────────────────
+          # ── Silvermind desktop app ──────────────────────────────────
         # Frontend assets must be pre-built:
         #   pnpm build:desktop
         # This writes to desktop/frontend/dist/ which Go embeds at compile time.
@@ -44,6 +44,13 @@
 
           tags = [ "desktop" "production" "webkit2_41" ];
           ldflags = [ "-s" "-w" ];
+
+          # The Go binary needs runtime library paths for webkitgtk, gtk3, etc.
+          # buildGoModule strips them; re-add in postFixup.
+          postFixup = ''
+            rpath="${pkgs.lib.makeLibraryPath ([ pkgs.webkitgtk_4_1 pkgs.gtk3 pkgs.glib pkgs.gst_all_1.gstreamer ])}"
+            patchelf --add-rpath "$rpath" $out/bin/.silvermind-desktop-wrapped
+          '';
 
           meta = with pkgs.lib; {
             description = "Desktop task management powered by sbtask";
