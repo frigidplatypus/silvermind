@@ -1,24 +1,20 @@
 <script lang="ts">
   import { marked, Renderer } from 'marked';
+  import DOMPurify from 'dompurify';
 
   let { text, inline = false }: { text: string; inline?: boolean } = $props();
 
   const renderer = new Renderer();
   renderer.link = ({ href, title, text: linkText }) => {
+    const scheme = href?.toLowerCase().split(':')[0] ?? '';
+    if (scheme === 'javascript' || scheme === 'data' || scheme === 'vbscript') {
+      href = '#';
+    }
     const titleAttr = title ? ` title="${title.replace(/"/g, '&quot;')}"` : '';
     return `<a href="${href}" target="_blank" rel="noopener noreferrer"${titleAttr}>${linkText}</a>`;
   };
 
-  // Strip inline scripts, event handlers, and iframes for safety
-  function sanitize(html: string): string {
-    return html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/\s+on\w+="[^"]*"/g, '')
-      .replace(/\s+on\w+='[^']*'/g, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
-  }
-
-  const html = $derived(sanitize(
+  const html = $derived(DOMPurify.sanitize(
     (inline ? marked.parseInline(text, { renderer }) : marked.parse(text, { renderer })) as string
   ));
 </script>

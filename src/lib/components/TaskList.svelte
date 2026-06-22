@@ -21,8 +21,8 @@
 
   let isRefreshing = $state(false);
   let pullDistance = $state(0);
-  let pullStartY = $state(0);
-  let tracking = $state(false);
+  let pullStartY = 0;
+  let tracking = false;
 
   function onTouchStart(e: TouchEvent) {
     if (!onRefresh) return;

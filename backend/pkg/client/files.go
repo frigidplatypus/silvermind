@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,7 +50,11 @@ func (c *Client) readPageRaw(path string) (string, int64, error) {
 	}
 
 	if lm := resp.Header.Get("X-Last-Modified"); lm != "" {
-		lastModified, _ = strconv.ParseInt(lm, 10, 64)
+		lastModified, err = strconv.ParseInt(lm, 10, 64)
+		if err != nil {
+			slog.Warn("malformed X-Last-Modified header, optimistic locking disabled", "value", lm)
+			lastModified = 0
+		}
 	}
 
 	return string(body), lastModified, nil

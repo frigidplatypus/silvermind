@@ -2,7 +2,7 @@ package serve
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -41,7 +41,7 @@ type QueryExecuteResponse struct {
 func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 	c, _, err := s.resolveSpace(r)
 	if err != nil {
-		log.Printf("[queries] resolveSpace error: %v", err)
+		slog.Error("queries resolveSpace error", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
@@ -51,14 +51,14 @@ func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 		tag = queryPageTag
 	}
 
-	log.Printf("[queries] searching for pages with tag=%q on %s", tag, c.BaseURL())
+	slog.Info("searching for query pages", "tag", tag, "space", c.BaseURL())
 	pages, err := c.FindPagesByTag(tag)
 	if err != nil {
-		log.Printf("[queries] FindPagesByTag error: %v", err)
+		slog.Error("queries FindPagesByTag error", "error", err)
 		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
 		return
 	}
-	log.Printf("[queries] found %d pages with tag %q", len(pages), tag)
+	slog.Info("found query pages", "count", len(pages), "tag", tag)
 
 	result := make([]QueryPageInfo, 0, len(pages))
 	for _, page := range pages {
@@ -94,6 +94,9 @@ func (s *Server) handleQueryBlockList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := r.PathValue("page")
+	if !checkPage(w, page) {
+		return
+	}
 	content, _, err := c.ReadPage(page)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
@@ -131,6 +134,10 @@ func (s *Server) handleQueryExecute(w http.ResponseWriter, r *http.Request) {
 
 	if req.Page == "" {
 		writeError(w, http.StatusBadRequest, "bad_request", "page is required")
+		return
+	}
+	if err := validatePageName(req.Page); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
 		return
 	}
 
@@ -219,6 +226,11 @@ type QuerySaveRequest struct {
 }
 
 func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
+	if err := requireJSON(r); err != nil {
+		writeError(w, http.StatusUnsupportedMediaType, "bad_request", err.Error())
+		return
+	}
+
 	req, err := decodeJSON[QuerySaveRequest](r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", fmt.Sprintf("invalid JSON: %s", err))
@@ -227,6 +239,10 @@ func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
 
 	if req.Page == "" || req.Title == "" || req.SLIQ == "" {
 		writeError(w, http.StatusBadRequest, "bad_request", "page, title, and sliq are required")
+		return
+	}
+	if err := validatePageName(req.Page); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
 		return
 	}
 

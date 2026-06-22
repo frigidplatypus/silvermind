@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 
 	"github.com/justin/sbtask/pkg/config"
@@ -90,7 +91,20 @@ func (s *Server) SetWebGUI(webGUIPath string) {
 		return
 	}
 	fileServer := http.FileServer(http.Dir(webGUIPath))
-	s.mux.Handle("GET /", fileServer)
+	s.mux.Handle("GET /", spaFallback(fileServer, webGUIPath))
+}
+
+// spaFallback wraps an http.Handler so that any 404 (missing file) serves
+// index.html instead — required for SPAs with client-side routing.
+func spaFallback(next http.Handler, webGUIPath string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(webGUIPath, r.URL.Path)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			http.ServeFile(w, r, filepath.Join(webGUIPath, "index.html"))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) Addr() string {

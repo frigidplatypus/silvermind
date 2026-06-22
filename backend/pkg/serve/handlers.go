@@ -3,6 +3,7 @@ package serve
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strconv"
@@ -161,9 +162,18 @@ func (s *Server) handleToday(w http.ResponseWriter, r *http.Request) {
 	q := query.NewQuery(c)
 	todayStr := time.Now().Format("2006-01-02")
 
-	overdue, _ := q.Execute(task.TaskFilter{Overdue: true})
-	dueToday, _ := q.Execute(task.TaskFilter{DueAfter: todayStr, DueBefore: todayStr})
-	schedToday, _ := q.Execute(task.TaskFilter{ScheduledAfter: todayStr, ScheduledBefore: todayStr})
+	overdue, err := q.Execute(task.TaskFilter{Overdue: true})
+	if err != nil {
+		slog.Error("today overdue query failed", "error", err)
+	}
+	dueToday, err := q.Execute(task.TaskFilter{DueAfter: todayStr, DueBefore: todayStr})
+	if err != nil {
+		slog.Error("today due_today query failed", "error", err)
+	}
+	schedToday, err := q.Execute(task.TaskFilter{ScheduledAfter: todayStr, ScheduledBefore: todayStr})
+	if err != nil {
+		slog.Error("today scheduled_today query failed", "error", err)
+	}
 
 	dueToday = filterNotDone(dueToday)
 	schedToday = filterNotDone(schedToday)
@@ -237,6 +247,9 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := r.PathValue("page")
+	if !checkPage(w, page) {
+		return
+	}
 	pos, ok := parsePos(w, r)
 	if !ok {
 		return
@@ -352,6 +365,9 @@ func (s *Server) handleModifyTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := r.PathValue("page")
+	if !checkPage(w, page) {
+		return
+	}
 	pos, ok := parsePos(w, r)
 	if !ok {
 		return
@@ -437,6 +453,9 @@ func (s *Server) handleMarkUndone(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleToggleDone(w http.ResponseWriter, r *http.Request, newStatus string) {
 	page := r.PathValue("page")
+	if !checkPage(w, page) {
+		return
+	}
 	pos, ok := parsePos(w, r)
 	if !ok {
 		return
@@ -855,4 +874,25 @@ func shortenTaskText(s string) string {
 		return s
 	}
 	return string(r[:maxLen])
+}
+
+func validatePageName(page string) error {
+	if page == "" {
+		return fmt.Errorf("page name is required")
+	}
+	if strings.Contains(page, "..") {
+		return fmt.Errorf("page name must not contain '..'")
+	}
+	if strings.ContainsAny(page, "/\\") {
+		return fmt.Errorf("page name must not contain path separators")
+	}
+	return nil
+}
+
+func checkPage(w http.ResponseWriter, page string) bool {
+	if err := validatePageName(page); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return false
+	}
+	return true
 }

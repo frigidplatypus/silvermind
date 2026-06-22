@@ -1,8 +1,8 @@
 {
   "name": "silvermind",
   "assetdir": "frontend/dist",
-  "frontend:install": "cd .. && pnpm build:desktop",
-  "frontend:build": "",
+  "frontend:install": "cd .. && pnpm install",
+  "frontend:build": "cd .. && pnpm build:desktop",
   "frontend:dev": "cd .. && pnpm dev:desktop",
   "frontend:dev:watcher": "cd .. && pnpm dev:desktop",
   "wailsjsdir": "frontend",

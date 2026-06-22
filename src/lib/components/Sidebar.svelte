@@ -16,10 +16,6 @@
     onNavigate: (view: string) => void;
   } = $props();
 
-  $effect(() => {
-    loadQueryPages();
-  });
-
   let spaceOpen = $state(false);
 
   const activeSpaceId = $derived(getActiveId());

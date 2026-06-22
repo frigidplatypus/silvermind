@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "dev:desktop": "vite --config vite.config.desktop.ts",
     "build:desktop": "vite build --config vite.config.desktop.ts",
     "build:web": "vite build --config frontend/vite.config.web.ts",
     "preview": "vite preview",
@@ -20,6 +21,7 @@
     "@capacitor/splash-screen": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
     "feather-icons": "^4.29.2",
+    "dompurify": "^3.2.0",
     "marked": "^18.0.0",
     "svelte": "^5.0.0"
   },
@@ -31,7 +33,6 @@
     "autoprefixer": "^10.4.0",
     "eslint": "^9.0.0",
     "eslint-plugin-svelte": "^2.45.0",
-    "marked": "^18.0.5",
     "prettier": "^3.3.0",
     "prettier-plugin-svelte": "^3.2.0",
     "svelte-check": "^4.0.0",
