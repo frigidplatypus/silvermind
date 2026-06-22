@@ -16,3 +16,19 @@ export function setDefaultView(view: string): void {
   current = view;
   try { localStorage.setItem('silvermind-default-view', view); } catch { /* noop */ }
 }
+
+let _showToday = $state(false);
+
+export function getShowToday(): boolean { return _showToday; }
+
+export function loadShowToday(): void {
+  try {
+    const saved = localStorage.getItem('silvermind-show-today');
+    if (saved !== null) _showToday = saved === 'true';
+  } catch { /* noop */ }
+}
+
+export function setShowToday(v: boolean): void {
+  _showToday = v;
+  try { localStorage.setItem('silvermind-show-today', String(v)); } catch { /* noop */ }
+}

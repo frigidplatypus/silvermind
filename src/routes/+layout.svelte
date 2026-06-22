@@ -21,7 +21,7 @@
   import SearchBar from '$lib/components/SearchBar.svelte';
   import TaskList from '$lib/components/TaskList.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
-  import { getDefaultView } from '$lib/stores/landing.svelte';
+  import { getDefaultView, getShowToday, loadShowToday } from '$lib/stores/landing.svelte';
 
   let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
@@ -116,8 +116,15 @@
         {#if getIsActive()}
           <button class="search-back-btn" onclick={() => deactivateSearch()} aria-label="Back">&larr;</button>
         {/if}
-        <h1 class="app-title">{getIsActive() ? 'Search' : currentTab === 'inbox' ? 'Inbox' : currentTab === 'today' ? 'Today' : currentTab === 'global' ? 'All Tasks' : 'Settings'}</h1>
-        {#if !getIsActive() && currentTab !== 'settings'}<SpaceSwitcher />{/if}
+        <h1 class="app-title">{getIsActive() ? 'Search' : currentTab === 'inbox' ? 'Task List' : currentTab === 'today' ? 'Today' : currentTab === 'global' ? 'All Tasks' : currentTab === 'settings' ? 'Settings' : ''}</h1>
+        {#if !getIsActive() && currentTab !== 'settings'}
+          <SpaceSwitcher />
+          <button class="gear-btn" onclick={() => navigate('settings')} aria-label="Settings">
+            <Icon name="settings" />
+          </button>
+        {:else if !getIsActive() && currentTab === 'settings'}
+          <button class="gear-btn" onclick={() => navigate('inbox')} aria-label="Back">&larr;</button>
+        {/if}
       </div>
     </header>
     {#if getIsActive()}
@@ -140,16 +147,15 @@
     {/if}
     <nav class="tab-bar" role="tablist" aria-label="Main navigation" style="padding-bottom: var(--safe-area-bottom)">
       <button class="tab-button" class:active={currentTab === 'inbox'} role="tab" aria-selected={currentTab === 'inbox'} onclick={() => navigate('inbox')}>
-        <span class="tab-icon"><Icon name="inbox" /></span><span class="tab-label">Inbox</span>
+        <span class="tab-icon"><Icon name="inbox" /></span><span class="tab-label">Task List</span>
       </button>
-      <button class="tab-button" class:active={currentTab === 'today'} role="tab" aria-selected={currentTab === 'today'} onclick={() => navigate('today')}>
-        <span class="tab-icon"><Icon name="calendar" /></span><span class="tab-label">Today</span>
-      </button>
+      {#if getShowToday()}
+        <button class="tab-button" class:active={currentTab === 'today'} role="tab" aria-selected={currentTab === 'today'} onclick={() => navigate('today')}>
+          <span class="tab-icon"><Icon name="calendar" /></span><span class="tab-label">Today</span>
+        </button>
+      {/if}
       <button class="tab-button" class:active={currentTab === 'global'} role="tab" aria-selected={currentTab === 'global'} onclick={() => navigate('global')}>
         <span class="tab-icon"><Icon name="globe" /></span><span class="tab-label">All</span>
-      </button>
-      <button class="tab-button" class:active={currentTab === 'settings'} role="tab" aria-selected={currentTab === 'settings'} onclick={() => navigate('settings')}>
-        <span class="tab-icon"><Icon name="settings" /></span><span class="tab-label">Settings</span>
       </button>
     </nav>
     {#if currentTab !== 'settings' && !getIsActive()}<div class="quick-capture-container"><QuickCapture /></div>{/if}
@@ -168,6 +174,8 @@
   .tab-icon { font-size: 1.25rem; } .tab-label { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
   .quick-capture-container { flex-shrink: 0; background: var(--color-bg); }
   .search-back-btn { background: none; border: none; font-size: 1.25rem; color: var(--color-accent); padding: 0; cursor: pointer; }
+  .gear-btn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0.25rem; display: flex; align-items: center; border-radius: var(--radius-md); }
+  .gear-btn:hover { background: var(--color-bg-tertiary); color: var(--color-text); }
   .main.search-active { overflow-y: auto; }
   .search-empty { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 </style>

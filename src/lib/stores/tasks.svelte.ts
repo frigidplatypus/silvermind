@@ -4,14 +4,22 @@ import { getToday } from '$lib/api/today';
 import { createTask } from '$lib/api/tasks';
 import { ApiClientError } from '$lib/api/client';
 import { getActiveSpace } from '$lib/stores/space.svelte';
+import { loadGlobalView } from '$lib/stores/global.svelte';
 
 let _tasks = $state<Task[]>([]);
 let _isLoading = $state(false);
 let _lastError = $state<string | null>(null);
 
+let _overdue = $state<Task[]>([]);
+let _dueToday = $state<Task[]>([]);
+let _scheduledToday = $state<Task[]>([]);
+
 export function getTasks(): Task[] { return _tasks; }
 export function getTasksLoading(): boolean { return _isLoading; }
 export function getTasksError(): string | null { return _lastError; }
+export function getTodayOverdue(): Task[] { return _overdue; }
+export function getTodayDue(): Task[] { return _dueToday; }
+export function getTodayScheduled(): Task[] { return _scheduledToday; }
 
 function formatError(e: unknown): string {
   const space = getActiveSpace();
@@ -44,7 +52,11 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
   _isLoading = true;
   _lastError = null;
   try {
-    return await getToday();
+    const data = await getToday();
+    _overdue = data.overdue;
+    _dueToday = data.due_today;
+    _scheduledToday = data.scheduled_today;
+    return data;
   } catch (e) {
     _lastError = formatError(e);
     return { overdue: [], due_today: [], scheduled_today: [] };
@@ -56,7 +68,8 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
 export async function addTask(text: string): Promise<Task | null> {
   try {
     const task = await createTask({ text });
-    await loadInbox();
+    await Promise.all([loadInbox(), loadToday()]);
+    loadGlobalView();
     return task;
   } catch (e) {
     _lastError = formatError(e);

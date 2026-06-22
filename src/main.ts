@@ -3,13 +3,14 @@ import './app.css';
 import { initServiceListener } from '$lib/stores/service.svelte';
 import { loadSpaces } from '$lib/stores/space.svelte';
 import { loadTheme } from '$lib/stores/theme.svelte';
-import { loadDefaultView, getDefaultView } from '$lib/stores/landing.svelte';
+import { loadDefaultView, getDefaultView, loadShowToday } from '$lib/stores/landing.svelte';
 import Layout from './routes/+layout.svelte';
 
 initServiceListener();
 loadSpaces().catch(() => {});
 loadTheme();
 loadDefaultView();
+loadShowToday();
 
 function getActiveTab(): string {
   const hash = window.location.hash.slice(1);

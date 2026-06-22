@@ -11,7 +11,7 @@
   import QuickCapture from './QuickCapture.svelte';
   import Icon from './Icon.svelte';
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
-  import { getTasks, loadInbox } from '$lib/stores/tasks.svelte';
+  import { getTasks, loadInbox, loadToday } from '$lib/stores/tasks.svelte';
   import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import type { Task } from '$lib/types/task';
@@ -58,6 +58,7 @@
   function handleTaskChanged() {
     setSelectedTaskId(null);
     loadInbox();
+    if (activeView === 'today') loadToday();
     if (activeView === 'global') loadGlobalView();
   }
 
@@ -233,6 +234,9 @@
   <div class="desktop-main">
     <div class="desktop-top-bar">
       <QuickCapture />
+      <button class="gear-btn" onclick={() => onNavigate(activeView === 'settings' ? 'inbox' : 'settings')} aria-label="Settings">
+        <Icon name="settings" />
+      </button>
     </div>
     <SearchBar />
     {#if getIsActive()}
@@ -307,8 +311,28 @@
     overflow: hidden;
   }
   .desktop-top-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--color-separator);
+  }
+  .desktop-top-bar :global(.capture-form) {
+    flex: 1;
+  }
+  .gear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+  .gear-btn:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
   }
   .query-header {
     display: flex;

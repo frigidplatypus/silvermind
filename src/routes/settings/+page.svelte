@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getTheme, setTheme } from '$lib/stores/theme.svelte';
-  import { getDefaultView, setDefaultView } from '$lib/stores/landing.svelte';
+  import { getDefaultView, setDefaultView, getShowToday, setShowToday } from '$lib/stores/landing.svelte';
   import { getSpacesList, loadSpaces, setActiveSpace } from '$lib/stores/space.svelte';
   import type { Theme } from '$lib/stores/theme.svelte';
   import type { Space } from '$lib/types/space';
@@ -135,13 +135,21 @@
   <section class="section">
     <h3 class="section-title">Startup</h3>
     <div class="default-picker">
-      {#each [{ id: 'inbox', icon: 'inbox', label: 'Inbox' }, { id: 'today', icon: 'calendar', label: 'Today' }, { id: 'global', icon: 'globe', label: 'All Tasks' }] as item}
+      {#each [{ id: 'inbox', icon: 'inbox', label: 'Task List' }, { id: 'today', icon: 'calendar', label: 'Today' }, { id: 'global', icon: 'globe', label: 'All Tasks' }] as item}
         <button class="default-btn" class:active={currentDefault === item.id} onclick={() => onDefaultChange(item.id)}>
           <Icon name={item.icon} size="1.5rem" />
           <span class="default-label">{item.label}</span>
         </button>
       {/each}
     </div>
+  </section>
+
+  <section class="section">
+    <h3 class="section-title">Views</h3>
+    <label class="toggle-row">
+      <input type="checkbox" checked={getShowToday()} onchange={(e) => setShowToday((e.target as HTMLInputElement).checked)} />
+      <span>Show Today view</span>
+    </label>
   </section>
 
   <section class="section">
@@ -276,4 +284,6 @@
   .field-toggle { background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 0; display: inline-flex; align-items: center; margin-left: 0.25rem; }
   .field-toggle:hover { color: var(--color-text-secondary); }
   .about-text { font-size: var(--font-size-sm); color: var(--color-text-tertiary); }
+  .toggle-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); cursor: pointer; }
+  .toggle-row input { accent-color: var(--color-accent); }
 </style>

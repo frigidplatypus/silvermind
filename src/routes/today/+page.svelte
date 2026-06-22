@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { loadToday, getTasksError } from '$lib/stores/tasks.svelte';
-  import { getToday } from '$lib/api/today';
+  import { loadToday, getTasksError, getTodayOverdue, getTodayDue, getTodayScheduled } from '$lib/stores/tasks.svelte';
   import type { Task } from '$lib/types/task';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
@@ -9,32 +8,18 @@
 
   let { onTaskTap: externalOnTaskTap }: { onTaskTap?: (t: Task) => void } = $props();
 
-  let overdue = $state<Task[]>([]);
-  let dueToday = $state<Task[]>([]);
-  let scheduledToday = $state<Task[]>([]);
   let selectedTask = $state<Task | null>(null);
 
   let _pollTimer: ReturnType<typeof setInterval> | null = null;
   onMount(async () => {
-    await refresh();
-    _pollTimer = setInterval(async () => {
-      try {
-        const fresh = await getToday();
-        const cur = { overdue, dueToday, scheduledToday };
-        const cmp = { overdue: fresh.overdue, due_today: fresh.due_today, scheduled_today: fresh.scheduled_today };
-        if (JSON.stringify(cmp) !== JSON.stringify(cur)) {
-          overdue = fresh.overdue;
-          dueToday = fresh.due_today;
-          scheduledToday = fresh.scheduled_today;
-        }
-      } catch {
-        /* silently ignore */
-      }
-    }, 30_000);
+    await loadToday();
+    _pollTimer = setInterval(() => { loadToday(); }, 30_000);
   });
   onDestroy(() => { if (_pollTimer) clearInterval(_pollTimer); });
 
-  async function refresh() { const d = await loadToday(); overdue = d.overdue; dueToday = d.due_today; scheduledToday = d.scheduled_today; }
+  const overdue = $derived(getTodayOverdue());
+  const dueToday = $derived(getTodayDue());
+  const scheduledToday = $derived(getTodayScheduled());
 
   function tid(t: Task) { return `${t.page}/${t.position}`; }
 
@@ -47,7 +32,7 @@
   }
 
   function handleDetailClose() { selectedTask = null; }
-  function handleTaskChanged(_t: Task) { selectedTask = null; refresh(); }
+  function handleTaskChanged(_t: Task) { selectedTask = null; loadToday(); }
 </script>
 
 <div class="today-page">
@@ -55,7 +40,7 @@
     <div class="error-state" role="alert">
       <Icon name="alert-triangle" size="1.25rem" />
       <p class="error-message">{getTasksError()}</p>
-      <button class="retry-btn" onclick={refresh}>Retry</button>
+      <button class="retry-btn" onclick={() => loadToday()}>Retry</button>
     </div>
   {/if}
   <section><h2 class="heading overdue">Overdue</h2>

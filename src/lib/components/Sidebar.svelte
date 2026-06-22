@@ -5,6 +5,7 @@
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
   import { loadTagNames } from '$lib/stores/tagnames.svelte';
   import { getQueryPagesList, getQueryPagesLoading, getQueryPagesError, loadQueryPages } from '$lib/stores/queries.svelte';
+  import { getShowToday } from '$lib/stores/landing.svelte';
   import { isDesktopApp, setActiveSpaceDesktop } from '$lib/desktop-bridge';
 
   let {
@@ -45,12 +46,14 @@
     }
   }
 
-  const items = $derived([
-    { id: 'inbox', label: 'Inbox', icon: 'inbox' },
-    { id: 'today', label: 'Today', icon: 'calendar' },
-    { id: 'global', label: 'All Tasks', icon: 'globe' },
-    { id: 'settings', label: 'Settings', icon: 'settings' },
-  ]);
+  const items = $derived.by(() => {
+    const list = [
+      { id: 'inbox', label: 'Task List', icon: 'inbox' },
+      { id: 'global', label: 'All Tasks', icon: 'globe' },
+    ];
+    if (getShowToday()) list.splice(1, 0, { id: 'today', label: 'Today', icon: 'calendar' });
+    return list;
+  });
 
   const activeSpace = $derived(getSpacesList().find((s) => s.id === getActiveId()));
 

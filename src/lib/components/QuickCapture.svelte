@@ -35,11 +35,11 @@
 </form>
 
 <style>
-  .capture-form { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; padding-bottom: max(0.5rem, var(--safe-area-bottom)); border-top: 0.5px solid var(--color-separator); background: var(--color-bg); }
-  .capture-input { flex: 1; padding: 0.625rem 0.875rem; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-base); color: var(--color-text); outline: none; }
+  .capture-form { display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0; background: var(--color-bg); }
+  .capture-input { flex: 1; padding: 0.375rem 0.625rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-secondary); font-size: var(--font-size-sm); color: var(--color-text); outline: none; }
   .capture-input:focus { border-color: var(--color-accent); background: var(--color-surface); }
   .capture-input::placeholder { color: var(--color-text-tertiary); }
-  .cancel-btn { padding: 0.5rem; color: var(--color-text-secondary); border-radius: var(--radius-md); }
-  .submit-btn { padding: 0.5rem 0.875rem; border-radius: var(--radius-md); background: var(--color-accent); color: white; font-weight: 600; font-size: var(--font-size-sm); }
+  .cancel-btn { padding: 0.25rem 0.375rem; color: var(--color-text-secondary); border-radius: var(--radius-sm); font-size: var(--font-size-sm); }
+  .submit-btn { padding: 0.375rem 0.625rem; border-radius: var(--radius-sm); background: var(--color-accent); color: white; font-weight: 600; font-size: var(--font-size-xs); }
   .submit-btn:disabled { opacity: 0.4; }
 </style>
