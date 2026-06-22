@@ -2,7 +2,7 @@ module silvermind-desktop
 
 go 1.26.3
 
-replace github.com/justin/sbtask => /home/justin/development/go/sbtask
+replace github.com/justin/sbtask => ../backend
 
 require (
 	github.com/justin/sbtask v0.0.0

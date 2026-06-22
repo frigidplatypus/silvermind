@@ -4,10 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    sbtask.url = "git+ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git";
   };
 
-  outputs = { self, nixpkgs, flake-utils, sbtask, ... }:
+  outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -20,6 +19,7 @@
           pname = "silvermind-desktop";
           version = "0.1.0";
           src = ./desktop;
+          # sbtask library is at ../backend — the replace directive in desktop/go.mod handles this
           vendorHash = "sha256-UuCwmr8BYrSqyXQ1lNXXjj1uH0vogXyn0taCeCZg+z4=";
           proxyVendor = true;
 
@@ -35,11 +35,7 @@
               echo "ERROR: frontend/dist/ is empty. Run 'pnpm build:desktop' first."
               exit 1
             fi
-            # Point sbtask replace directive to the flake input
-            SBTASK_SRC="${sbtask}"
-            if [ -d "$SBTASK_SRC" ]; then
-              go mod edit -replace github.com/justin/sbtask=$SBTASK_SRC
-            fi
+            # sbtask replace directive in desktop/go.mod already points to ../backend
           '';
 
           tags = [ "desktop" "production" "webkit2_41" ];
@@ -65,7 +61,6 @@
       {
         packages = {
           inherit silvermind-desktop;
-          inherit (sbtask.packages.${system}) sbtask;
           default = silvermind-desktop;
         };
 
@@ -75,7 +70,6 @@
             nodejs-slim_22 pnpm
             wails pkg-config
             webkitgtk_4_1 gtk3
-            sbtask.packages.${system}.sbtask
           ];
         };
 

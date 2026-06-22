@@ -16,7 +16,7 @@
     webkitgtk_4_1
     gtk3
     pkg-config
-    inputs.sbtask.packages.${pkgs.system}.sbtask
+    # sbtask is local at ./backend — build with 'go build ./cmd/sbtask' from backend/
   ];
 
   # https://devenv.sh/languages/
@@ -31,7 +31,7 @@
   };
 
   # https://devenv.sh/processes/
-  processes.sbtask.exec = "sbtask --config ${config.env.DEVENV_ROOT}/sbtask-config.yaml serve --port 7433 --host 0.0.0.0";
+  processes.sbtask.exec = "cd ${config.env.DEVENV_ROOT}/backend && go run ./cmd/sbtask --config ${config.env.DEVENV_ROOT}/sbtask-config.yaml serve --port 7433 --host 0.0.0.0";
   processes.vite.exec = "${lib.getExe pkgs.pnpm} --dir ${config.env.DEVENV_ROOT} exec vite --host 0.0.0.0 --port 5173";
 
   # https://devenv.sh/scripts/
@@ -51,8 +51,9 @@
     git --version
     go version
     echo "Silvermind packages:"
-    echo "  sbtask:               $(which sbtask)"
+    echo "  sbtask:               cd backend && go run ./cmd/sbtask"
     echo "  silvermind-desktop:   built by 'nix build .#silvermind-desktop'"
+    echo "  web-gui:              just serve-web"
     echo ""
     echo "Run 'devenv up' to start sbtask + vite"
   '';

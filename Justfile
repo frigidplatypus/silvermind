@@ -67,6 +67,24 @@ check-dist:
         exit 1; \
     fi
 
+# ── Web GUI ──────────────────────────────────────────────────────────────────
+
+web_dist_dir := "frontend/dist"
+
+# Build the Svelte frontend for web GUI (outputs to frontend/dist/)
+build-web:
+    pnpm build:web
+
+# Build sbtask CLI binary (backend/)
+build-sbtask:
+    cd backend && go build -o ../sbtask ./cmd/sbtask
+    @echo "✓ Built sbtask"
+
+# Run sbtask serve with web GUI enabled
+serve-web: build-web build-sbtask
+    @echo "Starting sbtask serve with web GUI at http://localhost:9876"
+    cd backend && ../sbtask serve --web-gui ../{{web_dist_dir}}
+
 # ── iOS / Capacitor ──────────────────────────────────────────────────────────
 
 # Cross-compile sbtask for iOS arm64

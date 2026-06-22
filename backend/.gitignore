@@ -1,0 +1,30 @@
+# Nix
+result
+result-*
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+# Go
+*.exe
+*.test
+vendor/
+*.out
+/sbtask
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.tmp
+
+# Environment
+.env*
