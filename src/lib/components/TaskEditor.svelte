@@ -4,6 +4,7 @@
   import { notifySuccess } from '$lib/native/haptics';
   import { getTaskNames, loadTaskNames } from '$lib/stores/tasknames.svelte';
   import { getTagNames, loadTagNames } from '$lib/stores/tagnames.svelte';
+  import { showError } from '$lib/stores/toast.svelte';
   import Icon from './Icon.svelte';
   import Autocomplete from './Autocomplete.svelte';
 
@@ -35,6 +36,35 @@
   let tagFocused = $state(false);
   let tagSelectedIndex = $state(0);
   let extraAttrs = $state<Record<string, string>>({ ...(task.extra_attrs || {}) });
+  let extraAttrCounter = 0;
+
+  const hasChanges = $derived.by(() => {
+    if (text !== task.text) return true;
+    if (status !== (task.status || '')) return true;
+    if (priority !== (task.priority || 'none')) return true;
+    if (due !== (task.due || '')) return true;
+    if (scheduled !== (task.scheduled || '')) return true;
+    if (recur !== (task.recur || '')) return true;
+    if (deps.join(',') !== (task.depends_on || []).join(',')) return true;
+    if (parent !== (task.parent || '')) return true;
+    if (tags.join(',') !== (task.tags || []).join(',')) return true;
+    if (JSON.stringify(extraAttrs) !== JSON.stringify(task.extra_attrs || {})) return true;
+    return false;
+  });
+
+  function handleAttemptClose() {
+    if (hasChanges) {
+      if (!confirm('Discard unsaved changes?')) return;
+    }
+    onclose();
+  }
+
+  function handleOverlayKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      handleAttemptClose();
+    }
+  }
 
   const taskNames = $derived(getTaskNames());
   const allTagNames = $derived(getTagNames());
@@ -112,7 +142,7 @@
       onclose();
     } catch (e) {
       console.error('Save failed', e);
-      alert(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
+      showError(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { isSaving = false; }
   }
 
@@ -126,7 +156,7 @@
       onclose();
     } catch (e) {
       console.error('Toggle done failed', e);
-      alert(`Toggle done failed: ${e instanceof Error ? e.message : String(e)}`);
+      showError(`Toggle done failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -138,7 +168,7 @@
       onclose();
     } catch (e) {
       console.error('Delete failed', e);
-      alert(`Delete failed: ${e instanceof Error ? e.message : String(e)}`);
+      showError(`Delete failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 </script>
@@ -192,10 +222,10 @@
   </div>
 
   <label class="field-label" for="edit-due">Due date</label>
-  <input id="edit-due" type="text" class="field" bind:value={due} placeholder="2026-06-25 or tomorrow" />
+  <input id="edit-due" type="date" class="field" bind:value={due} />
 
   <label class="field-label" for="edit-scheduled">Scheduled date</label>
-  <input id="edit-scheduled" type="text" class="field" bind:value={scheduled} placeholder="2026-06-20" />
+  <input id="edit-scheduled" type="date" class="field" bind:value={scheduled} />
 
   <button class="advanced-toggle" onclick={() => (showAdvanced = !showAdvanced)}>
     <Icon name={showAdvanced ? 'chevron-down' : 'chevron-right'} size="0.875rem" />
@@ -243,7 +273,7 @@
           <button class="extra-remove" onclick={() => { delete extraAttrs[key]; extraAttrs = { ...extraAttrs }; }} aria-label="Remove attribute"><Icon name="x" size="0.875rem" /></button>
         </div>
       {/each}
-      <button class="extra-add" onclick={() => { extraAttrs[''] = ''; extraAttrs = { ...extraAttrs }; }}>+ Add attribute</button>
+      <button class="extra-add" onclick={() => { extraAttrs[`__new_${++extraAttrCounter}`] = ''; extraAttrs = { ...extraAttrs }; }}>+ Add attribute</button>
     </div>
   {/if}
 
@@ -264,7 +294,7 @@
 {/snippet}
 
 {#if mode === 'modal'}
-  <div class="modal-overlay" onclick={onclose} role="dialog" aria-label="Edit task">
+  <div class="modal-overlay" onclick={handleAttemptClose} onkeydown={handleOverlayKeydown} role="dialog" aria-modal="true" aria-label="Edit task" tabindex="-1">
     <div class="modal-dialog" onclick={(e) => e.stopPropagation()} role="document">
       <div class="modal-header">
         <h2 class="modal-title">Edit Task</h2>
@@ -275,7 +305,7 @@
           <button class="save-btn" onclick={handleSave} disabled={isSaving || !text.trim()}>
             {isSaving ? '...' : 'Save'}
           </button>
-          <button class="close-btn" onclick={onclose} aria-label="Close"><Icon name="x" /></button>
+          <button class="close-btn" onclick={handleAttemptClose} aria-label="Close"><Icon name="x" /></button>
         </div>
       </div>
       <div class="modal-body">
@@ -286,7 +316,7 @@
 {:else}
   <div class="editor">
     <div class="editor-header">
-      <button class="back-btn" onclick={onclose} aria-label="Back">‹ Back</button>
+      <button class="back-btn" onclick={handleAttemptClose} aria-label="Back"><Icon name="arrow-left" size="1rem" /> Back</button>
       <div class="header-actions">
         <button class="done-btn" onclick={handleToggleDone} aria-label={task.done ? 'Mark active' : 'Mark done'}>
           <Icon name={task.done ? 'rotate-ccw' : 'check'} /> {task.done ? 'Undo' : 'Done'}
@@ -316,7 +346,7 @@
   .back-btn { color: var(--color-accent); font-weight: 500; font-size: var(--font-size-base); }
   .header-actions { display: flex; gap: 0.5rem; align-items: center; }
   .done-btn { padding: 0.5rem 0.75rem; border-radius: var(--radius-md); font-weight: 600; font-size: var(--font-size-sm); color: var(--color-success); background: var(--color-success-light); }
-  .save-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: white; font-weight: 600; font-size: var(--font-size-sm); }
+  .save-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
   .save-btn:disabled { opacity: 0.4; }
   .editor-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
   .field-label { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -348,5 +378,5 @@
   .delete-trigger { width: 100%; padding: 0.75rem; border-radius: var(--radius-md); color: var(--color-danger); font-weight: 600; font-size: var(--font-size-base); }
   .confirm-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
   .cancel-btn { flex: 1; padding: 0.5rem; border-radius: var(--radius-md); font-size: var(--font-size-sm); color: var(--color-text-secondary); background: var(--color-bg-secondary); }
-  .confirm-delete-btn { flex: 1; padding: 0.5rem; border-radius: var(--radius-md); background: var(--color-danger); color: white; font-weight: 600; font-size: var(--font-size-sm); }
+  .confirm-delete-btn { flex: 1; padding: 0.5rem; border-radius: var(--radius-md); background: var(--color-danger); color: var(--color-on-danger); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
 </style>
