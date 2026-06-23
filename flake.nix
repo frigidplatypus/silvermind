@@ -24,7 +24,7 @@
             meta.mainProgram = "sbtask";
           };
 
-          # ── Silvermind desktop app ──────────────────────────────────
+          # ── Silvermind desktop app (Linux & macOS) ─────────────────
           # Frontend assets must be pre-built:
           #   pnpm build:desktop
           # This writes to desktop/frontend/dist/ which Go embeds at compile time.
@@ -36,27 +36,35 @@
             vendorHash = "sha256-UuCwmr8BYrSqyXQ1lNXXjj1uH0vogXyn0taCeCZg+z4=";
             proxyVendor = true;
 
-            nativeBuildInputs = with pkgs; [ pkg-config wrapGAppsHook3 go ];
-            buildInputs = with pkgs; [ webkitgtk_4_1 gtk3 ];
+            nativeBuildInputs = with pkgs; [ go ]
+              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkg-config wrapGAppsHook3 wails ];
+
+            buildInputs = with pkgs;
+              pkgs.lib.optionals pkgs.stdenv.isLinux [ webkitgtk_4_1 gtk3 ];
 
             preBuild = ''
               export HOME=$TMPDIR
               export CGO_ENABLED=1
+            '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+              export CGO_LDFLAGS="-framework UniformTypeIdentifiers $CGO_LDFLAGS"
+            '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
               export CGO_CFLAGS="-Wno-error=incompatible-pointer-types $CGO_CFLAGS"
               export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -Wno-error=incompatible-pointer-types"
+            '' + ''
               if [ ! -f frontend/dist/index.html ]; then
                 echo "ERROR: frontend/dist/ is empty. Run 'pnpm build:desktop' first."
                 exit 1
               fi
             '';
 
-            tags = [ "desktop" "production" "webkit2_41" ];
+            tags = [ "desktop" "production" ]
+              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ "webkit2_41" ];
             ldflags = [ "-s" "-w" ];
 
-            # The Go binary needs runtime library paths for webkitgtk, gtk3, etc.
-            # buildGoModule strips them; re-add in postFixup.
-            postFixup = ''
-              rpath="${pkgs.lib.makeLibraryPath ([ pkgs.webkitgtk_4_1 pkgs.gtk3 pkgs.glib pkgs.gst_all_1.gstreamer ])}"
+            # Linux: re-add runtime library paths that buildGoModule strips.
+            # macOS: frameworks are linked at build time via CGO, no patchelf needed.
+            postFixup = pkgs.lib.optionalString pkgs.stdenv.isLinux ''
+              rpath="${pkgs.lib.makeLibraryPath [ pkgs.webkitgtk_4_1 pkgs.gtk3 pkgs.glib pkgs.gst_all_1.gstreamer ]}"
               patchelf --add-rpath "$rpath" $out/bin/.silvermind-desktop-wrapped
             '';
 
@@ -65,7 +73,7 @@
               homepage = "https://github.com/justin/silvermind";
               license = licenses.mit;
               mainProgram = "silvermind-desktop";
-              platforms = platforms.linux;
+              platforms = platforms.linux ++ platforms.darwin;
             };
           };
 
@@ -80,15 +88,20 @@
             packages = with pkgs; [
               go gopls delve
               nodejs-slim_22 pnpm
-              wails pkg-config
-              webkitgtk_4_1 gtk3
+            ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+              wails pkg-config webkitgtk_4_1 gtk3
             ];
           };
 
           apps = {
             default = {
               type = "app";
-              program = "${silvermind-desktop}/bin/silvermind-desktop";
+              program = let
+                binDir = "${silvermind-desktop}/bin";
+              in
+                if pkgs.stdenv.isLinux
+                then "${binDir}/.silvermind-desktop-wrapped"
+                else "${binDir}/silvermind-desktop";
             };
             sbtask = {
               type = "app";
