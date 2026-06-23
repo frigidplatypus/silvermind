@@ -6,11 +6,13 @@
   --color-surface: #ffffff;
   --color-text: #1d1d1f;
   --color-text-secondary: #6e6e73;
-  --color-text-tertiary: #aeaeb2;
+  --color-text-tertiary: #8e8e93;
   --color-accent: #007aff;
   --color-accent-light: #e8f2ff;
+  --color-on-accent: #ffffff;
   --color-danger: #ff3b30;
   --color-danger-light: #ffeaea;
+  --color-on-danger: #ffffff;
   --color-warning: #ff9500;
   --color-warning-light: #fff4e5;
   --color-success: #34c759;
@@ -21,9 +23,11 @@
   --color-overlay: rgba(0, 0, 0, 0.3);
   --color-priority-high: #ff3b30;
   --color-priority-medium: #ff9500;
-  --color-priority-none: #aeaeb2;
+  --color-priority-low: #007aff;
+  --color-priority-none: #8e8e93;
 
   --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, sans-serif;
+  --font-family-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
   --font-size-xs: 0.6875rem;
   --font-size-sm: 0.8125rem;
   --font-size-base: 1rem;
@@ -31,11 +35,42 @@
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 2rem;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.4;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+  --radius-full: 50%;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --z-base: 0;
+  --z-header: 10;
+  --z-dropdown: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+
+  --shadow-sm: 0 2px 8px var(--color-shadow);
+  --shadow-md: 0 4px 12px var(--color-shadow);
+  --shadow-lg: 0 8px 32px var(--color-shadow);
+  --shadow-fab: 0 4px 16px var(--color-shadow);
+
+  --duration-fast: 0.1s;
+  --duration-normal: 0.15s;
+  --easing: ease;
 
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -50,11 +85,13 @@
     --color-surface: #222244;
     --color-text: #e8e8ed;
     --color-text-secondary: #aeaeb2;
-    --color-text-tertiary: #6e6e73;
+    --color-text-tertiary: #8e8e93;
     --color-accent: #0a84ff;
     --color-accent-light: #1a3a5c;
+    --color-on-accent: #ffffff;
     --color-danger: #ff453a;
     --color-danger-light: #3a1a1a;
+    --color-on-danger: #ffffff;
     --color-warning: #ff9f0a;
     --color-warning-light: #3a2a1a;
     --color-success: #30d158;
@@ -65,7 +102,8 @@
     --color-overlay: rgba(0, 0, 0, 0.5);
     --color-priority-high: #ff453a;
     --color-priority-medium: #ff9f0a;
-    --color-priority-none: #6e6e73;
+    --color-priority-low: #0a84ff;
+    --color-priority-none: #8e8e93;
   }
 
 @media (prefers-reduced-motion: reduce) {
@@ -120,6 +158,27 @@ button {
   cursor: pointer;
   color: inherit;
   -webkit-appearance: none;
+}
+
+button:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="menuitemradio"]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 input, textarea, select {
