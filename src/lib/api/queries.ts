@@ -32,3 +32,18 @@ export async function executeQuery(page: string, index?: number): Promise<QueryE
   if (index) body.index = index;
   return api.post<QueryExecuteResult[]>('/queries/execute', body);
 }
+
+export interface SaveQueryRequest {
+  page: string;
+  title: string;
+  sliq: string;
+  create: boolean;
+}
+
+export async function saveQuery(req: SaveQueryRequest): Promise<{ page: string }> {
+  return api.post<{ page: string }>('/queries/save', req);
+}
+
+export async function testQuery(sliq: string): Promise<QueryExecuteResult> {
+  return api.post<QueryExecuteResult>('/queries/test', { sliq });
+}
