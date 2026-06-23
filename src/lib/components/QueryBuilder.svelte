@@ -16,6 +16,7 @@
   let pageFilterType = $state<'equals' | 'starts' | 'not-starts'>('equals');
   let pageFilterValue = $state('');
   let dateField = $state<'due' | 'scheduled'>('due');
+  let dateMode = $state<'relative' | 'calendar'>('relative');
   let rangeStart = $state('');
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
@@ -319,33 +320,40 @@
           <button class="toggle-btn" class:active={dateField === 'scheduled'} onclick={() => (dateField = 'scheduled')}>Scheduled</button>
         </div>
       </div>
-      <div class="filter-row">
-        <input type="date" bind:value={rangeStart} class="field-input" />
-        <span class="range-sep">to</span>
-        <input type="date" bind:value={rangeEnd} class="field-input" />
+      <div class="date-mode-toggle">
+        <button class="toggle-btn" class:active={dateMode === 'relative'} onclick={() => (dateMode = 'relative')}>Relative</button>
+        <button class="toggle-btn" class:active={dateMode === 'calendar'} onclick={() => (dateMode = 'calendar')}>Calendar</button>
       </div>
-      <div class="checkbox-group" style="margin-top: 0.5rem">
-        <label class="checkbox-item">
-          <input type="radio" name="date-exists" value="none" bind:group={hasDateFilter} />
-          <span>Any</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="radio" name="date-exists" value="has" bind:group={hasDateFilter} />
-          <span>Has date</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="radio" name="date-exists" value="missing" bind:group={hasDateFilter} />
-          <span>No date</span>
-        </label>
-      </div>
-      <div class="preset-group">
-        {#each datePresets as p}
-          <button class="toggle-btn" class:active={dateToken === p.token} onclick={() => applyPreset(p.token)}>{p.label}</button>
-        {/each}
-        {#if dateToken}
-          <button class="toggle-btn" onclick={clearPreset}>Clear</button>
-        {/if}
-      </div>
+      {#if dateMode === 'relative'}
+        <div class="preset-group">
+          {#each datePresets as p}
+            <button class="toggle-btn" class:active={dateToken === p.token} onclick={() => applyPreset(p.token)}>{p.label}</button>
+          {/each}
+          {#if dateToken}
+            <button class="toggle-btn" onclick={clearPreset}>Clear</button>
+          {/if}
+        </div>
+      {:else}
+        <div class="filter-row" style="margin-top: 0.5rem">
+          <input type="date" bind:value={rangeStart} class="field-input" />
+          <span class="range-sep">to</span>
+          <input type="date" bind:value={rangeEnd} class="field-input" />
+        </div>
+        <div class="checkbox-group" style="margin-top: 0.5rem">
+          <label class="checkbox-item">
+            <input type="radio" name="date-exists" value="none" bind:group={hasDateFilter} />
+            <span>Any</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="radio" name="date-exists" value="has" bind:group={hasDateFilter} />
+            <span>Has date</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="radio" name="date-exists" value="missing" bind:group={hasDateFilter} />
+            <span>No date</span>
+          </label>
+        </div>
+      {/if}
     </div>
 
     <div class="filter-group">
