@@ -4,13 +4,31 @@ import { initServiceListener } from '$lib/stores/service.svelte';
 import { loadSpaces } from '$lib/stores/space.svelte';
 import { loadTheme } from '$lib/stores/theme.svelte';
 import { loadDefaultView, getDefaultView, loadShowToday } from '$lib/stores/landing.svelte';
+import { isDesktopApp, getConfigStatusDesktop } from '$lib/desktop-bridge';
+import { startOnboarding } from '$lib/stores/onboarding.svelte';
 import Layout from './routes/+layout.svelte';
 
 initServiceListener();
 loadSpaces().catch(() => {});
+
+async function checkOnboarding() {
+  if (!isDesktopApp()) return;
+  try {
+    const status = await getConfigStatusDesktop();
+    if (!status.exists || status.space_count === 0) {
+      if (status.sbtask_exists && status.space_count > 0) {
+        startOnboarding('migration', status.spaces.map(s => ({ name: s.name, url: s.url })));
+      } else {
+        startOnboarding('add-space');
+      }
+    }
+  } catch { /* silently skip onboarding if bridge fails */ }
+}
+
 loadTheme();
 loadDefaultView();
 loadShowToday();
+checkOnboarding();
 
 function getActiveTab(): string {
   const hash = window.location.hash.slice(1);

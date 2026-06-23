@@ -4,9 +4,12 @@ import (
 	"context"
 	"embed"
 	"log"
+	"os"
 	"os/exec"
 	"time"
 
+	"github.com/justin/sbtask/pkg/client"
+	"github.com/justin/sbtask/pkg/config"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -130,6 +133,76 @@ func (a *App) SetActiveSpace(name string) ([]SpaceInfo, error) {
 		return spaces, err
 	}
 	return nil, nil
+}
+
+func (a *App) SetSharedConfig(sbtaskPath string) ([]SpaceInfo, error) {
+	if a.config != nil {
+		spaces, err := a.config.SetSharedConfig(sbtaskPath)
+		if err == nil {
+			a.RestartSbtask()
+		}
+		return spaces, err
+	}
+	return nil, nil
+}
+
+func (a *App) MigrateSbtaskConfig() ([]SpaceInfo, error) {
+	if a.config != nil {
+		spaces, err := a.config.MigrateSbtaskConfig()
+		if err == nil {
+			a.RestartSbtask()
+		}
+		return spaces, err
+	}
+	return nil, nil
+}
+
+type verifyResult struct {
+	OK        bool   `json:"ok"`
+	TaskCount int    `json:"task_count"`
+	Error     string `json:"error,omitempty"`
+}
+
+func (a *App) VerifySpace(url, authToken string) verifyResult {
+	c, err := client.NewClient(client.Config{SpaceURL: url, AuthToken: authToken})
+	if err != nil {
+		return verifyResult{OK: false, Error: err.Error()}
+	}
+	tasks, apiErr := c.QueryTasks(map[string]string{"limit": "1"})
+	if apiErr != nil {
+		return verifyResult{OK: false, Error: apiErr.Error()}
+	}
+	return verifyResult{OK: true, TaskCount: len(tasks)}
+}
+
+type configStatusResult struct {
+	Exists       bool        `json:"exists"`
+	SbtaskExists bool        `json:"sbtask_exists"`
+	SpaceCount   int         `json:"space_count"`
+	Spaces       []SpaceInfo `json:"spaces"`
+}
+
+func (a *App) GetConfigStatus() configStatusResult {
+	if a.config == nil {
+		return configStatusResult{}
+	}
+	result := configStatusResult{Exists: true}
+	spaces := a.config.ListSpaces()
+	result.SpaceCount = len(spaces)
+	result.Spaces = spaces
+
+	sbtaskPath := config.DefaultConfigPath()
+	if _, err := os.Stat(sbtaskPath); err == nil && sbtaskPath != a.config.configPath() {
+		sbtaskCfg, err := config.LoadConfig(sbtaskPath)
+		if err == nil && sbtaskCfg != nil && len(sbtaskCfg.Spaces) > 0 {
+			result.SbtaskExists = true
+			if !result.Exists || result.SpaceCount == 0 {
+				result.Spaces = a.config.GetSbtaskSpaces()
+				result.SpaceCount = len(result.Spaces)
+			}
+		}
+	}
+	return result
 }
 
 func (a *App) GetConfigPath() string {

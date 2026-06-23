@@ -19,4 +19,6 @@ func registerRoutes(s *Server, mux *http.ServeMux) {
 	mux.HandleFunc("POST /queries/test", s.handleQueryTest)
 	mux.HandleFunc("GET /helpers/check", s.handleHelpersCheck)
 	mux.HandleFunc("POST /helpers/deploy", s.handleHelpersDeploy)
+	mux.HandleFunc("GET /config/status", s.handleConfigStatus)
+	mux.HandleFunc("POST /spaces/verify", s.handleSpacesVerify)
 }

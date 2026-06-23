@@ -5,7 +5,7 @@
   import type { Theme } from '$lib/stores/theme.svelte';
   import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
-  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop } from '$lib/desktop-bridge';
+  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
   import { deployHelpers } from '$lib/api/queries';
 
@@ -25,6 +25,36 @@
   let editAuthToken = $state('');
   let showEditToken = $state(false);
   let showNewToken = $state(false);
+  let verifyingAdd = $state(false);
+  let verifyAddResult = $state<{ ok: boolean; task_count?: number; error?: string } | null>(null);
+  let verifyingEdit = $state(false);
+  let verifyEditResult = $state<{ ok: boolean; task_count?: number; error?: string } | null>(null);
+
+  async function handleVerifyNew() {
+    if (!newUrl.trim()) return;
+    verifyingAdd = true;
+    verifyAddResult = null;
+    try {
+      verifyAddResult = await verifySpaceDesktop(newUrl.trim(), newAuthToken || undefined);
+    } catch (e: any) {
+      verifyAddResult = { ok: false, error: e?.error || e?.message || 'Verification failed' };
+    } finally {
+      verifyingAdd = false;
+    }
+  }
+
+  async function handleVerifyEdit() {
+    if (!editUrl.trim()) return;
+    verifyingEdit = true;
+    verifyEditResult = null;
+    try {
+      verifyEditResult = await verifySpaceDesktop(editUrl.trim(), editAuthToken || undefined);
+    } catch (e: any) {
+      verifyEditResult = { ok: false, error: e?.error || e?.message || 'Verification failed' };
+    } finally {
+      verifyingEdit = false;
+    }
+  }
 
   $effect(() => {
     isDesktop = isDesktopApp();
@@ -179,6 +209,16 @@
               <input id="edit-name-{space.name}" type="text" class="field" bind:value={editName} disabled={saving} />
               <label class="field-label" for="edit-url-{space.name}">URL</label>
               <input id="edit-url-{space.name}" type="text" class="field" bind:value={editUrl} disabled={saving} />
+              <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+                <button class="verify-btn" onclick={handleVerifyEdit} disabled={verifyingEdit || !editUrl.trim()} style="flex-shrink:0">
+                  {verifyingEdit ? 'Verifying…' : 'Verify'}
+                </button>
+                {#if verifyEditResult}
+                  <span class="verify-result" class:ok={verifyEditResult.ok} class:fail={!verifyEditResult.ok}>
+                    {verifyEditResult.ok ? `✓ ${verifyEditResult.task_count} tasks` : `✕ ${verifyEditResult.error}`}
+                  </span>
+                {/if}
+              </div>
               <label class="field-label" for="edit-dp-{space.name}">Default page</label>
               <input id="edit-dp-{space.name}" type="text" class="field" bind:value={editDefaultPage} placeholder="Tasks" disabled={saving} />
               <label class="field-label" for="edit-ip-{space.name}">Inbox page</label>
@@ -231,6 +271,16 @@
         <h4 class="form-title">Add Space</h4>
         <input type="text" class="field" placeholder="Space name" bind:value={newName} disabled={saving} />
         <input type="text" class="field" placeholder="Space URL" bind:value={newUrl} disabled={saving} />
+        <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+          <button class="verify-btn" onclick={handleVerifyNew} disabled={verifyingAdd || !newUrl.trim()} style="flex-shrink:0">
+            {verifyingAdd ? 'Verifying…' : 'Verify'}
+          </button>
+          {#if verifyAddResult}
+            <span class="verify-result" class:ok={verifyAddResult.ok} class:fail={!verifyAddResult.ok}>
+              {verifyAddResult.ok ? `✓ ${verifyAddResult.task_count} tasks` : `✕ ${verifyAddResult.error}`}
+            </span>
+          {/if}
+        </div>
         <label class="field-label" style="margin-top:0.25rem">
           Auth token
           <button class="field-toggle" onclick={() => (showNewToken = !showNewToken)} type="button" aria-label={showNewToken ? 'Hide token' : 'Show token'}>
@@ -291,6 +341,19 @@
   .field:focus { border-color: var(--color-accent); }
   .add-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
   .add-btn:disabled { opacity: 0.4; }
+  .verify-btn {
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+  .verify-btn:hover:not(:disabled) { background: var(--color-border); }
+  .verify-btn:disabled { opacity: 0.4; }
+  .verify-result { font-size: var(--font-size-xs); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .verify-result.ok { color: var(--color-accent); }
+  .verify-result.fail { color: var(--color-danger); }
   .field-toggle { background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 0; display: inline-flex; align-items: center; margin-left: 0.25rem; }
   .field-toggle:hover { color: var(--color-text-secondary); }
   .about-text { font-size: var(--font-size-sm); color: var(--color-text-tertiary); }

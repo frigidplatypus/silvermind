@@ -13,6 +13,8 @@
   import SpaceSwitcher from '$lib/components/SpaceSwitcher.svelte';
   import ServiceErrorBanner from '$lib/components/ServiceErrorBanner.svelte';
   import DesktopShell from '$lib/components/DesktopShell.svelte';
+  import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+  import { getShowOnboarding } from '$lib/stores/onboarding.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import InboxPage from './inbox/+page.svelte';
   import TodayPage from './today/+page.svelte';
@@ -201,6 +203,9 @@
     </nav>
     {#if currentTab !== 'settings' && currentTab !== 'builder' && !getIsActive()}<FloatingAddButton />{/if}
   </div>
+{/if}
+{#if getShowOnboarding()}
+  <OnboardingModal />
 {/if}
 <Toast />
 

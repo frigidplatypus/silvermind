@@ -84,14 +84,78 @@ func (c *ConfigManager) configPath() string {
 }
 
 func (c *ConfigManager) load() (*config.ConfigFile, error) {
-	return config.LoadConfig(c.path)
+	cfg, err := config.LoadConfig(c.path)
+	if err != nil {
+		return nil, err
+	}
+	if cfg != nil && cfg.SharedConfig && cfg.SbtaskPath != "" {
+		return config.LoadConfig(cfg.SbtaskPath)
+	}
+	return cfg, nil
 }
 
 func (c *ConfigManager) save(cfg *config.ConfigFile) error {
-	if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
-		return fmt.Errorf("create config dir: %w", err)
+	targetPath := c.path
+	if cfg.SharedConfig && cfg.SbtaskPath != "" {
+		targetPath = cfg.SbtaskPath
+	} else {
+		if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
+			return fmt.Errorf("create config dir: %w", err)
+		}
 	}
-	return config.SaveConfig(c.path, cfg)
+	return config.SaveConfig(targetPath, cfg)
+}
+
+func (c *ConfigManager) resolveSavePath(cfg *config.ConfigFile) string {
+	if cfg.SharedConfig && cfg.SbtaskPath != "" {
+		return cfg.SbtaskPath
+	}
+	return c.path
+}
+
+func (c *ConfigManager) SetSharedConfig(sbtaskPath string) ([]SpaceInfo, error) {
+	if sbtaskPath == "" {
+		sbtaskPath = config.DefaultConfigPath()
+	}
+	sbtaskCfg, err := config.LoadConfig(sbtaskPath)
+	if err != nil || sbtaskCfg == nil {
+		return nil, fmt.Errorf("failed to load sbtask config: %w", err)
+	}
+	if len(sbtaskCfg.Spaces) == 0 {
+		return nil, fmt.Errorf("sbtask config has no spaces")
+	}
+	sbtaskCfg.SharedConfig = true
+	sbtaskCfg.SbtaskPath = sbtaskPath
+	if err := c.save(sbtaskCfg); err != nil {
+		return nil, err
+	}
+	log.Printf("[silvermind] using shared config at %s", sbtaskPath)
+	return toSpaces(sbtaskCfg), nil
+}
+
+func (c *ConfigManager) HasSharedConfig() bool {
+	cfg, err := config.LoadConfig(c.path)
+	if err != nil || cfg == nil {
+		return false
+	}
+	return cfg.SharedConfig && cfg.SbtaskPath != ""
+}
+
+func (c *ConfigManager) MigrateSbtaskConfig() ([]SpaceInfo, error) {
+	c.migrate()
+	cfg, err := c.load()
+	if err != nil || cfg == nil {
+		return nil, fmt.Errorf("migration produced no config")
+	}
+	return toSpaces(cfg), nil
+}
+
+func (c *ConfigManager) GetSbtaskSpaces() []SpaceInfo {
+	sbtaskCfg, err := config.LoadConfig(config.DefaultConfigPath())
+	if err != nil || sbtaskCfg == nil || len(sbtaskCfg.Spaces) == 0 {
+		return nil
+	}
+	return toSpaces(sbtaskCfg)
 }
 
 func toSpaces(cfg *config.ConfigFile) []SpaceInfo {

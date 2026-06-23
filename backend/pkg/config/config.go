@@ -18,12 +18,14 @@ type SpaceConfig struct {
 }
 
 type ConfigFile struct {
-	Space       string                 `yaml:"space,omitempty"`
-	DefaultPage string                 `yaml:"default_page,omitempty"`
-	InboxPage   string                 `yaml:"inbox_page,omitempty"`
-	ExcludeTags []string               `yaml:"exclude_tags,omitempty"`
-	Spaces      map[string]SpaceConfig `yaml:"spaces,omitempty"`
-	ActiveSpace string                 `yaml:"active_space,omitempty"`
+	SharedConfig bool                   `yaml:"shared_config,omitempty"`
+	SbtaskPath   string                 `yaml:"sbtask_path,omitempty"`
+	Space        string                 `yaml:"space,omitempty"`
+	DefaultPage  string                 `yaml:"default_page,omitempty"`
+	InboxPage    string                 `yaml:"inbox_page,omitempty"`
+	ExcludeTags  []string               `yaml:"exclude_tags,omitempty"`
+	Spaces       map[string]SpaceConfig `yaml:"spaces,omitempty"`
+	ActiveSpace  string                 `yaml:"active_space,omitempty"`
 }
 
 func DefaultConfig() *ConfigFile {

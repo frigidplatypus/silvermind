@@ -50,3 +50,32 @@ export async function setActiveSpaceDesktop(name: string): Promise<SpaceInfo[]> 
 export async function getConfigPath(): Promise<string> {
   return go().GetConfigPath();
 }
+
+export async function setSharedConfigDesktop(sbtaskPath: string): Promise<SpaceInfo[]> {
+  return go().SetSharedConfig(sbtaskPath);
+}
+
+export async function migrateSbtaskConfigDesktop(): Promise<SpaceInfo[]> {
+  return go().MigrateSbtaskConfig();
+}
+
+export interface ConfigStatusDesktop {
+  exists: boolean;
+  sbtask_exists: boolean;
+  space_count: number;
+  spaces: SpaceInfo[];
+}
+
+export async function getConfigStatusDesktop(): Promise<ConfigStatusDesktop> {
+  return go().GetConfigStatus();
+}
+
+export interface VerifyResultDesktop {
+  ok: boolean;
+  task_count?: number;
+  error?: string;
+}
+
+export async function verifySpaceDesktop(url: string, authToken?: string): Promise<VerifyResultDesktop> {
+  return go().VerifySpace(url, authToken || '');
+}
