@@ -124,7 +124,7 @@
   {/each}
 
   <div class="sidebar-section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
-    <span>Queries</span>
+    <span><Icon name="search" size="0.75rem" /> Queries</span>
     <div class="sidebar-actions">
       <button class="add-btn" onclick={() => onNavigate('builder')} aria-label="New query">
         <Icon name="plus" size="0.75rem" />
@@ -146,7 +146,6 @@
           class:active={activeView === `queries:${qp.page}:1`}
           onclick={() => onNavigate(`queries:${qp.page}:1`)}
         >
-          <Icon name="search" />
           {#if qp.page.includes('/') && !qp.page.startsWith('queries/')}
             <span class="query-page-name">
               <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
@@ -163,7 +162,6 @@
             class:active={activeView.startsWith(`queries:${qp.page}`)}
             onclick={() => onNavigate(`queries:${qp.page}`)}
           >
-            <Icon name="search" />
             {#if qp.page.includes('/') && !qp.page.startsWith('queries/')}
               <span class="query-page-name">
                 <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
