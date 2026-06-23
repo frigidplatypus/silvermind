@@ -166,6 +166,8 @@
       lines.push(`limit ${limit}`);
     }
 
+    lines.push('select templates.taskItem(p)');
+
     return lines.join('\n');
   }
 
