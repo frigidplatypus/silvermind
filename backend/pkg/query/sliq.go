@@ -124,8 +124,37 @@ func resolveRelativeDates(sliq string) string {
 	return sliq
 }
 
+// normalizeSLIQ converts a real SilverBullet SLIQ query (with from clause,
+// p. prefix, etc.) into the internal format that TranslateSLIQ expects.
+// Lines starting with "from " or "select " are stripped; the variable prefix
+// "p." is normalized to "t."; and "p.tags" is mapped to "t.itags" to match
+// the RuntimeTask field used internally for tag lookups.
+func normalizeSLIQ(sliq string) string {
+	lines := strings.Split(sliq, "\n")
+	var out []string
+	for _, line := range lines {
+		line := strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// Strip from / select clauses entirely
+		if strings.HasPrefix(line, "from ") || strings.HasPrefix(line, "select ") {
+			continue
+		}
+		// Normalize p. prefix to t. — p. is the conventional SLIQ variable.
+		// Must be careful not to match "table.", "index.", etc.
+		// We replace "p." → "t." with word-boundary before p, non-word after.
+		line = strings.ReplaceAll(line, "p.", "t.")
+		// Special case: p.tags → t.itags (SilverBullet tags vs our itags field)
+		line = strings.ReplaceAll(line, "t.tags", "t.itags")
+		out = append(out, line)
+	}
+	return strings.Join(out, "\n")
+}
+
 func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task) {
 	sliq = resolveRelativeDates(sliq)
+	sliq = normalizeSLIQ(sliq)
 	filter := task.TaskFilter{Limit: 100}
 	var pageExcludes []string
 	var pageIncludes []string
