@@ -219,10 +219,11 @@ func (s *Server) handleQueryExecute(w http.ResponseWriter, r *http.Request) {
 }
 
 type QuerySaveRequest struct {
-	Page   string `json:"page"`
-	Title  string `json:"title"`
-	SLIQ   string `json:"sliq"`
-	Create bool   `json:"create"`
+	Page        string `json:"page"`
+	Title       string `json:"title"`
+	SLIQ        string `json:"sliq"`
+	Create      bool   `json:"create"`
+	BlockNumber int    `json:"block_number"`
 }
 
 func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
@@ -257,6 +258,10 @@ func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
 	if req.Create {
 		pageContent := fmt.Sprintf("---\ntags:\n  - %s\n---\n%s", queryPageTag, block)
 		err = c.WritePage(req.Page, pageContent)
+	} else if req.BlockNumber > 0 {
+		err = c.ReadModifyWrite(req.Page, func(content string) (string, error) {
+			return query.ReplaceQueryBlock(content, req.BlockNumber, req.Title, req.SLIQ)
+		})
 	} else {
 		err = c.ReadModifyWrite(req.Page, func(content string) (string, error) {
 			return content + block, nil

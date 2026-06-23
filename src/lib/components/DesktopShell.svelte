@@ -146,8 +146,9 @@
   function handleEditQuery() {
     const parts = activeView.split(':');
     const page = parts[1];
+    const blockNumber = parts[2] ? parseInt(parts[2]) : 0;
     const title = queryTitle ?? '';
-    setBuilderEdit(page, title);
+    setBuilderEdit(page, title, blockNumber);
     onNavigate('builder');
   }
 

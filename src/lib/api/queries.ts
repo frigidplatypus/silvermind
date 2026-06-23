@@ -38,6 +38,7 @@ export interface SaveQueryRequest {
   title: string;
   sliq: string;
   create: boolean;
+  block_number?: number;
 }
 
 export async function saveQuery(req: SaveQueryRequest): Promise<{ page: string }> {

@@ -12,6 +12,7 @@
   let saving = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
+  let editBlockNumber = $state(0);
 
   onMount(() => {
     const edit = getBuilderEdit();
@@ -19,6 +20,7 @@
       page = edit.page;
       title = edit.title;
       create = false;
+      editBlockNumber = edit.blockNumber;
       clearBuilderEdit();
     }
   });
@@ -219,6 +221,7 @@
         title: title.trim(),
         sliq: sliqPreview,
         create,
+        ...(editBlockNumber > 0 ? { block_number: editBlockNumber } : {}),
       });
       success = `Saved to "${page.trim()}" as "${title.trim()}"`;
       await loadQueryPages();

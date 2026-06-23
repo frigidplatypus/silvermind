@@ -583,3 +583,17 @@ func findNearestHeading(lines []string, matchLine int) string {
 	}
 	return ""
 }
+
+var fullBlockRe = regexp.MustCompile(`\n?## [^\n]+\n\$\{query\[\[[\s\S]*?\]\]\}\n?`)
+
+func ReplaceQueryBlock(content string, blockNumber int, newTitle, newSLIQ string) (string, error) {
+	matches := fullBlockRe.FindAllStringIndex(content, -1)
+	if blockNumber < 1 || blockNumber > len(matches) {
+		return "", fmt.Errorf("block %d not found (page has %d blocks)", blockNumber, len(matches))
+	}
+
+	matchIdx := matches[blockNumber-1]
+	newBlock := fmt.Sprintf("\n## %s\n${query[[\n%s\n]]}\n", newTitle, newSLIQ)
+
+	return content[:matchIdx[0]] + newBlock + content[matchIdx[1]:], nil
+}
