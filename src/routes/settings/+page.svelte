@@ -6,6 +6,7 @@
   import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
   import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop } from '$lib/desktop-bridge';
+  import { showSuccess, showError } from '$lib/stores/toast.svelte';
 
   let currentTheme = $state<Theme>(getTheme());
   let currentDefault = $state<string>(getDefaultView());
@@ -30,6 +31,10 @@
 
   function onThemeChange(t: Theme) { currentTheme = t; setTheme(t); }
   function onDefaultChange(v: string) { currentDefault = v; setDefaultView(v); }
+  function onShowTodayChange(show: boolean) {
+    setShowToday(show);
+    if (!show && currentDefault === 'today') { currentDefault = 'inbox'; setDefaultView('inbox'); }
+  }
 
   function startEdit(space: Space) {
     editingSpace = space.name;
@@ -55,6 +60,7 @@
       await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage, editAuthToken);
       editingSpace = null;
       await loadSpaces();
+      showSuccess('Space updated');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
       console.error('[silvermind] UpdateSpace failed:', msg, e);
@@ -76,6 +82,7 @@
       newUrl = '';
       newAuthToken = '';
       await loadSpaces();
+      showSuccess('Space added');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
       console.error('[silvermind] AddSpace failed:', msg, e);
@@ -91,6 +98,7 @@
     try {
       await removeSpaceDesktop(name);
       await loadSpaces();
+      showSuccess('Space removed');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
       console.error('[silvermind] RemoveSpace failed:', msg, e);
@@ -118,8 +126,6 @@
 </script>
 
 <div class="settings-page">
-  <h2 class="page-title">Settings</h2>
-
   <section class="section">
     <h3 class="section-title">Appearance</h3>
     <div class="theme-picker">
@@ -136,10 +142,12 @@
     <h3 class="section-title">Startup</h3>
     <div class="default-picker">
       {#each [{ id: 'inbox', icon: 'inbox', label: 'Task List' }, { id: 'today', icon: 'calendar', label: 'Today' }, { id: 'global', icon: 'globe', label: 'All Tasks' }] as item}
-        <button class="default-btn" class:active={currentDefault === item.id} onclick={() => onDefaultChange(item.id)}>
-          <Icon name={item.icon} size="1.5rem" />
-          <span class="default-label">{item.label}</span>
-        </button>
+        {#if item.id !== 'today' || getShowToday()}
+          <button class="default-btn" class:active={currentDefault === item.id} onclick={() => onDefaultChange(item.id)}>
+            <Icon name={item.icon} size="1.5rem" />
+            <span class="default-label">{item.label}</span>
+          </button>
+        {/if}
       {/each}
     </div>
   </section>
@@ -147,7 +155,7 @@
   <section class="section">
     <h3 class="section-title">Views</h3>
     <label class="toggle-row">
-      <input type="checkbox" checked={getShowToday()} onchange={(e) => setShowToday((e.target as HTMLInputElement).checked)} />
+      <input type="checkbox" checked={getShowToday()} onchange={(e) => onShowTodayChange((e.target as HTMLInputElement).checked)} />
       <span>Show Today view</span>
     </label>
   </section>
@@ -243,8 +251,7 @@
 </div>
 
 <style>
-  .settings-page { padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .page-title { font-size: var(--font-size-2xl); font-weight: 700; margin-bottom: 1.5rem; }
+  .settings-page { padding: var(--space-4); overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .section { margin-bottom: 2rem; }
   .section-title { font-size: var(--font-size-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-secondary); margin-bottom: 0.75rem; }
   .section-desc { font-size: var(--font-size-sm); color: var(--color-text-tertiary); margin-bottom: 0.75rem; }
@@ -269,7 +276,7 @@
   .action-btn.edit { color: var(--color-accent); background: var(--color-accent-light); padding: 0.375rem; }
   .action-btn.remove { color: var(--color-danger); background: var(--color-danger-light); padding: 0.375rem; }
   .action-btn.cancel { color: var(--color-text-secondary); background: var(--color-bg-tertiary); }
-  .action-btn.save { color: #fff; background: var(--color-accent); }
+  .action-btn.save { color: var(--color-on-accent); background: var(--color-accent); }
   .action-btn.save:disabled { opacity: 0.4; }
   .active-badge { font-size: var(--font-size-xs); padding: 0.125rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-success-light); color: var(--color-success); font-weight: 600; }
   .space-edit-form { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
@@ -279,7 +286,7 @@
   .form-title { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text); }
   .field { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: var(--font-size-sm); color: var(--color-text); outline: none; font-family: inherit; }
   .field:focus { border-color: var(--color-accent); }
-  .add-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: white; font-weight: 600; font-size: var(--font-size-sm); }
+  .add-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
   .add-btn:disabled { opacity: 0.4; }
   .field-toggle { background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 0; display: inline-flex; align-items: center; margin-left: 0.25rem; }
   .field-toggle:hover { color: var(--color-text-secondary); }

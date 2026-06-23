@@ -54,17 +54,18 @@
 
 <div
   class="task-list-container"
+  aria-busy={isLoading || isRefreshing}
   ontouchstart={onTouchStart}
   ontouchmove={onTouchMove}
   ontouchend={onTouchEnd}
 >
   {#if isRefreshing}
-    <div class="refresh-indicator">Refreshing…</div>
+    <div class="refresh-indicator" role="status" aria-live="polite">Refreshing…</div>
   {:else if pullDistance > 0}
     <div class="refresh-indicator" style="height:{pullDistance}px;opacity:{pullDistance/60}">Pull to refresh</div>
   {/if}
 
-  {#if error}
+  {#if error && tasks.length === 0}
     <div class="error-state" role="alert">
       <Icon name="alert-triangle" size="1.25rem" />
       <p class="error-message">{error}</p>
@@ -72,11 +73,20 @@
         <button class="retry-btn" onclick={() => onRefresh()}>Retry</button>
       {/if}
     </div>
-  {:else if isLoading}
+  {:else if isLoading && tasks.length === 0}
     <div class="loading-state">Loading tasks…</div>
   {:else if tasks.length === 0}
     <div class="empty-state">{emptyMessage}</div>
   {:else}
+    {#if error}
+      <div class="error-banner-inline" role="alert">
+        <Icon name="alert-triangle" size="0.875rem" />
+        <span>{error}</span>
+        {#if onRefresh}
+          <button class="retry-btn-inline" onclick={() => onRefresh()}>Retry</button>
+        {/if}
+      </div>
+    {/if}
     {#each tasks as task (tid(task))}
       <TaskRow {task} id={tid(task)} onclick={() => onTaskTap?.(task)} />
     {/each}
@@ -86,8 +96,10 @@
 <style>
   .task-list-container { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .refresh-indicator { display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-  .loading-state, .empty-state { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--color-text-secondary); }
-  .error-state { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2rem 1.5rem; text-align: center; color: var(--color-danger); }
-  .error-message { font-size: var(--font-size-sm); line-height: 1.5; word-break: break-word; max-width: 400px; }
-  .retry-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-danger); color: #fff; font-weight: 600; font-size: var(--font-size-sm); }
+  .loading-state, .empty-state { display: flex; align-items: center; justify-content: center; padding: 3rem var(--space-4); color: var(--color-text-secondary); }
+  .error-state { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: 2rem 1.5rem; text-align: center; color: var(--color-danger); }
+  .error-message { font-size: var(--font-size-sm); line-height: var(--line-height-normal); word-break: break-word; max-width: 400px; }
+  .retry-btn { padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--color-danger); color: var(--color-on-danger); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
+  .error-banner-inline { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); background: var(--color-danger-light); color: var(--color-danger); font-size: var(--font-size-sm); }
+  .retry-btn-inline { margin-left: auto; padding: 0.125rem var(--space-2); border-radius: var(--radius-sm); background: var(--color-danger); color: var(--color-on-danger); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); }
 </style>

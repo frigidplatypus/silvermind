@@ -54,5 +54,5 @@
   .global-status { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
   .error-state { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2rem 1.5rem; text-align: center; color: var(--color-danger); }
   .error-message { font-size: var(--font-size-sm); line-height: 1.5; word-break: break-word; }
-  .retry-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-danger); color: #fff; font-weight: 600; font-size: var(--font-size-sm); }
+  .retry-btn { padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--color-danger); color: var(--color-on-danger); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
 </style>

@@ -8,7 +8,8 @@
   import { getIsDesktop, setDesktopMode } from '$lib/stores/desktop.svelte';
   import { hideSplash } from '$lib/native/splash';
   import { setDarkStyle } from '$lib/native/status-bar';
-  import QuickCapture from '$lib/components/QuickCapture.svelte';
+  import FloatingAddButton from '$lib/components/FloatingAddButton.svelte';
+  import { triggerAddTask } from '$lib/stores/add-task.svelte';
   import SpaceSwitcher from '$lib/components/SpaceSwitcher.svelte';
   import ServiceErrorBanner from '$lib/components/ServiceErrorBanner.svelte';
   import DesktopShell from '$lib/components/DesktopShell.svelte';
@@ -16,15 +17,21 @@
   import InboxPage from './inbox/+page.svelte';
   import TodayPage from './today/+page.svelte';
   import GlobalPage from './global/+page.svelte';
+  import BuilderPage from './builder/+page.svelte';
   import SettingsPage from './settings/+page.svelte';
   import { goto } from '$lib/router';
   import SearchBar from '$lib/components/SearchBar.svelte';
   import TaskList from '$lib/components/TaskList.svelte';
+  import TaskDetail from '$lib/components/TaskDetail.svelte';
+  import Toast from '$lib/components/Toast.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
   import { getDefaultView, getShowToday, loadShowToday } from '$lib/stores/landing.svelte';
+  import type { Task } from '$lib/types/task';
 
   let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
+  let prevTab = $state<string>('inbox');
+  let searchSelectedTask = $state<Task | null>(null);
 
   function isEditing(): boolean {
     const el = document.activeElement;
@@ -40,7 +47,7 @@
     switch (e.key) {
       case 'n': {
         e.preventDefault();
-        document.getElementById('quick-input')?.focus();
+        triggerAddTask();
         break;
       }
       case '/': {
@@ -103,7 +110,35 @@
     if (spaceId) { loadInbox(); loadTaskNames(); loadTagNames(); }
   });
 
-  function navigate(tab: string) { currentTab = tab; goto(`/${tab}`); }
+  function handleSearchClick() {
+    activateSearch(currentTab === 'global' ? 'global' : 'active');
+    setTimeout(() => document.getElementById('search-input')?.focus(), 0);
+  }
+
+  function navigate(tab: string) {
+    if (currentTab !== 'settings' && currentTab !== 'builder') prevTab = currentTab;
+    currentTab = tab;
+    goto(`/${tab}`);
+  }
+
+  function handleSearchTaskTap(task: Task) {
+    searchSelectedTask = task;
+  }
+
+  function handleSearchTaskChanged() {
+    searchSelectedTask = null;
+    loadInbox();
+  }
+
+  const pageTitle = $derived(
+    getIsActive() ? 'Search'
+    : currentTab === 'inbox' ? 'Task List'
+    : currentTab === 'today' ? 'Today'
+    : currentTab === 'global' ? 'All Tasks'
+    : currentTab === 'builder' ? 'New Query'
+    : currentTab === 'settings' ? 'Settings'
+    : ''
+  );
 </script>
 
 {#if getIsDesktop()}
@@ -114,16 +149,19 @@
     <header class="app-header" style="padding-top: var(--safe-area-top)">
       <div class="header-content">
         {#if getIsActive()}
-          <button class="search-back-btn" onclick={() => deactivateSearch()} aria-label="Back">&larr;</button>
+          <button class="header-btn" onclick={() => deactivateSearch()} aria-label="Back"><Icon name="arrow-left" /></button>
         {/if}
-        <h1 class="app-title">{getIsActive() ? 'Search' : currentTab === 'inbox' ? 'Task List' : currentTab === 'today' ? 'Today' : currentTab === 'global' ? 'All Tasks' : currentTab === 'settings' ? 'Settings' : ''}</h1>
-        {#if !getIsActive() && currentTab !== 'settings'}
+        <h1 class="app-title">{pageTitle}</h1>
+        {#if !getIsActive() && currentTab !== 'settings' && currentTab !== 'builder'}
+          <button class="header-btn" onclick={handleSearchClick} aria-label="Search">
+            <Icon name="search" />
+          </button>
           <SpaceSwitcher />
-          <button class="gear-btn" onclick={() => navigate('settings')} aria-label="Settings">
+          <button class="header-btn" onclick={() => navigate('settings')} aria-label="Settings">
             <Icon name="settings" />
           </button>
-        {:else if !getIsActive() && currentTab === 'settings'}
-          <button class="gear-btn" onclick={() => navigate('inbox')} aria-label="Back">&larr;</button>
+        {:else if !getIsActive() && (currentTab === 'settings' || currentTab === 'builder')}
+          <button class="header-btn" onclick={() => navigate(prevTab)} aria-label="Back"><Icon name="arrow-left" /></button>
         {/if}
       </div>
     </header>
@@ -133,21 +171,24 @@
         {#if getQuery() && getResults().length === 0 && !getIsSearching()}
           <div class="search-empty">No results for &ldquo;{getQuery()}&rdquo;</div>
         {:else if getResults().length > 0}
-          <TaskList tasks={getResults()} emptyMessage="No results" />
+          <TaskList tasks={getResults()} onTaskTap={handleSearchTaskTap} emptyMessage="No results" />
         {:else if getIsSearching()}
           <div class="search-empty">Searching&hellip;</div>
         {:else}
           <div class="search-empty">Type to search tasks</div>
         {/if}
       </main>
+      {#if searchSelectedTask}
+        <TaskDetail task={searchSelectedTask} variant="overlay" onclose={() => (searchSelectedTask = null)} ontaskchanged={handleSearchTaskChanged} />
+      {/if}
     {:else}
       <main class="app-main">
-        {#if currentTab === 'inbox'}<InboxPage />{:else if currentTab === 'today'}<TodayPage />{:else if currentTab === 'global'}<GlobalPage />{:else}<SettingsPage />{/if}
+        {#if currentTab === 'inbox'}<InboxPage />{:else if currentTab === 'today'}<TodayPage />{:else if currentTab === 'global'}<GlobalPage />{:else if currentTab === 'builder'}<BuilderPage />{:else}<SettingsPage />{/if}
       </main>
     {/if}
     <nav class="tab-bar" role="tablist" aria-label="Main navigation" style="padding-bottom: var(--safe-area-bottom)">
       <button class="tab-button" class:active={currentTab === 'inbox'} role="tab" aria-selected={currentTab === 'inbox'} onclick={() => navigate('inbox')}>
-        <span class="tab-icon"><Icon name="inbox" /></span><span class="tab-label">Task List</span>
+        <span class="tab-icon"><Icon name="inbox" /></span><span class="tab-label">Tasks</span>
       </button>
       {#if getShowToday()}
         <button class="tab-button" class:active={currentTab === 'today'} role="tab" aria-selected={currentTab === 'today'} onclick={() => navigate('today')}>
@@ -158,24 +199,23 @@
         <span class="tab-icon"><Icon name="globe" /></span><span class="tab-label">All</span>
       </button>
     </nav>
-    {#if currentTab !== 'settings' && !getIsActive()}<div class="quick-capture-container"><QuickCapture /></div>{/if}
+    {#if currentTab !== 'settings' && currentTab !== 'builder' && !getIsActive()}<FloatingAddButton />{/if}
   </div>
 {/if}
+<Toast />
 
 <style>
   .app-shell { display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; }
-  .app-header { background: var(--color-bg); border-bottom: 0.5px solid var(--color-separator); z-index: 10; flex-shrink: 0; }
-  .header-content { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; }
-  .app-title { font-size: var(--font-size-xl); font-weight: 700; color: var(--color-text); }
+  .app-header { background: var(--color-bg); border-bottom: 0.5px solid var(--color-separator); z-index: var(--z-header); flex-shrink: 0; }
+  .header-content { display: flex; align-items: center; gap: var(--space-2); justify-content: space-between; padding: var(--space-3) var(--space-4); }
+  .app-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: var(--color-text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .app-main { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
-  .tab-bar { display: flex; justify-content: center; gap: 2rem; padding: 0.5rem 1rem; background: var(--color-bg); border-top: 0.5px solid var(--color-separator); flex-shrink: 0; }
-  .tab-button { display: flex; flex-direction: column; align-items: center; gap: 0.125rem; padding: 0.25rem 1rem; border-radius: var(--radius-md); }
-  .tab-button.active .tab-label { color: var(--color-accent); font-weight: 600; }
-  .tab-icon { font-size: 1.25rem; } .tab-label { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
-  .quick-capture-container { flex-shrink: 0; background: var(--color-bg); }
-  .search-back-btn { background: none; border: none; font-size: 1.25rem; color: var(--color-accent); padding: 0; cursor: pointer; }
-  .gear-btn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0.25rem; display: flex; align-items: center; border-radius: var(--radius-md); }
-  .gear-btn:hover { background: var(--color-bg-tertiary); color: var(--color-text); }
-  .main.search-active { overflow-y: auto; }
-  .search-empty { display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+  .app-main.search-active { overflow-y: auto; }
+  .tab-bar { display: flex; padding: var(--space-2) var(--space-4); background: var(--color-bg); border-top: 0.5px solid var(--color-separator); flex-shrink: 0; }
+  .tab-button { display: flex; flex-direction: column; align-items: center; gap: 0.125rem; padding: var(--space-1) var(--space-4); border-radius: var(--radius-md); flex: 1; }
+  .tab-button.active .tab-label { color: var(--color-accent); font-weight: var(--font-weight-semibold); }
+  .tab-icon { font-size: var(--font-size-xl); } .tab-label { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+  .header-btn { display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); padding: var(--space-1); border-radius: var(--radius-md); flex-shrink: 0; }
+  .header-btn:hover { background: var(--color-bg-tertiary); color: var(--color-text); }
+  .search-empty { display: flex; align-items: center; justify-content: center; padding: 3rem var(--space-4); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 </style>
