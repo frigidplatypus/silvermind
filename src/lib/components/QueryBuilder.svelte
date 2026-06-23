@@ -19,6 +19,80 @@
   let rangeStart = $state('');
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
+
+  function today(): string {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function daysFromNow(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function weekStart(d: Date): Date {
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.getFullYear(), d.getMonth(), diff);
+  }
+
+  function weekEnd(d: Date): Date {
+    const start = weekStart(d);
+    return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  }
+
+  function monthStart(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
+  function monthEnd(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  }
+
+  function fmt(d: Date): string {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  const datePresets: { label: string; apply: () => void }[] = [
+    {
+      label: 'Today',
+      apply: () => { const d = today(); rangeStart = d; rangeEnd = d; hasDateFilter = 'none'; },
+    },
+    {
+      label: 'Tomorrow',
+      apply: () => { const d = daysFromNow(1); rangeStart = d; rangeEnd = d; hasDateFilter = 'none'; },
+    },
+    {
+      label: 'Overdue',
+      apply: () => { rangeStart = ''; rangeEnd = daysFromNow(-1); hasDateFilter = 'none'; },
+    },
+    {
+      label: 'This week',
+      apply: () => { rangeStart = fmt(weekStart(new Date())); rangeEnd = fmt(weekEnd(new Date())); hasDateFilter = 'none'; },
+    },
+    {
+      label: 'Next week',
+      apply: () => {
+        const next = new Date(); next.setDate(next.getDate() + 7);
+        rangeStart = fmt(weekStart(next)); rangeEnd = fmt(weekEnd(next)); hasDateFilter = 'none';
+      },
+    },
+    {
+      label: 'This month',
+      apply: () => { rangeStart = fmt(monthStart(new Date())); rangeEnd = fmt(monthEnd(new Date())); hasDateFilter = 'none'; },
+    },
+  ];
+
+  function presetActive(todayVal: string, tomorrowVal: string, overdueVal: string) {
+    return (label: string) => {
+      if (label === 'Today') return rangeStart === rangeEnd && rangeStart === todayVal;
+      if (label === 'Tomorrow') return rangeStart === rangeEnd && rangeStart === tomorrowVal;
+      if (label === 'Overdue') return !rangeStart && rangeEnd === overdueVal;
+      return false;
+    };
+  }
+  let isPresetActive = $derived(presetActive(today(), daysFromNow(1), daysFromNow(-1)));
   let includeTags = $state('');
   let excludeTags = $state('');
   let extraAttrs = $state<{ key: string; value: string }[]>([]);
@@ -296,6 +370,11 @@
           <span>No date</span>
         </label>
       </div>
+      <div class="preset-group">
+        {#each datePresets as p}
+          <button class="toggle-btn" class:active={isPresetActive(p.label)} onclick={p.apply}>{p.label}</button>
+        {/each}
+      </div>
     </div>
 
     <div class="filter-group">
@@ -488,6 +567,12 @@
   .date-field-toggle {
     display: flex;
     gap: 0.125rem;
+  }
+  .preset-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
   }
   .toggle-btn {
     padding: 0.125rem 0.625rem;
