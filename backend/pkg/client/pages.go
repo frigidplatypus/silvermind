@@ -18,13 +18,18 @@ type RuntimePage struct {
 }
 
 // FindPagesByTag returns all page names that have the given tag in their frontmatter.
-// Uses SilverBullet's Runtime API to query page objects.
-// The where[tags][contains] query parameter is unreliable, so we fetch all pages
-// and filter client-side.
+// Attempts server-side filtering first (works on most SilverBullet instances),
+// then falls back to client-side filtering with a generous limit.
 func (c *Client) FindPagesByTag(tag string) ([]string, error) {
+	// Fast path: server-side tag query (works on most instances)
+	if names, err := c.findPagesByTagServer(tag); err == nil && len(names) > 0 {
+		return names, nil
+	}
+
+	// Fallback: fetch all pages and filter client-side
 	u := c.resolveURL("/.runtime/objects/page")
 	q := url.Values{}
-	q.Set("limit", "200")
+	q.Set("limit", "1000")
 	u += "?" + q.Encode()
 
 	req, err := c.newRequest("GET", u, nil)
@@ -71,6 +76,49 @@ func (c *Client) FindPagesByTag(tag string) ([]string, error) {
 	return names, nil
 }
 
+func (c *Client) findPagesByTagServer(tag string) ([]string, error) {
+	u := c.resolveURL("/.runtime/objects/page")
+	q := url.Values{}
+	q.Set("where[tags][contains]", tag)
+	q.Set("limit", "100")
+	u += "?" + q.Encode()
+
+	req, err := c.newRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("server tag query failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	var pages []RuntimePage
+	if err := json.Unmarshal(body, &pages); err != nil {
+		return nil, err
+	}
+
+	if len(pages) == 0 {
+		return nil, fmt.Errorf("no results")
+	}
+
+	names := make([]string, 0, len(pages))
+	for _, p := range pages {
+		names = append(names, p.Name)
+	}
+	return names, nil
+}
+
 func hasTag(p RuntimePage, tag string) bool {
 	for _, t := range p.Tags {
 		if t == tag {
@@ -84,4 +132,3 @@ func hasTag(p RuntimePage, tag string) bool {
 	}
 	return false
 }
-

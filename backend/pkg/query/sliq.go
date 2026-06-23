@@ -213,21 +213,26 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 			line = strings.TrimPrefix(line, "and ")
 			line = strings.TrimSpace(line)
 
-			for _, clause := range strings.Split(line, " or ") {
+		for _, clause := range strings.Split(line, " or ") {
 				clause = strings.TrimSpace(clause)
+				for _, sub := range strings.Split(clause, " and ") {
+					sub = strings.TrimSpace(sub)
+					if sub == "" {
+						continue
+					}
 				switch {
-				case clause == "not t.done":
+				case sub == "not t.done":
 					// Handled by default exclusion
-				case clause == "t.done":
+				case sub == "t.done":
 					filter.Status = []string{"x"}
-				case strings.HasPrefix(clause, "t.state =="):
-					st := strings.Trim(clause[11:], " \"")
+				case strings.HasPrefix(sub, "t.state =="):
+					st := strings.Trim(sub[11:], " \"")
 					st = strings.ToLower(st)
 					if st == "waiting" || st == "x" || st == "maybe" || strings.EqualFold(st, "someday") {
 						filter.Status = append(filter.Status, st)
 					}
-				case strings.HasPrefix(clause, "t.state !="):
-					st := strings.Trim(clause[12:], " \"")
+				case strings.HasPrefix(sub, "t.state !="):
+					st := strings.Trim(sub[12:], " \"")
 					st = strings.ToLower(st)
 					if st != "" {
 						exclude := st
@@ -241,8 +246,8 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							return out
 						})
 					}
-				case strings.Contains(clause, "not table.includes(t.itags,"):
-					tag := extractSLIQString(clause, "not table.includes(t.itags,")
+				case strings.Contains(sub, "not table.includes(t.itags,"):
+					tag := extractSLIQString(sub, "not table.includes(t.itags,")
 					if tag != "" {
 						exclude := tag
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
@@ -262,38 +267,38 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							return out
 						})
 					}
-				case strings.Contains(clause, "table.includes(t.itags,"):
-					tag := extractSLIQString(clause, "table.includes(t.itags,")
+				case strings.Contains(sub, "table.includes(t.itags,"):
+					tag := extractSLIQString(sub, "table.includes(t.itags,")
 					if tag != "" {
 						filter.Tags = append(filter.Tags, tag)
 					}
-				case strings.Contains(clause, "not t.page:startsWith("):
-					prefix := extractSLIQString(clause, "not t.page:startsWith(")
+				case strings.Contains(sub, "not t.page:startsWith("):
+					prefix := extractSLIQString(sub, "not t.page:startsWith(")
 					if prefix != "" {
 						pageExcludes = append(pageExcludes, prefix)
 					}
-				case strings.Contains(clause, "t.page:startsWith("):
-					prefix := extractSLIQString(clause, "t.page:startsWith(")
+				case strings.Contains(sub, "t.page:startsWith("):
+					prefix := extractSLIQString(sub, "t.page:startsWith(")
 					if prefix != "" {
 						pageIncludes = append(pageIncludes, prefix)
 					}
-				case strings.HasPrefix(clause, "t.page =="):
-					page := strings.Trim(clause[10:], " \"")
+				case strings.HasPrefix(sub, "t.page =="):
+					page := strings.Trim(sub[10:], " \"")
 					if page != "" {
 						filter.Page = page
 					}
-				case strings.HasPrefix(clause, "t.priority =="):
-					pri := strings.Trim(clause[14:], " \"")
+				case strings.HasPrefix(sub, "t.priority =="):
+					pri := strings.Trim(sub[14:], " \"")
 					if pri != "" {
 						filter.Priority = strings.ToLower(pri)
 					}
-				case strings.HasPrefix(clause, "t.name =="):
-					name := strings.Trim(clause[10:], " \"")
+				case strings.HasPrefix(sub, "t.name =="):
+					name := strings.Trim(sub[10:], " \"")
 					if name != "" {
 						filter.Name = name
 					}
-				case strings.Contains(clause, "t.scheduled:find"):
-					dateStr := extractSLIQString(clause, "t.scheduled:find")
+				case strings.Contains(sub, "t.scheduled:find"):
+					dateStr := extractSLIQString(sub, "t.scheduled:find")
 					if dateStr != "" {
 						today := "[[Journal/" + dateStr + "]]"
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
@@ -306,8 +311,8 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							return out
 						})
 					}
-				case strings.Contains(clause, "t.scheduled") && strings.Contains(clause, "<"):
-					dateVal := extractQuotedValue(clause)
+				case strings.Contains(sub, "t.scheduled") && strings.Contains(sub, "<"):
+					dateVal := extractQuotedValue(sub)
 					if dateVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -319,8 +324,8 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							return out
 						})
 					}
-				case strings.Contains(clause, "t.due") && strings.Contains(clause, "<"):
-					dueVal := extractQuotedValue(clause)
+				case strings.Contains(sub, "t.due") && strings.Contains(sub, "<"):
+					dueVal := extractQuotedValue(sub)
 					if dueVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -332,8 +337,8 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							return out
 						})
 					}
-				case strings.Contains(clause, "t.due") && strings.Contains(clause, ">"):
-					dueVal := extractQuotedValue(clause)
+				case strings.Contains(sub, "t.due") && strings.Contains(sub, ">"):
+					dueVal := extractQuotedValue(sub)
 					if dueVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -345,10 +350,10 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							return out
 						})
 					}
-				case strings.HasPrefix(clause, "t.extra_attrs."):
-					extraAttrFilter(clause, &clientFilters)
-				case strings.Contains(clause, "!=") && strings.Contains(clause, "nil"):
-					parts := strings.SplitN(clause, "!=", 2)
+				case strings.HasPrefix(sub, "t.extra_attrs."):
+					extraAttrFilter(sub, &clientFilters)
+				case strings.Contains(sub, "!=") && strings.Contains(sub, "nil"):
+					parts := strings.SplitN(sub, "!=", 2)
 					if len(parts) == 2 {
 						field := strings.TrimSpace(parts[0])
 						field = strings.TrimPrefix(field, "t.")
@@ -364,8 +369,8 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							})
 						}
 					}
-				case strings.Contains(clause, "==") && strings.Contains(clause, "nil"):
-					parts := strings.SplitN(clause, "==", 2)
+				case strings.Contains(sub, "==") && strings.Contains(sub, "nil"):
+					parts := strings.SplitN(sub, "==", 2)
 					if len(parts) == 2 {
 						field := strings.TrimSpace(parts[0])
 						field = strings.TrimPrefix(field, "t.")
@@ -384,8 +389,8 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 				// Catch-all for t.<field> == "<value>" — custom attrs accessed directly
 				// e.g. p.project == "alpha" (valid SilverBullet SLIQ doesn't nest
 				// custom attrs under extra_attrs). Must be after all known-field cases.
-				case strings.HasPrefix(clause, "t.") && strings.Contains(clause, "=="):
-					field, val, ok := parseAttrEquality(clause)
+				case strings.HasPrefix(sub, "t.") && strings.Contains(sub, "=="):
+					field, val, ok := parseAttrEquality(sub)
 					if ok && val != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -401,6 +406,7 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 					}
 				}
 			}
+		}
 		}
 
 		if strings.HasPrefix(line, "order by ") {
