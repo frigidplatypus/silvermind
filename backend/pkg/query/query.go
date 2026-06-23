@@ -37,6 +37,11 @@ func (q *Query) Execute(filter task.TaskFilter) ([]task.Task, error) {
 	normalizePositions(tasks)
 	tasks = applyHardExclusions(tasks)
 
+	// Filter by multiple statuses client-side (single status is handled by API)
+	if len(filter.Status) > 1 {
+		tasks = filterByStatuses(tasks, filter.Status)
+	}
+
 	if filter.Overdue {
 		tasks = filterOverdue(tasks)
 	}
@@ -117,29 +122,24 @@ func FromRuntime(rt client.RuntimeTask) task.Task {
 }
 
 func parseExtraAttrs(rt client.RuntimeTask) map[string]string {
-	data, err := json.Marshal(rt)
-	if err != nil {
+	if rt.Extra == nil {
 		return nil
 	}
 
-	var raw map[string]interface{}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil
-	}
-
-	attrs := make(map[string]string)
+	// Only skip base RuntimeTask struct fields; everything else is an extra attr
 	known := map[string]bool{
 		"ref": true, "tag": true, "name": true,
 		"done": true, "state": true, "page": true, "pos": true,
 		"tags": true, "itags": true, "parent": true,
-		"dependsOn": true, "recur": true,
 	}
 
-	for k, v := range raw {
+	attrs := make(map[string]string)
+	for k, v := range rt.Extra {
 		if known[k] {
 			continue
 		}
-		if s, ok := v.(string); ok {
+		var s string
+		if err := json.Unmarshal(v, &s); err == nil {
 			attrs[k] = s
 		}
 	}
@@ -150,8 +150,9 @@ func parseExtraAttrs(rt client.RuntimeTask) map[string]string {
 func filterToQueryParams(f task.TaskFilter) map[string]string {
 	params := make(map[string]string)
 
-	for _, s := range f.Status {
-		params["where[state]"] = s // last wins if multiple statuses are given
+	// Only send single status to API; multi-status is filtered client-side
+	if len(f.Status) == 1 {
+		params["where[state]"] = f.Status[0]
 	}
 
 	if f.Page != "" {
@@ -235,6 +236,19 @@ func filterByTags(tasks []task.Task, requiredTags []string) []task.Task {
 	for _, t := range tasks {
 		if hasAllTags(t.Tags, requiredTags) {
 			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func filterByStatuses(tasks []task.Task, statuses []string) []task.Task {
+	var result []task.Task
+	for _, t := range tasks {
+		for _, s := range statuses {
+			if (s == "x" && t.Done) || strings.EqualFold(t.Status, s) {
+				result = append(result, t)
+				break
+			}
 		}
 	}
 	return result

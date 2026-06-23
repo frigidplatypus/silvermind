@@ -20,6 +20,35 @@ type RuntimeTask struct {
 	Parent string   `json:"parent,omitempty"`
 	Tags   []string `json:"tags,omitempty"`
 	ITags  []string `json:"itags,omitempty"`
+	Extra  map[string]json.RawMessage `json:"-"`
+}
+
+// rawTask captures all JSON fields including unknown ones for extra_attrs extraction
+type rawTask struct {
+	RuntimeTask
+	Extra map[string]json.RawMessage `json:"-"`
+}
+
+func (r *rawTask) UnmarshalJSON(data []byte) error {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
+	known := map[string]bool{
+		"ref": true, "tag": true, "name": true, "done": true,
+		"state": true, "page": true, "pos": true,
+		"parent": true, "tags": true, "itags": true,
+	}
+
+	r.Extra = make(map[string]json.RawMessage)
+	for k, v := range m {
+		if !known[k] {
+			r.Extra[k] = v
+		}
+	}
+
+	return json.Unmarshal(data, &r.RuntimeTask)
 }
 
 func (c *Client) QueryTasks(params map[string]string) ([]RuntimeTask, error) {
@@ -69,9 +98,16 @@ func (c *Client) QueryTasks(params map[string]string) ([]RuntimeTask, error) {
 		}
 	}
 
-	var tasks []RuntimeTask
-	if err := json.Unmarshal(body, &tasks); err != nil {
+	// Unmarshal into rawTask to capture extra fields, then convert
+	var rawTasks []rawTask
+	if err := json.Unmarshal(body, &rawTasks); err != nil {
 		return nil, fmt.Errorf("failed to parse task response: %w", err)
+	}
+
+	tasks := make([]RuntimeTask, len(rawTasks))
+	for i, r := range rawTasks {
+		tasks[i] = r.RuntimeTask
+		tasks[i].Extra = r.Extra
 	}
 
 	return tasks, nil

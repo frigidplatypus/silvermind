@@ -84,11 +84,6 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 					if st == "waiting" || st == "x" || st == "maybe" || strings.EqualFold(st, "someday") {
 						filter.Status = append(filter.Status, st)
 					}
-				case strings.Contains(clause, "table.includes(t.itags,"):
-					tag := extractSLIQString(clause, "table.includes(t.itags,")
-					if tag != "" {
-						filter.Tags = append(filter.Tags, tag)
-					}
 				case strings.Contains(clause, "not table.includes(t.itags,"):
 					tag := extractSLIQString(clause, "not table.includes(t.itags,")
 					if tag != "" {
@@ -109,6 +104,11 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							}
 							return out
 						})
+					}
+				case strings.Contains(clause, "table.includes(t.itags,"):
+					tag := extractSLIQString(clause, "table.includes(t.itags,")
+					if tag != "" {
+						filter.Tags = append(filter.Tags, tag)
 					}
 				case strings.Contains(clause, "not t.page:startsWith("):
 					prefix := extractSLIQString(clause, "not t.page:startsWith(")
@@ -150,7 +150,7 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 						})
 					}
 				case strings.Contains(clause, "t.scheduled") && strings.Contains(clause, "<"):
-					dateVal := extractSLIQString(clause, "t.scheduled")
+					dateVal := extractQuotedValue(clause)
 					if dateVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -163,7 +163,7 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 						})
 					}
 				case strings.Contains(clause, "t.due") && strings.Contains(clause, "<"):
-					dueVal := extractSLIQString(clause, "t.due")
+					dueVal := extractQuotedValue(clause)
 					if dueVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -176,7 +176,7 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 						})
 					}
 				case strings.Contains(clause, "t.due") && strings.Contains(clause, ">"):
-					dueVal := extractSLIQString(clause, "t.due")
+					dueVal := extractQuotedValue(clause)
 					if dueVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
@@ -285,14 +285,14 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 		})
 	}
 
-	hasDone := len(filter.Status) == 1 && filter.Status[0] == "x"
+	hasStatusFilter := len(filter.Status) > 0
 
 	postFilter := func(tasks []task.Task) []task.Task {
 		for _, f := range clientFilters {
 			tasks = f(tasks)
 		}
-		if !hasDone {
-			tasks = excludeDoneAndWaiting(tasks)
+		if !hasStatusFilter {
+			tasks = excludeDone(tasks)
 		}
 		return tasks
 	}
@@ -305,6 +305,17 @@ func excludeDoneAndWaiting(tasks []task.Task) []task.Task {
 	for _, tk := range tasks {
 		if tk.Status == "x" || strings.EqualFold(tk.Status, "done") ||
 			strings.EqualFold(tk.Status, "waiting") {
+			continue
+		}
+		out = append(out, tk)
+	}
+	return out
+}
+
+func excludeDone(tasks []task.Task) []task.Task {
+	out := make([]task.Task, 0, len(tasks))
+	for _, tk := range tasks {
+		if tk.Done || tk.Status == "x" || strings.EqualFold(tk.Status, "done") {
 			continue
 		}
 		out = append(out, tk)
@@ -326,6 +337,19 @@ func extractSLIQString(line string, after string) string {
 	rest = strings.TrimRight(rest, " )\t")
 	rest = strings.Trim(rest, "\"")
 	return rest
+}
+
+func extractQuotedValue(s string) string {
+	idx := strings.Index(s, "\"")
+	if idx < 0 {
+		return ""
+	}
+	rest := s[idx+1:]
+	idx2 := strings.Index(rest, "\"")
+	if idx2 < 0 {
+		return ""
+	}
+	return rest[:idx2]
 }
 
 func findMatchLine(lines []string, content string, match string, startFrom int) int {
