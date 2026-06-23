@@ -330,6 +330,24 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 							})
 						}
 					}
+				// Catch-all for t.<field> == "<value>" — custom attrs accessed directly
+				// e.g. p.project == "alpha" (valid SilverBullet SLIQ doesn't nest
+				// custom attrs under extra_attrs). Must be after all known-field cases.
+				case strings.HasPrefix(clause, "t.") && strings.Contains(clause, "=="):
+					field, val, ok := parseAttrEquality(clause)
+					if ok && val != "" {
+						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
+							var out []task.Task
+							for _, t := range tasks {
+								if t.ExtraAttrs != nil {
+									if v, exists := t.ExtraAttrs[field]; exists && v == val {
+										out = append(out, t)
+									}
+								}
+							}
+							return out
+						})
+					}
 				}
 			}
 		}
@@ -443,6 +461,20 @@ func extractSLIQString(line string, after string) string {
 	rest = strings.TrimRight(rest, " )\t")
 	rest = strings.Trim(rest, "\"")
 	return rest
+}
+
+// parseAttrEquality extracts field name and value from a clause like
+// t.project == "alpha" → field="project", val="alpha", ok=true.
+// Only returns ok for clauses of the form t.<field> == "<value>".
+func parseAttrEquality(clause string) (field, val string, ok bool) {
+	field = strings.TrimPrefix(clause, "t.")
+	if idx := strings.Index(field, "=="); idx > 0 {
+		key := strings.TrimSpace(field[:idx])
+		rest := strings.TrimSpace(field[idx+2:])
+		val = strings.Trim(rest, "\"'")
+		return key, val, true
+	}
+	return "", "", false
 }
 
 func extractQuotedValue(s string) string {
