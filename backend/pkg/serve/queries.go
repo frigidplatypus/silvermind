@@ -1,11 +1,13 @@
 package serve
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/justin/sbtask/pkg/client"
 	"github.com/justin/sbtask/pkg/query"
 )
 
@@ -52,14 +54,19 @@ func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 		tag = queryPageTag
 	}
 
-	slog.Info("searching for query pages", "tag", tag, "space", c.BaseURL())
-	pages, err := c.FindPagesByTag(tag)
-	if err != nil {
-		slog.Error("queries FindPagesByTag error", "error", err)
-		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
-		return
+	// Try the Library/Silvermind/Queries directory page first (authoritative source)
+	pages, err := findQueryPagesFromDirectory(c)
+	if err != nil || len(pages) == 0 {
+		// Fall back to tag-based discovery
+		slog.Info("directory page lookup failed, falling back to tag", "error", err, "tag", tag)
+		pages, err = c.FindPagesByTag(tag)
+		if err != nil {
+			slog.Error("queries FindPagesByTag error", "error", err)
+			writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
+			return
+		}
 	}
-	slog.Info("found query pages", "count", len(pages), "tag", tag)
+	slog.Info("found query pages", "count", len(pages))
 
 	result := make([]QueryPageInfo, 0, len(pages))
 	for _, page := range pages {
@@ -86,6 +93,57 @@ func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeOK(w, result)
+}
+
+// findQueryPagesFromDirectory reads Library/Silvermind/Queries, extracts its
+// SLIQ query block, executes it against the SilverBullet runtime, and returns
+// the page names (one per discovered query page).
+func findQueryPagesFromDirectory(c *client.Client) ([]string, error) {
+	const dirPage = "Library/Silvermind/Queries"
+
+	content, _, err := c.ReadPage(dirPage)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", dirPage, err)
+	}
+
+	blocks := query.ExtractQueryBlocks(content)
+	if len(blocks) == 0 {
+		return nil, fmt.Errorf("no query blocks in %s", dirPage)
+	}
+
+	// Strip select lines — we need raw page objects, not rendered HTML
+	sliq := stripSelectLines(blocks[0].SLIQ)
+
+	luaScript := fmt.Sprintf("return query[[\n%s\n]]", sliq)
+	raw, err := c.ExecuteLua(luaScript)
+	if err != nil {
+		return nil, fmt.Errorf("executing directory query: %w", err)
+	}
+
+	var result []map[string]interface{}
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("parsing directory query result: %w", err)
+	}
+
+	var names []string
+	for _, item := range result {
+		if name, ok := item["name"].(string); ok && name != "" {
+			names = append(names, name)
+		}
+	}
+	return names, nil
+}
+
+func stripSelectLines(sliq string) string {
+	lines := strings.Split(sliq, "\n")
+	var out []string
+	for _, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "select ") {
+			continue
+		}
+		out = append(out, line)
+	}
+	return strings.Join(out, "\n")
 }
 
 func (s *Server) handleQueryBlockList(w http.ResponseWriter, r *http.Request) {
