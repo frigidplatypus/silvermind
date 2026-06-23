@@ -21,6 +21,7 @@
   import Toast from './Toast.svelte';
   import { showError, showSuccess } from '$lib/stores/toast.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
+  import { setBuilderEdit } from '$lib/stores/builder-edit.svelte';
   import GlobalPage from '../../routes/global/+page.svelte';
   import BuilderPage from '../../routes/builder/+page.svelte';
   import { getGlobalTasks, loadGlobalView } from '$lib/stores/global.svelte';
@@ -140,6 +141,14 @@
 
   function handleQueryTaskTap(task: any) {
     setSelectedTaskId(`${task.page}/${task.position}`);
+  }
+
+  function handleEditQuery() {
+    const parts = activeView.split(':');
+    const page = parts[1];
+    const title = queryTitle ?? '';
+    setBuilderEdit(page, title);
+    onNavigate('builder');
   }
 
   function handleEdit() {
@@ -320,9 +329,6 @@
     <ServiceErrorBanner />
     <div class="desktop-top-bar">
       <h2 class="top-bar-title">{viewTitle}</h2>
-      <button class="gear-btn" onclick={() => onNavigate(activeView === 'settings' ? 'inbox' : 'settings')} aria-label="Settings">
-        <Icon name="settings" />
-      </button>
     </div>
     <SearchBar />
     {#if getIsActive()}
@@ -341,6 +347,9 @@
       <div class="query-header">
         <Icon name="search" size="1rem" />
         <span class="query-title">{queryTitle ?? 'Query'}</span>
+        <button class="query-edit-btn" onclick={handleEditQuery} aria-label="Edit query">
+          <Icon name="edit-3" size="0.875rem" />
+        </button>
       </div>
       <SplitPane showRight={!!selectedTask}>
         {#snippet left()}
@@ -427,20 +436,6 @@
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
   }
-  .gear-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: var(--radius-md);
-    color: var(--color-text-secondary);
-    flex-shrink: 0;
-  }
-  .gear-btn:hover {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text);
-  }
   .query-header {
     display: flex;
     align-items: center;
@@ -450,6 +445,21 @@
     border-bottom: 1px solid var(--color-separator);
     font-size: var(--font-size-sm);
     font-weight: 600;
+    color: var(--color-accent);
+  }
+  .query-edit-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-md);
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+  }
+  .query-edit-btn:hover {
+    background: var(--color-bg-tertiary);
     color: var(--color-accent);
   }
   .query-title {

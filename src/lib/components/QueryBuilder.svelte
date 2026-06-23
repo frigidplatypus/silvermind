@@ -3,6 +3,8 @@
   import { saveQuery, testQuery } from '$lib/api/queries';
   import { loadQueryPages } from '$lib/stores/queries.svelte';
   import { goto } from '$lib/router';
+  import { getBuilderEdit, clearBuilderEdit } from '$lib/stores/builder-edit.svelte';
+  import { onMount } from 'svelte';
 
   let page = $state('');
   let title = $state('');
@@ -10,6 +12,16 @@
   let saving = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
+
+  onMount(() => {
+    const edit = getBuilderEdit();
+    if (edit.page) {
+      page = edit.page;
+      title = edit.title;
+      create = false;
+      clearBuilderEdit();
+    }
+  });
 
   let statuses = $state<string[]>([]);
   let priority = $state('');
