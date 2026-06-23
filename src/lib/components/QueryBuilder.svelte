@@ -20,26 +20,31 @@
   let rangeStart = $state('');
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
-  let dateToken = $state<string | null>(null);
-
-  const datePresets: { label: string; token: string }[] = [
-    { label: 'Today', token: '@today' },
-    { label: 'Tomorrow', token: '@tomorrow' },
-    { label: 'Overdue', token: '@-1' },
-    { label: 'This week', token: '@week_start..@week_end' },
-    { label: 'Next week', token: '@+7..@+13' },
-    { label: 'This month', token: '@month_start..@month_end' },
+  const datePresets: { label: string; sliq: string }[] = [
+    { label: 'Today',      sliq: `t.${dateField} == "@today"` },
+    { label: 'Tomorrow',   sliq: `t.${dateField} == "@tomorrow"` },
+    { label: 'Overdue',    sliq: `t.${dateField} < "@today"` },
+    { label: 'This week',  sliq: `t.${dateField} >= "@week_start" and t.${dateField} <= "@week_end"` },
+    { label: 'Next week',  sliq: `t.${dateField} >= "@+7" and t.${dateField} <= "@+13"` },
+    { label: 'This month', sliq: `t.${dateField} >= "@month_start" and t.${dateField} <= "@month_end"` },
   ];
+  let activePresetLabel = $state<string | null>(null);
 
-  function applyPreset(token: string) {
-    dateToken = token;
+  function presetSLIQ(): string {
+    if (!activePresetLabel) return '';
+    const p = datePresets.find(x => x.label === activePresetLabel);
+    return p ? p.sliq : '';
+  }
+
+  function applyPreset(label: string) {
+    activePresetLabel = label;
     rangeStart = '';
     rangeEnd = '';
     hasDateFilter = 'none';
   }
 
   function clearPreset() {
-    dateToken = null;
+    activePresetLabel = null;
   }
   let includeTags = $state('');
   let excludeTags = $state('');
@@ -102,23 +107,14 @@
       }
     }
 
-    if (dateToken) {
-      if (dateToken.includes('..')) {
-        const [start, end] = dateToken.split('..');
-        {
+    if (activePresetLabel) {
+      const sliq = presetSLIQ();
+      if (sliq) {
+        const clauses = sliq.split(' and ');
+        for (const clause of clauses) {
           const prefix = lines.length === 0 ? 'where' : 'and';
-          lines.push(`${prefix} t.${dateField} >= "${start}"`);
+          lines.push(`${prefix} ${clause}`);
         }
-        {
-          const prefix = lines.length === 0 ? 'where' : 'and';
-          lines.push(`${prefix} t.${dateField} <= "${end}"`);
-        }
-      } else if (dateToken.startsWith('@-')) {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.${dateField} < "${dateToken}"`);
-      } else {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.${dateField} == "${dateToken}"`);
       }
     } else {
       if (hasDateFilter === 'has') {
@@ -173,7 +169,29 @@
     return lines.join('\n');
   }
 
+  function resolveDates(s: string): string {
+    const now = new Date();
+    const fmt = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const today = fmt(now);
+    const tomorrow = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+    const wd = (now.getDay() + 6) % 7;
+    const weekStart = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() - wd));
+    const weekEnd = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6 - wd));
+    const monthStart = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
+    const monthEnd = fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
+    s = s.replaceAll('@today', today);
+    s = s.replaceAll('@tomorrow', tomorrow);
+    s = s.replaceAll('@week_start', weekStart);
+    s = s.replaceAll('@week_end', weekEnd);
+    s = s.replaceAll('@month_start', monthStart);
+    s = s.replaceAll('@month_end', monthEnd);
+    s = s.replace(/@([+-]\d+)/g, (_, n) => fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() + parseInt(n))));
+    return s;
+  }
+
   let sliqPreview = $derived(buildSLIQ());
+  let resolvedPreview = $derived(resolveDates(sliqPreview));
   let hasFilters = $derived(sliqPreview.trim().length > 0);
 
   async function handleTest() {
@@ -232,7 +250,7 @@
     rangeStart = '';
     rangeEnd = '';
     hasDateFilter = 'none';
-    dateToken = null;
+    activePresetLabel = null;
     includeTags = '';
     excludeTags = '';
     extraAttrs = [];
@@ -327,9 +345,9 @@
       {#if dateMode === 'relative'}
         <div class="preset-group">
           {#each datePresets as p}
-            <button class="toggle-btn" class:active={dateToken === p.token} onclick={() => applyPreset(p.token)}>{p.label}</button>
+            <button class="toggle-btn" class:active={activePresetLabel === p.label} onclick={() => applyPreset(p.label)}>{p.label}</button>
           {/each}
-          {#if dateToken}
+          {#if activePresetLabel}
             <button class="toggle-btn" onclick={clearPreset}>Clear</button>
           {/if}
         </div>
@@ -413,7 +431,7 @@
         {testing ? 'Testing…' : 'Test'}
       </button>
     </div>
-    <pre class="sliq-preview">{sliqPreview || '(no filters selected)'}</pre>
+    <pre class="sliq-preview">{resolvedPreview || '(no filters selected)'}</pre>
     {#if testResult}
       <div class="test-result" role="status">
         <span class="test-count">{testResult.count} task{testResult.count === 1 ? '' : 's'} found</span>
