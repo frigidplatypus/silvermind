@@ -10,6 +10,7 @@ export interface QueryPage {
 export interface QueryBlockInfo {
   title: string;
   number: number;
+  sliq: string;
 }
 
 export interface QueryExecuteResult {

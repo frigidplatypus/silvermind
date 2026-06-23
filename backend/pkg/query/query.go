@@ -80,11 +80,7 @@ func FromRuntime(rt client.RuntimeTask) task.Task {
 		Status:   strings.ToLower(strings.TrimSpace(rt.State)),
 		Done:     rt.Done,
 		Parent:   rt.Parent,
-		Tags:     rt.ITags,
-	}
-
-	if len(t.Tags) == 0 {
-		t.Tags = rt.Tags
+		Tags:     append(rt.Tags, rt.ITags...),
 	}
 
 	extra := parseExtraAttrs(rt)
@@ -169,6 +165,10 @@ func filterToQueryParams(f task.TaskFilter) map[string]string {
 
 	if f.Priority != "" {
 		params["where[priority]"] = f.Priority
+	}
+
+	if len(f.Tags) > 0 {
+		params["where[tags][contains]"] = f.Tags[0]
 	}
 
 	if f.TextSearch != "" {

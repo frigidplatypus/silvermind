@@ -15,6 +15,7 @@ const queryPageTag = "silvermind/queries"
 type QueryBlockInfo struct {
 	Title  string `json:"title"`
 	Number int    `json:"number"`
+	SLIQ   string `json:"sliq"`
 }
 
 // QueryPageInfo describes a page that contains query blocks.
@@ -78,6 +79,7 @@ func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 			info.Blocks = append(info.Blocks, QueryBlockInfo{
 				Title:  b.Title,
 				Number: b.Number,
+				SLIQ:   b.SLIQ,
 			})
 		}
 		result = append(result, info)
@@ -115,7 +117,7 @@ func (s *Server) handleQueryBlockList(w http.ResponseWriter, r *http.Request) {
 
 	infos := make([]QueryBlockInfo, len(blocks))
 	for i, b := range blocks {
-		infos[i] = QueryBlockInfo{Title: b.Title, Number: b.Number}
+		infos[i] = QueryBlockInfo{Title: b.Title, Number: b.Number, SLIQ: b.SLIQ}
 	}
 	writeOK(w, infos)
 }

@@ -21,6 +21,7 @@
       title = edit.title;
       create = false;
       editBlockNumber = edit.blockNumber;
+      if (edit.sliq) prefillFromSLIQ(edit.sliq);
       clearBuilderEdit();
     }
   });
@@ -51,6 +52,112 @@
     statusIncludes = nextIncludes;
     statusExcludes = nextExcludes;
   }
+
+  function extractQuoted(s: string, after: string): string | null {
+    const idx = s.indexOf(after);
+    if (idx < 0) return null;
+    let rest = s.slice(idx + after.length).trimStart();
+    if (rest.startsWith('"')) {
+      rest = rest.slice(1);
+      const end = rest.indexOf('"');
+      if (end >= 0) return rest.slice(0, end);
+    }
+    return rest.replace(/[)"].*$/, '').trim() || null;
+  }
+
+  function prefillFromSLIQ(sliq: string) {
+    const lines = sliq.split('\n');
+    for (let line of lines) {
+      line = line.trim();
+      if (!line || line.startsWith('from ') || line.startsWith('select ')) continue;
+
+      line = line.replace(/^(where|and)\s+/, '');
+
+      const clauses = line.split(' or ');
+      for (let clause of clauses) {
+        clause = clause.trim();
+
+        if (clause === 'p.done') {
+          statusIncludes = new Set([...statusIncludes, 'done']);
+        } else if (clause === 'not p.done') {
+          statusExcludes = new Set([...statusExcludes, 'done']);
+        } else if (clause.startsWith('p.state == ')) {
+          const st = extractQuoted(clause, 'p.state == ');
+          if (st) statusIncludes = new Set([...statusIncludes, st]);
+        } else if (clause.startsWith('p.state != ')) {
+          const st = extractQuoted(clause, 'p.state != ');
+          if (st) statusExcludes = new Set([...statusExcludes, st]);
+        } else if (clause.startsWith('p.priority == ')) {
+          const pri = extractQuoted(clause, 'p.priority == ');
+          if (pri && (availablePriorities as string[]).includes(pri)) priority = pri;
+        } else if (clause.startsWith('table.includes(p.tags, ')) {
+          const tag = extractQuoted(clause, 'table.includes(p.tags, ');
+          if (tag) includeTags = includeTags ? `${includeTags}, ${tag}` : tag;
+        } else if (clause.startsWith('not table.includes(p.tags, ')) {
+          const tag = extractQuoted(clause, 'not table.includes(p.tags, ');
+          if (tag) excludeTags = excludeTags ? `${excludeTags}, ${tag}` : tag;
+        } else if (clause.startsWith('not p.page:startsWith(')) {
+          pageFilterType = 'not-starts';
+          pageFilterValue = extractQuoted(clause, 'not p.page:startsWith(') ?? '';
+        } else if (clause.startsWith('p.page:startsWith(')) {
+          pageFilterType = 'starts';
+          pageFilterValue = extractQuoted(clause, 'p.page:startsWith(') ?? '';
+        } else if (clause.startsWith('p.page == ')) {
+          pageFilterType = 'equals';
+          pageFilterValue = extractQuoted(clause, 'p.page == ') ?? '';
+        } else if (/^p\.\w+\s*==\s*"/.test(clause)) {
+          const m = clause.match(/^p\.(\w+)\s*==\s*"(.*)"$/);
+          if (m) extraAttrs = [...extraAttrs, { key: m[1], value: m[2] }];
+        }
+      }
+
+      if (line.includes('p.due != nil') || line.includes('p.scheduled != nil')) {
+        hasDateFilter = 'has';
+      } else if (line.includes('p.due == nil') || line.includes('p.scheduled == nil')) {
+        hasDateFilter = 'missing';
+      }
+
+      if (line.includes('p.scheduled')) dateField = 'scheduled';
+
+      if (!activePresetLabel) {
+        if (line.includes('"@today"') && line.includes('==')) {
+          activePresetLabel = 'Today';
+        } else if (line.includes('"@tomorrow"') && line.includes('==')) {
+          activePresetLabel = 'Tomorrow';
+        } else if (line.includes('"@today"') && line.includes('<')) {
+          activePresetLabel = 'Overdue';
+        } else if (line.includes('"@week_start"')) {
+          activePresetLabel = 'This week';
+        } else if (line.includes('"@+7"')) {
+          activePresetLabel = 'Next week';
+        } else if (line.includes('"@month_start"')) {
+          activePresetLabel = 'This month';
+        }
+      }
+
+      if (!activePresetLabel) {
+        const prefix = line.includes('p.scheduled') ? 'p.scheduled' : 'p.due';
+        if (line.includes(`${prefix} > "`)) rangeStart = extractQuoted(line, `${prefix} > `) ?? '';
+        if (line.includes(`${prefix} < "`)) rangeEnd = extractQuoted(line, `${prefix} < `) ?? '';
+      }
+
+      if (line.startsWith('order by ')) {
+        const rest = line.slice('order by '.length).trim();
+        const parts = rest.split(/\s+/);
+        const field = parts[0].replace(/^p\./, '').replace(',', '').trim();
+        if ((sortOptions as {value:string}[]).some(o => o.value === field)) {
+          sortBy = field;
+          sortOrder = parts[1] === 'desc' ? 'desc' : 'asc';
+        }
+      }
+
+      if (line.startsWith('limit ')) {
+        const n = parseInt(line.slice('limit '.length));
+        if (!isNaN(n) && n > 0) limit = n;
+      }
+    }
+  }
+
   let pageFilterType = $state<'equals' | 'starts' | 'not-starts'>('equals');
   let pageFilterValue = $state('');
   let dateField = $state<'due' | 'scheduled'>('due');

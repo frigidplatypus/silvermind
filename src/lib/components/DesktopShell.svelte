@@ -15,6 +15,7 @@
   import { getTasks, loadInbox, loadToday } from '$lib/stores/tasks.svelte';
   import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
+  import { getQueryBlocks } from '$lib/api/queries';
   import type { Task } from '$lib/types/task';
   import SearchBar from './SearchBar.svelte';
   import ServiceErrorBanner from './ServiceErrorBanner.svelte';
@@ -143,12 +144,22 @@
     setSelectedTaskId(`${task.page}/${task.position}`);
   }
 
-  function handleEditQuery() {
+  async function handleEditQuery() {
     const parts = activeView.split(':');
     const page = parts[1];
     const blockNumber = parts[2] ? parseInt(parts[2]) : 0;
     const title = queryTitle ?? '';
-    setBuilderEdit(page, title, blockNumber);
+
+    let sliq: string | undefined;
+    if (blockNumber > 0) {
+      try {
+        const blocks = await getQueryBlocks(page);
+        const block = blocks.find(b => b.number === blockNumber);
+        sliq = block?.sliq;
+      } catch { /* pre-fill without SLIQ if fetch fails */ }
+    }
+
+    setBuilderEdit(page, title, blockNumber, sliq);
     onNavigate('builder');
   }
 
