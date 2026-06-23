@@ -883,8 +883,8 @@ func validatePageName(page string) error {
 	if strings.Contains(page, "..") {
 		return fmt.Errorf("page name must not contain '..'")
 	}
-	if strings.ContainsAny(page, "/\\") {
-		return fmt.Errorf("page name must not contain path separators")
+	if strings.Contains(page, "\\") {
+		return fmt.Errorf("page name must not contain backslash")
 	}
 	return nil
 }

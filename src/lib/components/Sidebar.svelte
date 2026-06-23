@@ -11,9 +11,11 @@
   let {
     activeView,
     onNavigate,
+    width = 220,
   }: {
     activeView: string;
     onNavigate: (view: string) => void;
+    width?: number;
   } = $props();
 
   let spaceOpen = $state(false);
@@ -72,7 +74,7 @@
   }
 </script>
 
-<nav class="sidebar" role="navigation" aria-label="Main navigation">
+<nav class="sidebar" class:collapsed={width === 0} style="width: {width}px" role="navigation" aria-label="Main navigation">
   <div class="sidebar-brand"><Icon name="layers" size="1.25rem" /> Silvermind</div>
 
   <div class="sidebar-section-label">Space</div>
@@ -145,7 +147,14 @@
           onclick={() => onNavigate(`queries:${qp.page}`)}
         >
           <Icon name="search" />
-          <span class="query-page-name">{qp.page.split('/').pop()}</span>
+          {#if qp.page.includes('/')}
+            <span class="query-page-name">
+              <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
+              {qp.page.split('/').pop()}
+            </span>
+          {:else}
+            <span class="query-page-name">{qp.page}</span>
+          {/if}
         </button>
         {#each qp.blocks as block}
           <button
@@ -180,8 +189,6 @@
 
 <style>
   .sidebar {
-    width: 220px;
-    min-width: 220px;
     background: var(--color-bg-secondary);
     border-right: 1px solid var(--color-separator);
     display: flex;
@@ -191,6 +198,12 @@
     height: 100%;
     position: relative;
     z-index: var(--z-base);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sidebar.collapsed {
+    padding: 0;
+    border-right: none;
   }
   .sidebar-brand {
     display: flex;
@@ -314,6 +327,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .query-page-folder {
+    color: var(--color-text-tertiary);
+    font-weight: 400;
+    font-size: var(--font-size-xs);
   }
   .sidebar-item-child {
     padding-left: 2rem;

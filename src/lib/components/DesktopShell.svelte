@@ -36,6 +36,62 @@
   let prevView = $state(activeView);
   let editing = $state(false);
 
+  let sidebarWidth = $state(loadSidebarWidth());
+  let sidebarDragging = $state(false);
+  let sidebarDragStartX = 0;
+  let sidebarDragStartWidth = 0;
+
+  function loadSidebarWidth(): number {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-width');
+      if (saved !== null) {
+        const val = parseInt(saved, 10);
+        if (!isNaN(val)) return Math.max(0, val);
+      }
+    }
+    return 220;
+  }
+
+  function saveSidebarWidth(w: number) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('sidebar-width', String(w));
+    }
+  }
+
+  function maxSidebarWidth(): number {
+    return Math.floor(window.innerWidth * 0.4);
+  }
+
+  function onSidebarDown(e: PointerEvent) {
+    sidebarDragging = true;
+    sidebarDragStartX = e.clientX;
+    sidebarDragStartWidth = sidebarWidth;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onSidebarMove(e: PointerEvent) {
+    if (!sidebarDragging) return;
+    const dx = e.clientX - sidebarDragStartX;
+    sidebarWidth = Math.max(0, Math.min(maxSidebarWidth(), sidebarDragStartWidth + dx));
+  }
+
+  function onSidebarUp() {
+    sidebarDragging = false;
+    saveSidebarWidth(sidebarWidth);
+  }
+
+  function onSidebarKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      sidebarWidth = Math.max(0, sidebarWidth - 20);
+      saveSidebarWidth(sidebarWidth);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      sidebarWidth = Math.min(maxSidebarWidth(), sidebarWidth + 20);
+      saveSidebarWidth(sidebarWidth);
+    }
+  }
+
   $effect(() => {
     if (activeView !== prevView) {
       prevView = activeView;
@@ -245,8 +301,21 @@
   });
 </script>
 
-<div class="desktop-shell">
-  <Sidebar {activeView} {onNavigate} />
+<div class="desktop-shell" class:dragging-sidebar={sidebarDragging}>
+  <Sidebar {activeView} {onNavigate} width={sidebarWidth} />
+  <div
+    class="sidebar-divider"
+    role="separator"
+    aria-label="Resize sidebar"
+    aria-valuenow={sidebarWidth}
+    aria-valuemin={0}
+    aria-valuemax={maxSidebarWidth()}
+    tabindex="0"
+    onpointerdown={onSidebarDown}
+    onpointermove={onSidebarMove}
+    onpointerup={onSidebarUp}
+    onkeydown={onSidebarKeydown}
+  ></div>
   <div class="desktop-main">
     <ServiceErrorBanner />
     <div class="desktop-top-bar">
@@ -325,6 +394,20 @@
     height: 100vh;
     width: 100vw;
     overflow: hidden;
+  }
+  .desktop-shell.dragging-sidebar {
+    user-select: none;
+  }
+  .sidebar-divider {
+    width: 4px;
+    background: var(--color-separator);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .sidebar-divider:hover,
+  .dragging-sidebar .sidebar-divider {
+    background: var(--color-accent);
   }
   .desktop-main {
     flex: 1;
