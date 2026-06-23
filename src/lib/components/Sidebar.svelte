@@ -147,13 +147,13 @@
           onclick={() => onNavigate(`queries:${qp.page}:1`)}
         >
           <Icon name="search" />
-          {#if qp.page.includes('/')}
+          {#if qp.page.includes('/') && !qp.page.startsWith('queries/')}
             <span class="query-page-name">
               <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
               {qp.page.split('/').pop()}
             </span>
           {:else}
-            <span class="query-page-name">{qp.page}</span>
+            <span class="query-page-name">{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span>
           {/if}
         </button>
       {:else}
@@ -164,13 +164,13 @@
             onclick={() => onNavigate(`queries:${qp.page}`)}
           >
             <Icon name="search" />
-            {#if qp.page.includes('/')}
+            {#if qp.page.includes('/') && !qp.page.startsWith('queries/')}
               <span class="query-page-name">
                 <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
                 {qp.page.split('/').pop()}
               </span>
             {:else}
-              <span class="query-page-name">{qp.page}</span>
+              <span class="query-page-name">{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span>
             {/if}
           </button>
           {#each qp.blocks as block}
