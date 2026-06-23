@@ -41,10 +41,10 @@
   <div class="task-row-left">
     <div class="priority-dot" class:high={task.priority === 'high'} class:medium={task.priority === 'medium'} class:low={task.priority === 'low'}></div>
     {#if task.blocked}
-      <span class="status-icon-block" title="Blocked by dependencies"><Icon name="lock" size="0.875rem" /></span>
+      <span class="status-icon-block" role="img" aria-label="Blocked by dependencies"><Icon name="lock" size="0.875rem" /></span>
     {/if}
     {#if task.recur}
-      <span class="status-icon-recur" title="Recurring: {task.recur}"><Icon name="repeat" size="0.875rem" /></span>
+      <span class="status-icon-recur" role="img" aria-label="Recurring: {task.recur}"><Icon name="repeat" size="0.875rem" /></span>
     {/if}
     <div class="task-content">
       <span class="task-title" class:done={task.done}><Markdown text={task.text} inline={true} /></span>
@@ -64,12 +64,13 @@
 <style>
   .task-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0.875rem 1rem; background: var(--color-surface); border-bottom: 0.5px solid var(--color-separator); text-align: left; gap: 0.75rem; }
   .task-row:active { background: var(--color-bg-tertiary); }
-.task-row.highlighted { background: var(--color-bg-tertiary); outline: 2px solid var(--color-accent); outline-offset: -2px; }
+  .task-row:hover { background: var(--color-bg-secondary); }
+  .task-row.highlighted { background: var(--color-bg-tertiary); outline: 2px solid var(--color-accent); outline-offset: -2px; }
   .task-row-left { display: flex; align-items: flex-start; gap: 0.625rem; flex: 1; min-width: 0; }
   .priority-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--color-priority-none); margin-top: 0.45rem; flex-shrink: 0; }
   .priority-dot.high { background: var(--color-priority-high); }
   .priority-dot.medium { background: var(--color-priority-medium); }
-  .priority-dot.low { background: var(--color-accent); }
+  .priority-dot.low { background: var(--color-priority-low); }
   .status-icon-block { color: var(--color-danger); margin-top: 0.25rem; flex-shrink: 0; }
   .status-icon-recur { color: var(--color-accent); margin-top: 0.25rem; flex-shrink: 0; }
   .task-content { display: flex; flex-direction: column; min-width: 0; }

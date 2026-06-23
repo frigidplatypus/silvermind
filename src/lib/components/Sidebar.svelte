@@ -84,7 +84,7 @@
       aria-expanded={spaceOpen}
     >
       <span class="space-trigger-label">{activeSpace?.name ?? 'No space'}</span>
-      <span class="space-chevron" aria-hidden="true">{spaceOpen ? '▲' : '▼'}</span>
+      <span class="space-chevron" aria-hidden="true"><Icon name={spaceOpen ? 'chevron-up' : 'chevron-down'} size="0.75rem" /></span>
     </button>
     {#if spaceOpen}
       <div class="space-dropdown" role="listbox" aria-label="Select space">
@@ -99,7 +99,7 @@
               aria-selected={space.id === getActiveId()}
               onclick={() => selectSpace(space.id)}
             >
-              <span class="space-check">{space.id === getActiveId() ? '✓' : ''}</span>
+              <span class="space-check">{#if space.id === getActiveId()}<Icon name="check" size="0.875rem" />{/if}</span>
               <span>{space.name}</span>
             </button>
           {/each}
@@ -123,9 +123,14 @@
 
   <div class="sidebar-section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
     <span>Queries</span>
-    <button class="refresh-btn" onclick={handleRefreshQueries} aria-label="Refresh query pages" disabled={refreshingQueries}>
-      <Icon name="rotate-cw" size="0.75rem" />
-    </button>
+    <div class="sidebar-actions">
+      <button class="add-btn" onclick={() => onNavigate('builder')} aria-label="New query">
+        <Icon name="plus" size="0.75rem" />
+      </button>
+      <button class="refresh-btn" onclick={handleRefreshQueries} aria-label="Refresh query pages" disabled={refreshingQueries}>
+        <Icon name="rotate-cw" size="0.75rem" />
+      </button>
+    </div>
   </div>
   {#if getQueryPagesLoading()}
     <div class="query-loading">Checking for queries…</div>
@@ -155,6 +160,18 @@
       </div>
     {/each}
   {/if}
+
+  <div class="sidebar-spacer"></div>
+
+  <button
+    class="sidebar-item"
+    class:active={activeView === 'settings'}
+    onclick={() => onNavigate('settings')}
+    aria-current={activeView === 'settings' ? 'page' : undefined}
+  >
+    <Icon name="settings" />
+    <span>Settings</span>
+  </button>
 </nav>
 
 {#if spaceOpen}
@@ -169,11 +186,11 @@
     border-right: 1px solid var(--color-separator);
     display: flex;
     flex-direction: column;
-    padding: 0.75rem;
+    padding: var(--space-3);
     gap: 0.25rem;
     height: 100%;
     position: relative;
-    z-index: 1;
+    z-index: var(--z-base);
   }
   .sidebar-brand {
     display: flex;
@@ -253,7 +270,7 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     box-shadow: 0 4px 12px var(--color-shadow);
-    z-index: 200;
+    z-index: calc(var(--z-dropdown) + 1);
     overflow: hidden;
   }
   .dropdown-loading {
@@ -288,7 +305,7 @@
   .backdrop {
     position: fixed;
     inset: 0;
-    z-index: 0;
+    z-index: var(--z-dropdown);
   }
   .query-page-group {
     margin-bottom: 0.125rem;
@@ -321,7 +338,11 @@
     color: var(--color-danger);
     line-height: 1.4;
   }
-  .refresh-btn {
+  .sidebar-actions {
+    display: flex;
+    gap: 0.125rem;
+  }
+  .add-btn, .refresh-btn {
     padding: 0.125rem;
     border-radius: var(--radius-sm);
     color: var(--color-text-tertiary);
@@ -329,6 +350,7 @@
     align-items: center;
     justify-content: center;
   }
-  .refresh-btn:hover { color: var(--color-accent); }
+  .add-btn:hover, .refresh-btn:hover { color: var(--color-accent); }
   .refresh-btn:disabled { opacity: 0.4; }
+  .sidebar-spacer { flex: 1; }
 </style>

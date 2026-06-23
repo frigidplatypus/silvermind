@@ -47,11 +47,15 @@
     onblur={() => setTimeout(() => (focused = false), 150)}
     onkeydown={handleKeydown}
     autocomplete="off"
+    role="combobox"
+    aria-expanded={focused && filtered.length > 0}
+    aria-controls={id ? `${id}-listbox` : undefined}
+    aria-activedescendant={focused && filtered[selectedIndex] ? (id ? `${id}-opt-${selectedIndex}` : undefined) : undefined}
   />
   {#if focused && filtered.length > 0}
-    <ul class="ac-dropdown" role="listbox">
+    <ul class="ac-dropdown" role="listbox" id={id ? `${id}-listbox` : undefined}>
       {#each filtered as item, i}
-        <li class="ac-item" class:selected={i === selectedIndex} role="option" aria-selected={i === selectedIndex} onpointerdown={(e) => { e.preventDefault(); handleSelect(item); }}>
+        <li class="ac-item" class:selected={i === selectedIndex} role="option" id={id ? `${id}-opt-${i}` : undefined} aria-selected={i === selectedIndex} onpointerdown={(e) => { e.preventDefault(); handleSelect(item); }}>
           {item}
         </li>
       {/each}

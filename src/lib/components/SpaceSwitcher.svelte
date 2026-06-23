@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getSpacesList, getActiveSpace, getActiveId, setActiveSpace, getSpacesLoading } from '$lib/stores/space.svelte';
+  import Icon from './Icon.svelte';
 
   let isOpen = $state(false);
 
@@ -16,7 +17,7 @@
     aria-expanded={isOpen}
   >
     <span class="switcher-label">{getActiveSpace()?.name ?? 'No spaces'}</span>
-    <span class="switcher-chevron" aria-hidden="true">{isOpen ? '▴' : '▾'}</span>
+    <span class="switcher-chevron" aria-hidden="true"><Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size="0.75rem" /></span>
   </button>
 
   {#if isOpen}
@@ -32,7 +33,7 @@
             aria-checked={space.id === getActiveId()}
             onclick={() => selectSpace(space.id)}
           >
-            <span class="checkmark">{space.id === getActiveId() ? '✓' : ''}</span>
+            <span class="checkmark">{#if space.id === getActiveId()}<Icon name="check" size="0.875rem" />{/if}</span>
             <span>{space.name}</span>
           </button>
         {/each}
@@ -40,7 +41,6 @@
     </div>
   {/if}
 
-  <!-- Backdrop to close menu -->
   {#if isOpen}
     <div class="backdrop" onclick={() => (isOpen = false)} aria-hidden="true"></div>
   {/if}

@@ -35,6 +35,7 @@
       type="search"
       class="search-input"
       placeholder="Search tasks…"
+      aria-label="Search tasks"
       value={getQuery()}
       oninput={handleInput}
       onkeydown={handleKeydown}
@@ -42,10 +43,10 @@
       autocomplete="off"
     />
     {#if getIsSearching()}
-      <span class="search-spinner"><Icon name="loader" size="1rem" /></span>
+      <span class="search-spinner" role="status" aria-label="Searching"><Icon name="loader" size="1rem" /></span>
     {/if}
     {#if getQuery()}
-      <button class="clear-btn" onclick={handleClear} aria-label="Clear search">&times;</button>
+      <button class="clear-btn" onclick={handleClear} aria-label="Clear search"><Icon name="x" size="1rem" /></button>
     {/if}
   </div>
 </div>
