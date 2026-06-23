@@ -10,7 +10,10 @@ import (
 	"github.com/justin/sbtask/pkg/task"
 )
 
-var queryBlockRe = regexp.MustCompile(`\$\{query\[\[([\s\S]*?)\]\]\}`)
+var (
+	queryBlockRe   = regexp.MustCompile(`\$\{query\[\[([\s\S]*?)\]\]\}`)
+	fencedSLIQRe   = regexp.MustCompile("```sliq\n?([\\s\\S]*?)\n?```")
+)
 
 // QueryBlock represents a single SLIQ query block extracted from a page.
 type QueryBlock struct {
@@ -19,22 +22,58 @@ type QueryBlock struct {
 	Number int    `json:"number"`
 }
 
-// ExtractQueryBlocks finds all ${query[[...]]} blocks in a page's content,
+// ExtractQueryBlocks finds all SLIQ blocks in a page's content,
+// supporting both ${query[[...]]} and ```sliq ... ``` formats,
 // associating each with the nearest preceding Markdown heading.
 func ExtractQueryBlocks(content string) []QueryBlock {
 	lines := strings.Split(content, "\n")
-	matches := queryBlockRe.FindAllStringSubmatch(content, -1)
+
+	type match struct {
+		raw    string
+		sliq   string
+		offset int
+	}
+
+	var matches []match
+
+	// Find ${query[[...]]} blocks
+	for _, m := range queryBlockRe.FindAllStringSubmatch(content, -1) {
+		matches = append(matches, match{
+			raw:    m[0],
+			sliq:   strings.TrimSpace(m[1]),
+			offset: strings.Index(content, m[0]),
+		})
+	}
+
+	// Find ```sliq ... ``` fenced blocks
+	for _, m := range fencedSLIQRe.FindAllStringSubmatch(content, -1) {
+		matches = append(matches, match{
+			raw:    m[0],
+			sliq:   strings.TrimSpace(m[1]),
+			offset: strings.Index(content, m[0]),
+		})
+	}
+
 	if len(matches) == 0 {
 		return nil
 	}
 
+	// Sort by position in content
+	for i := 0; i < len(matches); i++ {
+		for j := i + 1; j < len(matches); j++ {
+			if matches[j].offset < matches[i].offset {
+				matches[i], matches[j] = matches[j], matches[i]
+			}
+		}
+	}
+
 	var blocks []QueryBlock
 	for i, m := range matches {
-		sliq := strings.TrimSpace(m[1])
+		sliq := m.sliq
 		if sliq == "" {
 			continue
 		}
-		title := findNearestHeading(lines, findMatchLine(lines, content, m[0], 0))
+		title := findNearestHeading(lines, findMatchLine(lines, content, m.raw, 0))
 		if title == "" {
 			title = fmt.Sprintf("Query %d", i+1)
 		}

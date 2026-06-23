@@ -252,7 +252,7 @@ func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	block := fmt.Sprintf("\n## %s\n${query[[\n%s\n]]}\n", req.Title, req.SLIQ)
+	block := fmt.Sprintf("\n## %s\n```sliq\n%s\n```\n", req.Title, req.SLIQ)
 
 	if req.Create {
 		pageContent := fmt.Sprintf("---\ntags:\n  - %s\n---\n%s", queryPageTag, block)
