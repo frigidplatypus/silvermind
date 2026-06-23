@@ -94,6 +94,15 @@
               type = "app";
               program = "${sbtask}/bin/sbtask";
             };
+            silvermind-web = let
+              webDist = ./frontend/dist;
+              runner = pkgs.writeShellScriptBin "silvermind-web" ''
+                exec ${sbtask}/bin/sbtask serve --web-gui ${webDist} "$@"
+              '';
+            in {
+              type = "app";
+              program = "${runner}/bin/silvermind-web";
+            };
           };
         }
       );

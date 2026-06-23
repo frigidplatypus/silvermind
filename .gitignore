@@ -37,4 +37,3 @@ android/
 *.tsbuildinfo
 result
 desktop/silvermind-desktop
-frontend/dist/
