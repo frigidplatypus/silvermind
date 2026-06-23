@@ -21,12 +21,12 @@
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
   const datePresets: { label: string; sliq: string }[] = [
-    { label: 'Today',      sliq: `t.${dateField} == "@today"` },
-    { label: 'Tomorrow',   sliq: `t.${dateField} == "@tomorrow"` },
-    { label: 'Overdue',    sliq: `t.${dateField} < "@today"` },
-    { label: 'This week',  sliq: `t.${dateField} >= "@week_start" and t.${dateField} <= "@week_end"` },
-    { label: 'Next week',  sliq: `t.${dateField} >= "@+7" and t.${dateField} <= "@+13"` },
-    { label: 'This month', sliq: `t.${dateField} >= "@month_start" and t.${dateField} <= "@month_end"` },
+    { label: 'Today',      sliq: `p.${dateField} == "@today"` },
+    { label: 'Tomorrow',   sliq: `p.${dateField} == "@tomorrow"` },
+    { label: 'Overdue',    sliq: `p.${dateField} < "@today"` },
+    { label: 'This week',  sliq: `p.${dateField} >= "@week_start" and p.${dateField} <= "@week_end"` },
+    { label: 'Next week',  sliq: `p.${dateField} >= "@+7" and p.${dateField} <= "@+13"` },
+    { label: 'This month', sliq: `p.${dateField} >= "@month_start" and p.${dateField} <= "@month_end"` },
   ];
   let activePresetLabel = $state<string | null>(null);
 
@@ -79,31 +79,31 @@
     extraAttrs = extraAttrs.filter((_, i) => i !== index);
   }
 
-  function buildSLIQ(): string {
-    const lines: string[] = [];
+   function buildSLIQ(): string {
+    const lines: string[] = ['from p = index.objects("task")'];
 
     const statusClauses: string[] = [];
     for (const s of statuses) {
-      if (s === 'done') statusClauses.push('t.done');
-      else statusClauses.push(`t.state == "${s}"`);
+      if (s === 'done') statusClauses.push('p.done');
+      else statusClauses.push(`p.state == "${s}"`);
     }
     if (statusClauses.length > 0) {
       lines.push(`where ${statusClauses.join(' or ')}`);
     }
 
     if (priority) {
-      const prefix = lines.length === 0 ? 'where' : 'and';
-      lines.push(`${prefix} t.priority == "${priority}"`);
+      const prefix = lines.length <= 1 ? 'where' : 'and';
+      lines.push(`${prefix} p.priority == "${priority}"`);
     }
 
     if (pageFilterValue) {
-      const prefix = lines.length === 0 ? 'where' : 'and';
+      const prefix = lines.length <= 1 ? 'where' : 'and';
       if (pageFilterType === 'equals') {
-        lines.push(`${prefix} t.page == "${pageFilterValue}"`);
+        lines.push(`${prefix} p.page == "${pageFilterValue}"`);
       } else if (pageFilterType === 'starts') {
-        lines.push(`${prefix} t.page:startsWith("${pageFilterValue}")`);
+        lines.push(`${prefix} p.page:startsWith("${pageFilterValue}")`);
       } else if (pageFilterType === 'not-starts') {
-        lines.push(`${prefix} not t.page:startsWith("${pageFilterValue}")`);
+        lines.push(`${prefix} not p.page:startsWith("${pageFilterValue}")`);
       }
     }
 
@@ -112,54 +112,54 @@
       if (sliq) {
         const clauses = sliq.split(' and ');
         for (const clause of clauses) {
-          const prefix = lines.length === 0 ? 'where' : 'and';
+          const prefix = lines.length <= 1 ? 'where' : 'and';
           lines.push(`${prefix} ${clause}`);
         }
       }
     } else {
       if (hasDateFilter === 'has') {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.${dateField} != nil`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} p.${dateField} != nil`);
       } else if (hasDateFilter === 'missing') {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.${dateField} == nil`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} p.${dateField} == nil`);
       }
 
       if (rangeStart) {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.${dateField} > "${rangeStart}"`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} p.${dateField} > "${rangeStart}"`);
       }
       if (rangeEnd) {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.${dateField} < "${rangeEnd}"`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} p.${dateField} < "${rangeEnd}"`);
       }
     }
 
     if (includeTags) {
       const tagList = includeTags.split(',').map(t => t.trim()).filter(Boolean);
       for (const tag of tagList) {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} table.includes(t.itags, "${tag}")`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} table.includes(p.tags, "${tag}")`);
       }
     }
 
     if (excludeTags) {
       const tagList = excludeTags.split(',').map(t => t.trim()).filter(Boolean);
       for (const tag of tagList) {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} not table.includes(t.itags, "${tag}")`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} not table.includes(p.tags, "${tag}")`);
       }
     }
 
     for (const attr of extraAttrs) {
       if (attr.key && attr.value) {
-        const prefix = lines.length === 0 ? 'where' : 'and';
-        lines.push(`${prefix} t.extra_attrs.${attr.key} == "${attr.value}"`);
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} p.${attr.key} == "${attr.value}"`);
       }
     }
 
     if (sortBy) {
-      lines.push(`order by t.${sortBy}${sortOrder === 'desc' ? ' desc' : ''}`);
+      lines.push(`order by p.${sortBy}${sortOrder === 'desc' ? ' desc' : ''}`);
     }
 
     if (limit && limit !== 100) {
