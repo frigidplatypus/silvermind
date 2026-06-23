@@ -274,3 +274,49 @@ func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
 func containsFold(haystack, needle string) bool {
 	return strings.Contains(strings.ToLower(haystack), strings.ToLower(needle))
 }
+
+type QueryTestRequest struct {
+	SLIQ string `json:"sliq"`
+}
+
+func (s *Server) handleQueryTest(w http.ResponseWriter, r *http.Request) {
+	if err := requireJSON(r); err != nil {
+		writeError(w, http.StatusUnsupportedMediaType, "bad_request", err.Error())
+		return
+	}
+
+	req, err := decodeJSON[QueryTestRequest](r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", fmt.Sprintf("invalid JSON: %s", err))
+		return
+	}
+
+	if req.SLIQ == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "sliq is required")
+		return
+	}
+
+	c, sc, err := s.resolveSpace(r)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	filter, postFilter := query.TranslateSLIQ(req.SLIQ)
+	q := query.NewQuery(c)
+	tasks, err := q.Execute(filter)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
+		return
+	}
+	if postFilter != nil {
+		tasks = postFilter(tasks)
+	}
+
+	resp := QueryExecuteResponse{
+		Title: "Test Query",
+		Tasks: tasksToResponse(tasks, sc.Space),
+		SLIQ:  req.SLIQ,
+	}
+	writeOK(w, resp)
+}
