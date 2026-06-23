@@ -7,6 +7,7 @@
   import Icon from '$lib/components/Icon.svelte';
   import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop } from '$lib/desktop-bridge';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
+  import { deployHelpers } from '$lib/api/queries';
 
   let currentTheme = $state<Theme>(getTheme());
   let currentDefault = $state<string>(getDefaultView());
@@ -60,6 +61,7 @@
       await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage, editAuthToken);
       editingSpace = null;
       await loadSpaces();
+      deployHelpers().catch(() => {});
       showSuccess('Space updated');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
@@ -82,6 +84,7 @@
       newUrl = '';
       newAuthToken = '';
       await loadSpaces();
+      deployHelpers().catch(() => {});
       showSuccess('Space added');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);

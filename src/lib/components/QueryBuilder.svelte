@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { saveQuery, testQuery } from '$lib/api/queries';
+  import { saveQuery, testQuery, checkHelpers, deployHelpers } from '$lib/api/queries';
   import { loadQueryPages } from '$lib/stores/queries.svelte';
   import { goto } from '$lib/router';
   import { getBuilderEdit, clearBuilderEdit } from '$lib/stores/builder-edit.svelte';
@@ -13,6 +13,8 @@
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
   let editBlockNumber = $state(0);
+  let helpersMissing = $state(false);
+  let deployingHelpers = $state(false);
 
   onMount(() => {
     const edit = getBuilderEdit();
@@ -24,7 +26,20 @@
       if (edit.sliq) prefillFromSLIQ(edit.sliq);
       clearBuilderEdit();
     }
+    checkHelpers().then(r => { helpersMissing = !r.exists; }).catch(() => {});
   });
+
+  async function handleDeployHelpers() {
+    deployingHelpers = true;
+    try {
+      await deployHelpers();
+      helpersMissing = false;
+    } catch {
+      error = 'Failed to deploy helpers';
+    } finally {
+      deployingHelpers = false;
+    }
+  }
 
   let statusIncludes = $state<Set<string>>(new Set());
   let statusExcludes = $state<Set<string>>(new Set());
@@ -120,17 +135,17 @@
       if (line.includes('p.scheduled')) dateField = 'scheduled';
 
       if (!activePresetLabel) {
-        if (line.includes('"@today"') && line.includes('==')) {
+        if ((line.includes('"@today"') || line.includes('today()')) && line.includes('==')) {
           activePresetLabel = 'Today';
-        } else if (line.includes('"@tomorrow"') && line.includes('==')) {
+        } else if ((line.includes('"@tomorrow"') || line.includes('tomorrow()')) && line.includes('==')) {
           activePresetLabel = 'Tomorrow';
-        } else if (line.includes('"@today"') && line.includes('<')) {
+        } else if ((line.includes('"@today"') || line.includes('today()')) && line.includes('<')) {
           activePresetLabel = 'Overdue';
-        } else if (line.includes('"@week_start"')) {
+        } else if (line.includes('"@week_start"') || line.includes('weekStart()')) {
           activePresetLabel = 'This week';
-        } else if (line.includes('"@+7"')) {
+        } else if (line.includes('"@+7"') || line.includes('addDays(7)')) {
           activePresetLabel = 'Next week';
-        } else if (line.includes('"@month_start"')) {
+        } else if (line.includes('"@month_start"') || line.includes('monthStart()')) {
           activePresetLabel = 'This month';
         }
       }
@@ -166,12 +181,12 @@
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
   const datePresets: { label: string; sliq: string }[] = [
-    { label: 'Today',      sliq: `p.${dateField} == "@today"` },
-    { label: 'Tomorrow',   sliq: `p.${dateField} == "@tomorrow"` },
-    { label: 'Overdue',    sliq: `p.${dateField} < "@today"` },
-    { label: 'This week',  sliq: `p.${dateField} >= "@week_start" and p.${dateField} <= "@week_end"` },
-    { label: 'Next week',  sliq: `p.${dateField} >= "@+7" and p.${dateField} <= "@+13"` },
-    { label: 'This month', sliq: `p.${dateField} >= "@month_start" and p.${dateField} <= "@month_end"` },
+    { label: 'Today',      sliq: `p.${dateField} == today()` },
+    { label: 'Tomorrow',   sliq: `p.${dateField} == tomorrow()` },
+    { label: 'Overdue',    sliq: `p.${dateField} < today()` },
+    { label: 'This week',  sliq: `p.${dateField} >= weekStart() and p.${dateField} <= weekEnd()` },
+    { label: 'Next week',  sliq: `p.${dateField} >= addDays(7) and p.${dateField} <= addDays(13)` },
+    { label: 'This month', sliq: `p.${dateField} >= monthStart() and p.${dateField} <= monthEnd()` },
   ];
   let activePresetLabel = $state<string | null>(null);
 
@@ -404,6 +419,14 @@
   {/if}
   {#if error}
     <div class="error-banner" role="alert">{error}</div>
+  {/if}
+  {#if helpersMissing}
+    <div class="helpers-banner" role="alert">
+      <span>Date helpers not installed. Queries using date presets won&rsquo;t render in SilverBullet.</span>
+      <button class="btn btn-secondary" onclick={handleDeployHelpers} disabled={deployingHelpers}>
+        {deployingHelpers ? 'Deploying…' : 'Deploy'}
+      </button>
+    </div>
   {/if}
 
   <div class="form-section">
@@ -875,6 +898,19 @@
     padding: 0.625rem 0.75rem;
     background: var(--color-danger-light);
     color: var(--color-danger);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--space-4);
+  }
+  .helpers-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: 0.625rem 0.75rem;
+    background: var(--color-accent-light);
+    color: var(--color-accent);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);

@@ -49,3 +49,11 @@ export async function saveQuery(req: SaveQueryRequest): Promise<{ page: string }
 export async function testQuery(sliq: string): Promise<QueryExecuteResult> {
   return api.post<QueryExecuteResult>('/queries/test', { sliq });
 }
+
+export async function checkHelpers(): Promise<{ exists: boolean }> {
+  return api.get<{ exists: boolean }>('/helpers/check');
+}
+
+export async function deployHelpers(): Promise<{ deployed: boolean }> {
+  return api.post<{ deployed: boolean }>('/helpers/deploy');
+}

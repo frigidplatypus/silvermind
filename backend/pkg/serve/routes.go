@@ -17,4 +17,6 @@ func registerRoutes(s *Server, mux *http.ServeMux) {
 	mux.HandleFunc("POST /queries/execute", s.handleQueryExecute)
 	mux.HandleFunc("POST /queries/save", s.handleQuerySave)
 	mux.HandleFunc("POST /queries/test", s.handleQueryTest)
+	mux.HandleFunc("GET /helpers/check", s.handleHelpersCheck)
+	mux.HandleFunc("POST /helpers/deploy", s.handleHelpersDeploy)
 }
