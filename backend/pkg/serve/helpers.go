@@ -56,6 +56,25 @@ end
 ` + "```" + `
 `
 
+const queriesDirPage = "Library/Silvermind/Queries"
+const queriesDirContent = `---
+tags:
+  - silvermind/helpers
+  - meta/silvermind
+---
+
+# Query Directory
+
+A directory of all query pages tagged with silvermind/queries.
+
+${query[[
+from p = index.pages()
+where table.includes(p.tags, "silvermind/queries")
+order by p.name
+select templates.pageItem(p)
+]]}
+`
+
 func (s *Server) handleHelpersCheck(w http.ResponseWriter, r *http.Request) {
 	c, _, err := s.resolveSpace(r)
 	if err != nil {
@@ -80,6 +99,11 @@ func (s *Server) handleHelpersDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.WritePage(helpersPage, helpersContent); err != nil {
+		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
+		return
+	}
+
+	if err := c.WritePage(queriesDirPage, queriesDirContent); err != nil {
 		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
 		return
 	}
