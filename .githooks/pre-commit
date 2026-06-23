@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DIST="desktop/frontend/dist/index.html"
+
+if [ ! -f "$DIST" ]; then
+  echo "Frontend dist missing. Running pnpm build:desktop..."
+  pnpm build:desktop
+  git add desktop/frontend/dist/
+  exit 0
+fi
+
+STALE=$(find src/ frontend/ -newer "$DIST" -name '*.svelte' -o -name '*.ts' -o -name '*.css' -o -name '*.js' 2>/dev/null | head -1)
+
+if [ -n "$STALE" ]; then
+  echo "Frontend source changed. Rebuilding..."
+  pnpm build:desktop
+  git add desktop/frontend/dist/
+fi
