@@ -19,80 +19,27 @@
   let rangeStart = $state('');
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
+  let dateToken = $state<string | null>(null);
 
-  function today(): string {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-
-  function daysFromNow(n: number): string {
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-
-  function weekStart(d: Date): Date {
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(d.getFullYear(), d.getMonth(), diff);
-  }
-
-  function weekEnd(d: Date): Date {
-    const start = weekStart(d);
-    return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
-  }
-
-  function monthStart(d: Date): Date {
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  }
-
-  function monthEnd(d: Date): Date {
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  }
-
-  function fmt(d: Date): string {
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-
-  const datePresets: { label: string; apply: () => void }[] = [
-    {
-      label: 'Today',
-      apply: () => { const d = today(); rangeStart = d; rangeEnd = d; hasDateFilter = 'none'; },
-    },
-    {
-      label: 'Tomorrow',
-      apply: () => { const d = daysFromNow(1); rangeStart = d; rangeEnd = d; hasDateFilter = 'none'; },
-    },
-    {
-      label: 'Overdue',
-      apply: () => { rangeStart = ''; rangeEnd = daysFromNow(-1); hasDateFilter = 'none'; },
-    },
-    {
-      label: 'This week',
-      apply: () => { rangeStart = fmt(weekStart(new Date())); rangeEnd = fmt(weekEnd(new Date())); hasDateFilter = 'none'; },
-    },
-    {
-      label: 'Next week',
-      apply: () => {
-        const next = new Date(); next.setDate(next.getDate() + 7);
-        rangeStart = fmt(weekStart(next)); rangeEnd = fmt(weekEnd(next)); hasDateFilter = 'none';
-      },
-    },
-    {
-      label: 'This month',
-      apply: () => { rangeStart = fmt(monthStart(new Date())); rangeEnd = fmt(monthEnd(new Date())); hasDateFilter = 'none'; },
-    },
+  const datePresets: { label: string; token: string }[] = [
+    { label: 'Today', token: '@today' },
+    { label: 'Tomorrow', token: '@tomorrow' },
+    { label: 'Overdue', token: '@-1' },
+    { label: 'This week', token: '@week_start..@week_end' },
+    { label: 'Next week', token: '@+7..@+13' },
+    { label: 'This month', token: '@month_start..@month_end' },
   ];
 
-  function presetActive(todayVal: string, tomorrowVal: string, overdueVal: string) {
-    return (label: string) => {
-      if (label === 'Today') return rangeStart === rangeEnd && rangeStart === todayVal;
-      if (label === 'Tomorrow') return rangeStart === rangeEnd && rangeStart === tomorrowVal;
-      if (label === 'Overdue') return !rangeStart && rangeEnd === overdueVal;
-      return false;
-    };
+  function applyPreset(token: string) {
+    dateToken = token;
+    rangeStart = '';
+    rangeEnd = '';
+    hasDateFilter = 'none';
   }
-  let isPresetActive = $derived(presetActive(today(), daysFromNow(1), daysFromNow(-1)));
+
+  function clearPreset() {
+    dateToken = null;
+  }
   let includeTags = $state('');
   let excludeTags = $state('');
   let extraAttrs = $state<{ key: string; value: string }[]>([]);
@@ -154,21 +101,41 @@
       }
     }
 
-    if (hasDateFilter === 'has') {
-      const prefix = lines.length === 0 ? 'where' : 'and';
-      lines.push(`${prefix} t.${dateField} != nil`);
-    } else if (hasDateFilter === 'missing') {
-      const prefix = lines.length === 0 ? 'where' : 'and';
-      lines.push(`${prefix} t.${dateField} == nil`);
-    }
+    if (dateToken) {
+      if (dateToken.includes('..')) {
+        const [start, end] = dateToken.split('..');
+        {
+          const prefix = lines.length === 0 ? 'where' : 'and';
+          lines.push(`${prefix} t.${dateField} >= "${start}"`);
+        }
+        {
+          const prefix = lines.length === 0 ? 'where' : 'and';
+          lines.push(`${prefix} t.${dateField} <= "${end}"`);
+        }
+      } else if (dateToken.startsWith('@-')) {
+        const prefix = lines.length === 0 ? 'where' : 'and';
+        lines.push(`${prefix} t.${dateField} < "${dateToken}"`);
+      } else {
+        const prefix = lines.length === 0 ? 'where' : 'and';
+        lines.push(`${prefix} t.${dateField} == "${dateToken}"`);
+      }
+    } else {
+      if (hasDateFilter === 'has') {
+        const prefix = lines.length === 0 ? 'where' : 'and';
+        lines.push(`${prefix} t.${dateField} != nil`);
+      } else if (hasDateFilter === 'missing') {
+        const prefix = lines.length === 0 ? 'where' : 'and';
+        lines.push(`${prefix} t.${dateField} == nil`);
+      }
 
-    if (rangeStart) {
-      const prefix = lines.length === 0 ? 'where' : 'and';
-      lines.push(`${prefix} t.${dateField} > "${rangeStart}"`);
-    }
-    if (rangeEnd) {
-      const prefix = lines.length === 0 ? 'where' : 'and';
-      lines.push(`${prefix} t.${dateField} < "${rangeEnd}"`);
+      if (rangeStart) {
+        const prefix = lines.length === 0 ? 'where' : 'and';
+        lines.push(`${prefix} t.${dateField} > "${rangeStart}"`);
+      }
+      if (rangeEnd) {
+        const prefix = lines.length === 0 ? 'where' : 'and';
+        lines.push(`${prefix} t.${dateField} < "${rangeEnd}"`);
+      }
     }
 
     if (includeTags) {
@@ -264,6 +231,7 @@
     rangeStart = '';
     rangeEnd = '';
     hasDateFilter = 'none';
+    dateToken = null;
     includeTags = '';
     excludeTags = '';
     extraAttrs = [];
@@ -372,8 +340,11 @@
       </div>
       <div class="preset-group">
         {#each datePresets as p}
-          <button class="toggle-btn" class:active={isPresetActive(p.label)} onclick={p.apply}>{p.label}</button>
+          <button class="toggle-btn" class:active={dateToken === p.token} onclick={() => applyPreset(p.token)}>{p.label}</button>
         {/each}
+        {#if dateToken}
+          <button class="toggle-btn" onclick={clearPreset}>Clear</button>
+        {/if}
       </div>
     </div>
 

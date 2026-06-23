@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/justin/sbtask/pkg/task"
 )
@@ -48,7 +49,44 @@ func ExtractQueryBlocks(content string) []QueryBlock {
 
 // TranslateSLIQ parses a SLIQ query string into a TaskFilter and an optional
 // post-filter function for filters that cannot be expressed server-side.
+func resolveRelativeDates(sliq string) string {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	tomorrow := now.AddDate(0, 0, 1).Format("2006-01-02")
+
+	// weekday offsets for "this week" (Mon=0)
+	wd := int(now.Weekday()) - 1
+	if wd < 0 {
+		wd = 6
+	}
+	weekStart := now.AddDate(0, 0, -wd).Format("2006-01-02")
+	weekEnd := now.AddDate(0, 0, 6-wd).Format("2006-01-02")
+
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+	monthEnd := time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+
+	sliq = strings.ReplaceAll(sliq, "@today", today)
+	sliq = strings.ReplaceAll(sliq, "@tomorrow", tomorrow)
+	sliq = strings.ReplaceAll(sliq, "@week_start", weekStart)
+	sliq = strings.ReplaceAll(sliq, "@week_end", weekEnd)
+	sliq = strings.ReplaceAll(sliq, "@month_start", monthStart)
+	sliq = strings.ReplaceAll(sliq, "@month_end", monthEnd)
+
+	// Match @+N or @-N patterns (relative days)
+	re := regexp.MustCompile(`@([+-]\d+)`)
+	sliq = re.ReplaceAllStringFunc(sliq, func(m string) string {
+		n, err := strconv.Atoi(m[1:])
+		if err != nil {
+			return m
+		}
+		return now.AddDate(0, 0, n).Format("2006-01-02")
+	})
+
+	return sliq
+}
+
 func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task) {
+	sliq = resolveRelativeDates(sliq)
 	filter := task.TaskFilter{Limit: 100}
 	var pageExcludes []string
 	var pageIncludes []string
