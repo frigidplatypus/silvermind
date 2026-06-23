@@ -467,6 +467,11 @@
     color: var(--color-text);
     cursor: pointer;
   }
+  .checkbox-item input[type="checkbox"]:checked + span,
+  .checkbox-item input[type="radio"]:checked + span {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
+  }
   .filter-row {
     display: flex;
     align-items: center;
