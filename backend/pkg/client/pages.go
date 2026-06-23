@@ -19,10 +19,12 @@ type RuntimePage struct {
 
 // FindPagesByTag returns all page names that have the given tag in their frontmatter.
 // Uses SilverBullet's Runtime API to query page objects.
+// The where[tags][contains] query parameter is unreliable, so we fetch all pages
+// and filter client-side.
 func (c *Client) FindPagesByTag(tag string) ([]string, error) {
 	u := c.resolveURL("/.runtime/objects/page")
 	q := url.Values{}
-	q.Set("where[tags][contains]", tag)
+	q.Set("limit", "200")
 	u += "?" + q.Encode()
 
 	req, err := c.newRequest("GET", u, nil)
@@ -62,8 +64,24 @@ func (c *Client) FindPagesByTag(tag string) ([]string, error) {
 
 	names := make([]string, 0, len(pages))
 	for _, p := range pages {
-		names = append(names, p.Name)
+		if hasTag(p, tag) {
+			names = append(names, p.Name)
+		}
 	}
 	return names, nil
+}
+
+func hasTag(p RuntimePage, tag string) bool {
+	for _, t := range p.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	for _, t := range p.ITags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 

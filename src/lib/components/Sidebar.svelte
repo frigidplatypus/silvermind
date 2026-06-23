@@ -198,12 +198,12 @@
     height: 100%;
     position: relative;
     z-index: var(--z-base);
-    overflow: hidden;
     flex-shrink: 0;
   }
   .sidebar.collapsed {
     padding: 0;
     border-right: none;
+    overflow: hidden;
   }
   .sidebar-brand {
     display: flex;
