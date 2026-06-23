@@ -169,29 +169,7 @@
     return lines.join('\n');
   }
 
-  function resolveDates(s: string): string {
-    const now = new Date();
-    const fmt = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const today = fmt(now);
-    const tomorrow = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
-    const wd = (now.getDay() + 6) % 7;
-    const weekStart = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() - wd));
-    const weekEnd = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6 - wd));
-    const monthStart = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
-    const monthEnd = fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-
-    s = s.replaceAll('@today', today);
-    s = s.replaceAll('@tomorrow', tomorrow);
-    s = s.replaceAll('@week_start', weekStart);
-    s = s.replaceAll('@week_end', weekEnd);
-    s = s.replaceAll('@month_start', monthStart);
-    s = s.replaceAll('@month_end', monthEnd);
-    s = s.replace(/@([+-]\d+)/g, (_, n) => fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate() + parseInt(n))));
-    return s;
-  }
-
   let sliqPreview = $derived(buildSLIQ());
-  let resolvedPreview = $derived(resolveDates(sliqPreview));
   let hasFilters = $derived(sliqPreview.trim().length > 0);
 
   async function handleTest() {
@@ -431,7 +409,7 @@
         {testing ? 'Testing…' : 'Test'}
       </button>
     </div>
-    <pre class="sliq-preview">{resolvedPreview || '(no filters selected)'}</pre>
+    <pre class="sliq-preview">{sliqPreview || '(no filters selected)'}</pre>
     {#if testResult}
       <div class="test-result" role="status">
         <span class="test-count">{testResult.count} task{testResult.count === 1 ? '' : 's'} found</span>
