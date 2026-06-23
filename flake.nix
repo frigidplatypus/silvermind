@@ -40,10 +40,7 @@
               ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkg-config wrapGAppsHook3 wails ];
 
             buildInputs = with pkgs;
-              pkgs.lib.optionals pkgs.stdenv.isLinux [ webkitgtk_4_1 gtk3 ]
-              ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (
-                with pkgs.darwin.apple_sdk.frameworks; [ WebKit AppKit Foundation ]
-              );
+              pkgs.lib.optionals pkgs.stdenv.isLinux [ webkitgtk_4_1 gtk3 ];
 
             preBuild = ''
               export HOME=$TMPDIR
@@ -91,9 +88,7 @@
               nodejs-slim_22 pnpm
             ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
               wails pkg-config webkitgtk_4_1 gtk3
-            ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (
-              with pkgs.darwin.apple_sdk.frameworks; [ WebKit AppKit Foundation ]
-            );
+            ];
           };
 
           apps = {
