@@ -45,6 +45,8 @@
             preBuild = ''
               export HOME=$TMPDIR
               export CGO_ENABLED=1
+            '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+              export CGO_LDFLAGS="-framework UniformTypeIdentifiers $CGO_LDFLAGS"
             '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
               export CGO_CFLAGS="-Wno-error=incompatible-pointer-types $CGO_CFLAGS"
               export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -Wno-error=incompatible-pointer-types"
