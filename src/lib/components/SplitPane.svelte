@@ -36,6 +36,17 @@
   function onPointerUp() {
     dragging = false;
   }
+
+  function onKeydown(e: KeyboardEvent) {
+    const step = 0.02;
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setSplitRatio(ratio - step);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setSplitRatio(ratio + step);
+    }
+  }
 </script>
 
 <div class="split-pane" class:dragging class:has-right={showRight}>
@@ -51,6 +62,7 @@
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
+      onkeydown={onKeydown}
     ></div>
     <div class="split-right" style="width: {(1 - ratio) * 100}%">
       {#if right}{@render right()}{/if}

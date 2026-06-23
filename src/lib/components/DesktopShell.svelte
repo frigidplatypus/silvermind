@@ -8,7 +8,8 @@
   import InboxPage from '../../routes/inbox/+page.svelte';
   import TodayPage from '../../routes/today/+page.svelte';
   import SettingsPage from '../../routes/settings/+page.svelte';
-  import QuickCapture from './QuickCapture.svelte';
+  import FloatingAddButton from './FloatingAddButton.svelte';
+  import { triggerAddTask } from '$lib/stores/add-task.svelte';
   import Icon from './Icon.svelte';
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
   import { getTasks, loadInbox, loadToday } from '$lib/stores/tasks.svelte';
@@ -16,8 +17,12 @@
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import type { Task } from '$lib/types/task';
   import SearchBar from './SearchBar.svelte';
+  import ServiceErrorBanner from './ServiceErrorBanner.svelte';
+  import Toast from './Toast.svelte';
+  import { showError, showSuccess } from '$lib/stores/toast.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
   import GlobalPage from '../../routes/global/+page.svelte';
+  import BuilderPage from '../../routes/builder/+page.svelte';
   import { getGlobalTasks, loadGlobalView } from '$lib/stores/global.svelte';
 
   let {
@@ -112,6 +117,17 @@
   const queryTasks = $derived(getCurrentQueryTasks());
   const queryLoading = $derived(getQueryLoading());
 
+  const viewTitle = $derived(
+    getIsActive() ? 'Search'
+    : activeView === 'inbox' ? 'Task List'
+    : activeView === 'today' ? 'Today'
+    : activeView === 'global' ? 'All Tasks'
+    : activeView === 'builder' ? 'New Query'
+    : activeView === 'settings' ? 'Settings'
+    : isQueryView ? (queryTitle ?? 'Query')
+    : ''
+  );
+
   function isEditing(): boolean {
     const el = document.activeElement;
     if (!el) return false;
@@ -146,7 +162,7 @@
       switch (e.key) {
         case 'n': {
           e.preventDefault();
-          document.getElementById('quick-input')?.focus();
+          triggerAddTask();
           break;
         }
         case '/': {
@@ -200,7 +216,7 @@
           markTaskDone(page, pos).then(() => {
             loadInbox();
             if (isQueryView) handleQueryTaskChanged();
-          }).catch((e2) => alert(`Done failed: ${e2.message}`));
+          }).catch((e2) => showError(`Done failed: ${e2.message}`));
           break;
         }
         case 'u': {
@@ -213,7 +229,7 @@
           undoTask(page, pos).then(() => {
             loadInbox();
             if (isQueryView) handleQueryTaskChanged();
-          }).catch((e2) => alert(`Undo failed: ${e2.message}`));
+          }).catch((e2) => showError(`Undo failed: ${e2.message}`));
           break;
         }
         case 'Escape': {
@@ -232,8 +248,9 @@
 <div class="desktop-shell">
   <Sidebar {activeView} {onNavigate} />
   <div class="desktop-main">
+    <ServiceErrorBanner />
     <div class="desktop-top-bar">
-      <QuickCapture />
+      <h2 class="top-bar-title">{viewTitle}</h2>
       <button class="gear-btn" onclick={() => onNavigate(activeView === 'settings' ? 'inbox' : 'settings')} aria-label="Settings">
         <Icon name="settings" />
       </button>
@@ -279,6 +296,8 @@
             <TodayPage onTaskTap={handleTaskTap} />
           {:else if activeView === 'global'}
             <GlobalPage onTaskTap={handleTaskTap} />
+          {:else if activeView === 'builder'}
+            <BuilderPage />
           {:else}
             <SettingsPage />
           {/if}
@@ -291,7 +310,10 @@
       </SplitPane>
     {/if}
   </div>
+  <FloatingAddButton />
 </div>
+
+<Toast />
 
 {#if editing && selectedTask}
   <TaskEditor task={selectedTask} mode="modal" onclose={() => (editing = false)} onsaved={handleEditSaved} />
@@ -313,12 +335,14 @@
   .desktop-top-bar {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--color-separator);
   }
-  .desktop-top-bar :global(.capture-form) {
-    flex: 1;
+  .top-bar-title {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
   }
   .gear-btn {
     display: flex;
