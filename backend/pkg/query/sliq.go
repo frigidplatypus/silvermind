@@ -190,6 +190,21 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 					if st == "waiting" || st == "x" || st == "maybe" || strings.EqualFold(st, "someday") {
 						filter.Status = append(filter.Status, st)
 					}
+				case strings.HasPrefix(clause, "t.state !="):
+					st := strings.Trim(clause[12:], " \"")
+					st = strings.ToLower(st)
+					if st != "" {
+						exclude := st
+						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
+							var out []task.Task
+							for _, t := range tasks {
+								if !strings.EqualFold(t.Status, exclude) {
+									out = append(out, t)
+								}
+							}
+							return out
+						})
+					}
 				case strings.Contains(clause, "not table.includes(t.itags,"):
 					tag := extractSLIQString(clause, "not table.includes(t.itags,")
 					if tag != "" {

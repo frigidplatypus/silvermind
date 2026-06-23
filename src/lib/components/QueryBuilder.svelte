@@ -25,8 +25,32 @@
     }
   });
 
-  let statuses = $state<string[]>([]);
+  let statusIncludes = $state<Set<string>>(new Set());
+  let statusExcludes = $state<Set<string>>(new Set());
   let priority = $state('');
+
+  function statusState(value: string): 'none' | 'include' | 'exclude' {
+    if (statusIncludes.has(value)) return 'include';
+    if (statusExcludes.has(value)) return 'exclude';
+    return 'none';
+  }
+
+  function cycleStatus(value: string) {
+    const current = statusState(value);
+    const nextIncludes = new Set(statusIncludes);
+    const nextExcludes = new Set(statusExcludes);
+    if (current === 'none') {
+      nextIncludes.add(value);
+      nextExcludes.delete(value);
+    } else if (current === 'include') {
+      nextIncludes.delete(value);
+      nextExcludes.add(value);
+    } else {
+      nextExcludes.delete(value);
+    }
+    statusIncludes = nextIncludes;
+    statusExcludes = nextExcludes;
+  }
   let pageFilterType = $state<'equals' | 'starts' | 'not-starts'>('equals');
   let pageFilterValue = $state('');
   let dateField = $state<'due' | 'scheduled'>('due');
@@ -97,12 +121,18 @@
     const lines: string[] = ['from p = index.objects("task")'];
 
     const statusClauses: string[] = [];
-    for (const s of statuses) {
+    for (const s of statusIncludes) {
       if (s === 'done') statusClauses.push('p.done');
       else statusClauses.push(`p.state == "${s}"`);
     }
+    for (const s of statusExcludes) {
+      if (s === 'done') statusClauses.push('not p.done');
+      else statusClauses.push(`p.state != "${s}"`);
+    }
     if (statusClauses.length > 0) {
-      lines.push(`where ${statusClauses.join(' or ')}`);
+      const joined = statusClauses.join(' or ');
+      const prefix = lines.length <= 1 ? 'where' : 'and';
+      lines.push(`${prefix} ${joined}`);
     }
 
     if (priority) {
@@ -237,7 +267,8 @@
     page = '';
     title = '';
     create = true;
-    statuses = [];
+    statusIncludes = new Set();
+    statusExcludes = new Set();
     priority = '';
     pageFilterType = 'equals';
     pageFilterValue = '';
@@ -288,19 +319,23 @@
       <legend class="filter-label">Status</legend>
       <div class="checkbox-group">
         {#each availableStatuses as s}
-          <label class="checkbox-item">
-            <input type="checkbox" checked={statuses.includes(s.value)} onchange={() => {
-              if (statuses.includes(s.value)) {
-                statuses = statuses.filter(x => x !== s.value);
-              } else {
-                statuses = [...statuses, s.value];
-              }
-            }} />
+          <button
+            class="status-{statusState(s.value)}"
+            onclick={() => cycleStatus(s.value)}
+            aria-pressed={statusState(s.value) !== 'none'}
+          >
+            {#if statusState(s.value) === 'include'}
+              <Icon name="check" size="0.75rem" />
+            {:else if statusState(s.value) === 'exclude'}
+              <Icon name="x" size="0.75rem" />
+            {:else}
+              <span class="status-circle"></span>
+            {/if}
             <span>{s.label}</span>
-          </label>
+          </button>
         {/each}
       </div>
-      <p class="field-hint">Leave unchecked for active tasks only</p>
+      <p class="field-hint">Click to cycle: include → exclude → none</p>
     </fieldset>
 
     <div class="filter-group">
@@ -541,6 +576,38 @@
   .checkbox-item input[type="checkbox"]:checked + span,
   .checkbox-item input[type="radio"]:checked + span {
     color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
+  }
+  .status-none, .status-include, .status-exclude {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .status-none .status-circle {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-border);
+    flex-shrink: 0;
+  }
+  .status-include {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: var(--color-accent-light);
+    font-weight: var(--font-weight-semibold);
+  }
+  .status-exclude {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+    background: var(--color-danger-light);
     font-weight: var(--font-weight-semibold);
   }
   .filter-row {
