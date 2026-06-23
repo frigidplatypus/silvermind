@@ -140,11 +140,11 @@
     <div class="query-error">{getQueryPagesError()}</div>
   {:else if getQueryPagesList().length > 0}
     {#each getQueryPagesList() as qp}
-      <div class="query-page-group">
+      {#if qp.blocks.length === 1}
         <button
           class="sidebar-item query-page-toggle"
-          class:active={activeView.startsWith(`queries:${qp.page}`)}
-          onclick={() => onNavigate(`queries:${qp.page}`)}
+          class:active={activeView === `queries:${qp.page}:1`}
+          onclick={() => onNavigate(`queries:${qp.page}:1`)}
         >
           <Icon name="search" />
           {#if qp.page.includes('/')}
@@ -156,17 +156,35 @@
             <span class="query-page-name">{qp.page}</span>
           {/if}
         </button>
-        {#each qp.blocks as block}
+      {:else}
+        <div class="query-page-group">
           <button
-            class="sidebar-item sidebar-item-child"
-            class:active={activeView === `queries:${qp.page}:${block.number}`}
-            onclick={() => onNavigate(`queries:${qp.page}:${block.number}`)}
+            class="sidebar-item query-page-toggle"
+            class:active={activeView.startsWith(`queries:${qp.page}`)}
+            onclick={() => onNavigate(`queries:${qp.page}`)}
           >
-            <Icon name="chevron-right" size="0.75rem" />
-            <span>{block.title}</span>
+            <Icon name="search" />
+            {#if qp.page.includes('/')}
+              <span class="query-page-name">
+                <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
+                {qp.page.split('/').pop()}
+              </span>
+            {:else}
+              <span class="query-page-name">{qp.page}</span>
+            {/if}
           </button>
-        {/each}
-      </div>
+          {#each qp.blocks as block}
+            <button
+              class="sidebar-item sidebar-item-child"
+              class:active={activeView === `queries:${qp.page}:${block.number}`}
+              onclick={() => onNavigate(`queries:${qp.page}:${block.number}`)}
+            >
+              <Icon name="chevron-right" size="0.75rem" />
+              <span>{block.title}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
     {/each}
   {/if}
 
