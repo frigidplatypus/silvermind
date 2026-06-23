@@ -198,11 +198,6 @@
     <span>Settings</span>
   </button>
 </nav>
-
-{#if spaceOpen}
-  <div class="backdrop" onclick={() => (spaceOpen = false)} aria-hidden="true"></div>
-{/if}
-
 <style>
   .sidebar {
     background: var(--color-bg-secondary);
@@ -330,11 +325,6 @@
     color: var(--color-accent);
     font-weight: 600;
     flex-shrink: 0;
-  }
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-dropdown);
   }
   .query-page-group {
     margin-bottom: 0.125rem;
