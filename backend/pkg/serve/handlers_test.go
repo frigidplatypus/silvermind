@@ -208,7 +208,7 @@ func TestModifyTask(t *testing.T) {
 		}
 	})
 
-	resp := putJSON(t, httpSrv.URL+"/tasks/Tasks/1", map[string]string{
+	resp := putJSON(t, httpSrv.URL+"/tasks/1?page=Tasks", map[string]string{
 		"text": "new text",
 	})
 	defer resp.Body.Close()
@@ -244,7 +244,7 @@ func TestModifyTaskRejectsInvalidDue(t *testing.T) {
 		}
 	})
 
-	resp := putJSON(t, httpSrv.URL+"/tasks/Tasks/1", map[string]string{
+	resp := putJSON(t, httpSrv.URL+"/tasks/1?page=Tasks", map[string]string{
 		"due": "banana",
 	})
 	defer resp.Body.Close()
@@ -269,7 +269,7 @@ func TestModifyTaskRejectsInvalidRecur(t *testing.T) {
 		}
 	})
 
-	resp := putJSON(t, httpSrv.URL+"/tasks/Tasks/1", map[string]string{
+	resp := putJSON(t, httpSrv.URL+"/tasks/1?page=Tasks", map[string]string{
 		"recur": "yearly",
 	})
 	defer resp.Body.Close()
@@ -306,7 +306,7 @@ func TestMarkDoneWithRecurrence(t *testing.T) {
 		}
 	})
 
-	resp := putJSON(t, httpSrv.URL+"/tasks/Tasks/1/done", map[string]string{})
+	resp := putJSON(t, httpSrv.URL+"/tasks/1/done?page=Tasks", map[string]string{})
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -350,7 +350,7 @@ func TestMarkDoneRecurrenceAppendFailure(t *testing.T) {
 		}
 	})
 
-	resp := putJSON(t, httpSrv.URL+"/tasks/Tasks/1/done", map[string]string{})
+	resp := putJSON(t, httpSrv.URL+"/tasks/1/done?page=Tasks", map[string]string{})
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadGateway {

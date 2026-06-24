@@ -13,20 +13,25 @@ export async function createTask(input: Record<string, unknown>): Promise<Task> 
   return api.post<Task>('/inbox', input);
 }
 
+function taskURL(position: number, page: string, suffix?: string): string {
+  const qs = `page=${encodeURIComponent(page)}`;
+  return `/tasks/${position}${suffix ?? ''}?${qs}`;
+}
+
 export async function updateTask(page: string, position: number, fields: Record<string, unknown>): Promise<Task> {
-  return api.put<Task>(`/tasks/${encodeURIComponent(page)}/${position}`, fields);
+  return api.put<Task>(taskURL(position, page), fields);
 }
 
 export async function markTaskDone(page: string, position: number): Promise<Task> {
-  return api.put<Task>(`/tasks/${encodeURIComponent(page)}/${position}/done`);
+  return api.put<Task>(taskURL(position, page, '/done'));
 }
 
 export async function undoTask(page: string, position: number): Promise<Task> {
-  return api.put<Task>(`/tasks/${encodeURIComponent(page)}/${position}/undo`);
+  return api.put<Task>(taskURL(position, page, '/undo'));
 }
 
 export async function deleteTask(page: string, position: number): Promise<void> {
-  return api.delete<void>(`/tasks/${encodeURIComponent(page)}/${position}`);
+  return api.delete<void>(taskURL(position, page));
 }
 
 export async function searchTasks(query: string): Promise<TaskListResponse> {

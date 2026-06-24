@@ -17,6 +17,9 @@ func (c *Client) ReadPage(path string) (content string, lastModified int64, err 
 	if err == nil && content == "" && !strings.HasSuffix(path, ".md") {
 		return c.readPageRaw(path + ".md")
 	}
+	if err != nil && !strings.HasSuffix(path, ".md") && strings.Contains(err.Error(), "is a directory") {
+		return c.readPageRaw(path + ".md")
+	}
 	return
 }
 

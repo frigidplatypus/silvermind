@@ -246,7 +246,7 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := r.PathValue("page")
+	page := r.URL.Query().Get("page")
 	if !checkPage(w, page) {
 		return
 	}
@@ -364,7 +364,7 @@ func (s *Server) handleModifyTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := r.PathValue("page")
+	page := r.URL.Query().Get("page")
 	if !checkPage(w, page) {
 		return
 	}
@@ -452,7 +452,7 @@ func (s *Server) handleMarkUndone(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleToggleDone(w http.ResponseWriter, r *http.Request, newStatus string) {
-	page := r.PathValue("page")
+	page := r.URL.Query().Get("page")
 	if !checkPage(w, page) {
 		return
 	}
