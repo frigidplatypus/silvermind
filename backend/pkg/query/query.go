@@ -159,22 +159,8 @@ func filterToQueryParams(f task.TaskFilter) map[string]string {
 		params["where[name]"] = f.Name
 	}
 
-	if f.Name != "" {
-		params["where[name]"] = f.Name
-	}
-
 	if f.Priority != "" {
 		params["where[priority]"] = f.Priority
-	}
-
-	if len(f.Tags) > 0 {
-		// Don't send server-side tag filter — SB's tasks API crashes on tasks
-		// with null tags (Cannot read properties of null (reading 'length')).
-		// Client-side filterByTags handles this correctly. Increase limit to
-		// ensure client-side filtering doesn't miss results.
-		if limit, _ := strconv.Atoi(params["limit"]); limit < 500 {
-			params["limit"] = "500"
-		}
 	}
 
 	if f.TextSearch != "" {
@@ -206,6 +192,14 @@ func filterToQueryParams(f task.TaskFilter) map[string]string {
 		params["limit"] = strconv.Itoa(f.Limit)
 	} else {
 		params["limit"] = "100"
+	}
+
+	// When client-side tag filtering is needed, bump limit so we don't
+	// truncate results before the filter has a chance to run.
+	if len(f.Tags) > 0 {
+		if limit, _ := strconv.Atoi(params["limit"]); limit < 500 {
+			params["limit"] = "500"
+		}
 	}
 
 	if f.Offset > 0 {
