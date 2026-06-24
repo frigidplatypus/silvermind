@@ -168,7 +168,13 @@ func filterToQueryParams(f task.TaskFilter) map[string]string {
 	}
 
 	if len(f.Tags) > 0 {
-		params["where[tags][contains]"] = f.Tags[0]
+		// Don't send server-side tag filter — SB's tasks API crashes on tasks
+		// with null tags (Cannot read properties of null (reading 'length')).
+		// Client-side filterByTags handles this correctly. Increase limit to
+		// ensure client-side filtering doesn't miss results.
+		if limit, _ := strconv.Atoi(params["limit"]); limit < 500 {
+			params["limit"] = "500"
+		}
 	}
 
 	if f.TextSearch != "" {

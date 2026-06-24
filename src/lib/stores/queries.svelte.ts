@@ -3,39 +3,47 @@ import type { QueryPage, QueryBlockInfo, QueryExecuteResult } from '$lib/api/que
 import { getQueryPages, executeQuery, getQueryBlocks } from '$lib/api/queries';
 
 let queryPages = $state<QueryPage[]>([]);
-let isLoading = $state(false);
-let error = $state<string | null>(null);
+let pagesLoading = $state(false);
+let pagesError = $state<string | null>(null);
+let queryError = $state<string | null>(null);
 let errorSLIQ = $state<string | null>(null);
 let currentQueryTasks = $state<Task[]>([]);
 let currentQueryTitle = $state<string | null>(null);
 let queryLoading = $state(false);
 
 export function getQueryPagesList(): QueryPage[] { return queryPages; }
-export function getQueryPagesLoading(): boolean { return isLoading; }
-export function getQueryPagesError(): string | null { return error; }
+export function getQueryPagesLoading(): boolean { return pagesLoading; }
+export function getQueryPagesError(): string | null { return pagesError; }
+export function getQueryError(): string | null { return queryError; }
 export function getCurrentQueryTasks(): Task[] { return currentQueryTasks; }
 export function getCurrentQueryTitle(): string | null { return currentQueryTitle; }
 export function getQueryLoading(): boolean { return queryLoading; }
 export function getErrorSLIQ(): string | null { return errorSLIQ; }
 
 export async function loadQueryPages(): Promise<void> {
-  isLoading = true;
-  error = null;
+  pagesLoading = true;
+  pagesError = null;
   try {
     queryPages = await getQueryPages();
   } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load query pages';
+    pagesError = e instanceof Error ? e.message : 'Failed to load query pages';
   } finally {
-    isLoading = false;
+    pagesLoading = false;
   }
 }
 
 export async function runQuery(page: string, index?: number): Promise<void> {
   queryLoading = true;
-  error = null;
+  queryError = null;
   errorSLIQ = null;
+
+  // Pre-load title from already-loaded queryPages so it's available on failure
+  const qp = queryPages.find(p => p.page === page);
+  const preBlock = qp?.blocks.find(b => b.number === (index ?? 1));
+  currentQueryTitle = preBlock?.title ?? qp?.page ?? null;
+
   currentQueryTasks = [];
-  currentQueryTitle = null;
+
   try {
     const results = await executeQuery(page, index);
     if (results.length > 0) {
@@ -49,7 +57,7 @@ export async function runQuery(page: string, index?: number): Promise<void> {
       currentQueryTitle = titles.join(', ');
     }
   } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to run query';
+    queryError = e instanceof Error ? e.message : 'Failed to run query';
     // Fetch the SLIQ so the user can open it in the editor
     try {
       const blocks = await getQueryBlocks(page);
@@ -64,6 +72,6 @@ export async function runQuery(page: string, index?: number): Promise<void> {
 export function clearQueryResults(): void {
   currentQueryTasks = [];
   currentQueryTitle = null;
-  error = null;
+  queryError = null;
   errorSLIQ = null;
 }

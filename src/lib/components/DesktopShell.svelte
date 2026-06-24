@@ -13,7 +13,7 @@
   import Icon from './Icon.svelte';
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
   import { getTasks, loadInbox, loadToday } from '$lib/stores/tasks.svelte';
-  import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults, getErrorSLIQ, getQueryPagesError } from '$lib/stores/queries.svelte';
+  import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults, getErrorSLIQ, getQueryError, getQueryPagesList } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import { getQueryBlocks } from '$lib/api/queries';
   import type { Task } from '$lib/types/task';
@@ -156,10 +156,15 @@
         const blocks = await getQueryBlocks(page);
         const block = blocks.find(b => b.number === blockNumber);
         sliq = block?.sliq;
-      } catch { /* fall through to error SLIQ */ }
+      } catch { /* fall through */ }
     }
     if (!sliq) {
       sliq = getErrorSLIQ() ?? undefined;
+    }
+    if (!sliq) {
+      const qp = getQueryPagesList().find(p => p.page === page);
+      const block = qp?.blocks.find(b => b.number === (blockNumber || 1));
+      sliq = block?.sliq;
     }
 
     setBuilderEdit(page, title, blockNumber, sliq);
@@ -196,7 +201,7 @@
   const queryTitle = $derived(getCurrentQueryTitle());
   const queryTasks = $derived(getCurrentQueryTasks());
   const queryLoading = $derived(getQueryLoading());
-  const queryError = $derived(getQueryPagesError());
+  const queryError = $derived(getQueryError());
 
   const viewTitle = $derived(
     getIsActive() ? 'Search'
