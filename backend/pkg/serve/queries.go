@@ -1,15 +1,23 @@
 package serve
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/justin/sbtask/pkg/query"
 )
 
 const queryPageTag = "silvermind/queries"
+
+const queryDiscoveryLua = `return query[[
+from p = index.pages()
+where table.includes(p.tags, "silvermind/queries")
+order by p.name
+]]`
 
 // QueryBlockInfo is a lightweight summary of a query block on a page.
 type QueryBlockInfo struct {
@@ -47,42 +55,82 @@ func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	spaceURL := c.BaseURL()
 	tag := r.URL.Query().Get("tag")
 	if tag == "" {
 		tag = queryPageTag
 	}
 
-	slog.Info("searching for query pages", "tag", tag, "space", c.BaseURL())
-	pages, err := c.FindPagesByTag(tag)
+	// Use the SLIQ query to discover pages (single API call, works everywhere)
+	slog.Info("discovering query pages via Lua", "tag", tag, "space", spaceURL)
+	raw, err := c.ExecuteLua(queryDiscoveryLua)
 	if err != nil {
-		slog.Error("queries FindPagesByTag error", "error", err)
+		slog.Error("query discovery Lua error", "error", err)
 		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
 		return
 	}
-	slog.Info("found query pages", "count", len(pages))
 
-	result := make([]QueryPageInfo, 0, len(pages))
-	for _, page := range pages {
-		content, _, err := c.ReadPage(page)
-		if err != nil {
-			continue
+	var discovered []map[string]interface{}
+	if err := json.Unmarshal(raw, &discovered); err != nil {
+		slog.Error("query discovery parse error", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	pageNames := make([]string, 0, len(discovered))
+	for _, p := range discovered {
+		if name, ok := p["name"].(string); ok && name != "" {
+			pageNames = append(pageNames, name)
 		}
-		blocks := query.ExtractQueryBlocks(content)
-		if len(blocks) == 0 {
-			continue
+	}
+	slog.Info("discovered query pages", "count", len(pageNames))
+
+	// Check cache, identify misses
+	cacheKeyPrefix := spaceURL + "|"
+	var uncached []string
+	result := make([]QueryPageInfo, 0, len(pageNames))
+	for _, page := range pageNames {
+		cacheKey := cacheKeyPrefix + page
+		if cached, ok := s.pageBlockCache.Load(cacheKey); ok {
+			result = append(result, cached.(QueryPageInfo))
+		} else {
+			uncached = append(uncached, page)
 		}
-		info := QueryPageInfo{
-			Page:       page,
-			BlockCount: len(blocks),
+	}
+
+	// Parallel-read uncached pages
+	if len(uncached) > 0 {
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		wg.Add(len(uncached))
+		for _, page := range uncached {
+			go func(p string) {
+				defer wg.Done()
+				content, _, err := c.ReadPage(p)
+				if err != nil || content == "" {
+					return
+				}
+				blocks := query.ExtractQueryBlocks(content)
+				if len(blocks) == 0 {
+					return
+				}
+				info := QueryPageInfo{Page: p, BlockCount: len(blocks)}
+				for _, b := range blocks {
+					info.Blocks = append(info.Blocks, QueryBlockInfo{
+						Title:  b.Title,
+						Number: b.Number,
+						SLIQ:   b.SLIQ,
+					})
+				}
+				// Store in cache and result
+				cacheKey := cacheKeyPrefix + p
+				s.pageBlockCache.Store(cacheKey, info)
+				mu.Lock()
+				result = append(result, info)
+				mu.Unlock()
+			}(page)
 		}
-		for _, b := range blocks {
-			info.Blocks = append(info.Blocks, QueryBlockInfo{
-				Title:  b.Title,
-				Number: b.Number,
-				SLIQ:   b.SLIQ,
-			})
-		}
-		result = append(result, info)
+		wg.Wait()
 	}
 
 	writeOK(w, result)
@@ -274,6 +322,10 @@ func (s *Server) handleQuerySave(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
 		return
 	}
+
+	// Invalidate cache for this page
+	cacheKey := c.BaseURL() + "|" + req.Page
+	s.pageBlockCache.Delete(cacheKey)
 
 	writeOK(w, map[string]string{"page": req.Page})
 }

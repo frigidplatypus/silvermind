@@ -8,18 +8,20 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/justin/sbtask/pkg/config"
 )
 
 type Server struct {
-	httpServer  *http.Server
-	cfg         *config.ConfigFile
-	spaceName   string
-	spaceURL    string
-	defaultPage string
-	mux         *http.ServeMux
+	httpServer     *http.Server
+	cfg            *config.ConfigFile
+	spaceName      string
+	spaceURL       string
+	defaultPage    string
+	mux            *http.ServeMux
+	pageBlockCache sync.Map
 }
 
 func NewServer(cfg *config.ConfigFile, spaceName, spaceURL, defaultPage, host string, port int) *Server {
