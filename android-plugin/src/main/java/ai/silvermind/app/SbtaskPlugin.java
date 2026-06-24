@@ -18,7 +18,6 @@ public class SbtaskPlugin extends Plugin {
         processManager.setOnStateChange(payload -> {
             notifyListeners("serviceStateChanged", payload.toJson());
         });
-        processManager.start();
     }
 
     @PluginMethod

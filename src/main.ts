@@ -6,10 +6,12 @@ import { loadTheme } from '$lib/stores/theme.svelte';
 import { loadDefaultView, getDefaultView, loadShowToday } from '$lib/stores/landing.svelte';
 import { isDesktopApp, getConfigStatusDesktop } from '$lib/desktop-bridge';
 import { startOnboarding } from '$lib/stores/onboarding.svelte';
+import { startSbtaskService } from '$lib/native/sbtask-bridge';
 import Layout from './routes/+layout.svelte';
 
 initServiceListener();
 loadSpaces().catch(() => {});
+startSbtaskService().catch(() => {});
 
 async function checkOnboarding() {
   if (!isDesktopApp()) return;
