@@ -13,6 +13,9 @@ const config: CapacitorConfig = {
     contentInset: 'automatic',
     prefersStatusBarHidden: false,
   },
+  android: {
+    webContentsDebuggingEnabled: true,
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,

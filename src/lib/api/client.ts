@@ -1,6 +1,6 @@
-// Vite proxies /api → sbtask serve in dev; desktop uses direct localhost:7433
+// Vite proxies /api → sbtask serve in dev; mobile and desktop use direct localhost:7433
 const SBTASK_PORT = 7433;
-const API_BASE = typeof window !== 'undefined' && (window as any).go?.main?.App
+const API_BASE = typeof window !== 'undefined' && ((window as any).go?.main?.App || (window as any).Capacitor)
   ? `http://127.0.0.1:${SBTASK_PORT}`
   : '/api';
 
