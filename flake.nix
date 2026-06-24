@@ -10,7 +10,13 @@
     let
       eachSystem = flake-utils.lib.eachDefaultSystem (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            config = {
+              allowUnfree = true;
+              android_sdk.accept_license = true;
+            };
+          };
 
           # ── sbtask CLI + API server (web GUI backend) ──────────────
           sbtask = pkgs.buildGoModule {
@@ -88,9 +94,48 @@
             packages = with pkgs; [
               go gopls delve
               nodejs-slim_22 pnpm
+              jdk
+              android-tools
+              just
             ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
               wails pkg-config webkitgtk_4_1 gtk3
             ];
+          };
+
+          devShells.android = let
+            compose = pkgs.androidenv.composeAndroidPackages {
+              platformVersions = [ "34" ];
+            };
+            sdk = compose.androidsdk;
+          in pkgs.mkShell {
+            packages = with pkgs; [
+              go gopls delve
+              nodejs-slim_22 pnpm
+              jdk
+              android-tools
+              just
+              sdk
+            ];
+
+            ANDROID_HOME = "${sdk}/libexec/android-sdk";
+            ANDROID_SDK_ROOT = "${sdk}/libexec/android-sdk";
+
+            shellHook = ''
+              ANDROID_USER_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}/silvermind-android-sdk"
+              SDK_MARKER="$ANDROID_USER_HOME/.nix-sdk-version"
+              CURRENT_SDK="${sdk}/libexec/android-sdk"
+
+              if [ ! -f "$SDK_MARKER" ] || [ "$(cat "$SDK_MARKER")" != "$CURRENT_SDK" ]; then
+                echo "[silvermind] Setting up writable Android SDK at $ANDROID_USER_HOME..."
+                mkdir -p "$ANDROID_USER_HOME"
+                cp -rn "$CURRENT_SDK"/* "$ANDROID_USER_HOME/" 2>/dev/null || true
+                chmod -R u+w "$ANDROID_USER_HOME" 2>/dev/null || true
+                echo "$CURRENT_SDK" > "$SDK_MARKER"
+              fi
+              export ANDROID_HOME="$ANDROID_USER_HOME"
+              export ANDROID_SDK_ROOT="$ANDROID_USER_HOME"
+              export GRADLE_USER_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}/silvermind-gradle"
+            '';
           };
 
           apps = {
