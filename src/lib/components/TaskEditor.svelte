@@ -23,8 +23,8 @@
   let text = $state(task.text);
   let status = $state(task.status || '');
   let priority = $state(task.priority || 'none');
-  let due = $state(task.due || '');
-  let scheduled = $state(task.scheduled || '');
+  let due = $state(task.due_parsed?.date || task.due || '');
+  let scheduled = $state(task.scheduled_parsed?.date || task.scheduled || '');
   let recur = $state(task.recur || '');
   let deps = $state<string[]>([...(task.depends_on || [])]);
   let parent = $state(task.parent || '');
@@ -38,12 +38,15 @@
   let extraAttrs = $state<Record<string, string>>({ ...(task.extra_attrs || {}) });
   let extraAttrCounter = 0;
 
+  const originalDue = $derived(task.due_parsed?.date || task.due || '');
+  const originalScheduled = $derived(task.scheduled_parsed?.date || task.scheduled || '');
+
   const hasChanges = $derived.by(() => {
     if (text !== task.text) return true;
     if (status !== (task.status || '')) return true;
     if (priority !== (task.priority || 'none')) return true;
-    if (due !== (task.due || '')) return true;
-    if (scheduled !== (task.scheduled || '')) return true;
+    if (due !== originalDue) return true;
+    if (scheduled !== originalScheduled) return true;
     if (recur !== (task.recur || '')) return true;
     if (deps.join(',') !== (task.depends_on || []).join(',')) return true;
     if (parent !== (task.parent || '')) return true;
@@ -121,8 +124,8 @@
       if (text !== task.text) fields.text = text;
       if (status !== (task.status || '')) fields.status = status;
       if (priority !== (task.priority || 'none')) fields.priority = priority === 'none' ? '' : priority;
-      if (due !== (task.due || '')) fields.due = due || '';
-      if (scheduled !== (task.scheduled || '')) fields.scheduled = scheduled || '';
+      if (due !== originalDue) fields.due = due || '';
+      if (scheduled !== originalScheduled) fields.scheduled = scheduled || '';
       if (recur !== (task.recur || '')) fields.recur = recur || '';
       const oldDeps = (task.depends_on || []).join(',');
       const newDeps = deps.join(',');
