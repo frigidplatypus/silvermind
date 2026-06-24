@@ -296,8 +296,9 @@
           const id = getSelectedTaskId();
           if (!id) return;
           e.preventDefault();
-          const [page, posStr] = id.split('/');
-          const pos = parseInt(posStr);
+          const lastSlash = id.lastIndexOf('/');
+          const page = id.slice(0, lastSlash);
+          const pos = parseInt(id.slice(lastSlash + 1));
           if (isNaN(pos)) return;
           markTaskDone(page, pos).then(() => {
             loadInbox();
@@ -309,8 +310,9 @@
           const id = getSelectedTaskId();
           if (!id) return;
           e.preventDefault();
-          const [page, posStr] = id.split('/');
-          const pos = parseInt(posStr);
+          const lastSlash = id.lastIndexOf('/');
+          const page = id.slice(0, lastSlash);
+          const pos = parseInt(id.slice(lastSlash + 1));
           if (isNaN(pos)) return;
           undoTask(page, pos).then(() => {
             loadInbox();
