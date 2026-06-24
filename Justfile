@@ -123,6 +123,11 @@ install-android-plugin:
 build-android: dist-mobile sbtask-fetch-android install-android-plugin cap-sync-android
     @echo "✓ Android assets ready — open with 'just cap-open-android'"
 
+# Build and install APK to connected device via adb
+install-android: build-android
+    cd android && ./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk
+    @echo "✓ Installed on connected device"
+
 # ── Nix ──────────────────────────────────────────────────────────────────────
 
 # Build with Nix (frontend dist must exist first — run 'just dist')
