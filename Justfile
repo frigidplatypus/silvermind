@@ -130,6 +130,13 @@ build-android: dist-mobile sbtask-fetch-android install-android-plugin cap-sync-
 
 # Build and install APK to connected device via adb
 install-android: build-android
+    @for cmd in npx pnpm go java adb; do \
+        if ! command -v $cmd >/dev/null 2>&1; then \
+            echo "ERROR: '$cmd' not found. Run this first:"; \
+            echo "  nix develop .#android"; \
+            exit 1; \
+        fi; \
+    done
     cd android && ./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk
     @echo "✓ Installed on connected device"
 
