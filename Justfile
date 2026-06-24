@@ -116,7 +116,12 @@ build-ios: dist-mobile sbtask-fetch cap-sync
     @echo "✓ iOS assets ready — open with 'just cap-open'"
 
 # Install Android custom plugin into generated project
+# Auto-generates the Android project if it doesn't exist (first time setup)
 install-android-plugin:
+    @if [ ! -d android/app/src/main/java/ai/silvermind/app ]; then \
+        echo "[prowl] Android project not found — running cap add android..."; \
+        npx cap add android; \
+    fi
     bash scripts/install-android-plugin.sh
 
 # Full Android build (dist + fetch + install-plugin + sync)
