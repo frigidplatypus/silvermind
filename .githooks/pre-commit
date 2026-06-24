@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+NIX_CMD="nix develop --command"
+
 rebuild_if_stale() {
   local dist_file="$1"
   local dist_dir="$2"
@@ -8,7 +10,7 @@ rebuild_if_stale() {
 
   if [ ! -f "$dist_file" ]; then
     echo "$dist_dir missing. Running $build_cmd..."
-    $build_cmd
+    $NIX_CMD bash -c "$build_cmd"
     git add "$dist_dir"
     return
   fi
@@ -17,7 +19,7 @@ rebuild_if_stale() {
 
   if [ -n "$STALE" ]; then
     echo "Frontend source changed. Rebuilding $build_cmd..."
-    $build_cmd
+    $NIX_CMD bash -c "$build_cmd"
     git add "$dist_dir"
   fi
 }
