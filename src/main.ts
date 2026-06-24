@@ -45,4 +45,5 @@ function render() {
 }
 
 render();
-window.addEventListener('hashchange', render);
+// hash changes are handled by navigate() in +layout.svelte;
+// do NOT remount on hashchange — that would destroy component state.

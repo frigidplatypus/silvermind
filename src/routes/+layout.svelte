@@ -21,7 +21,6 @@
   import GlobalPage from './global/+page.svelte';
   import BuilderPage from './builder/+page.svelte';
   import SettingsPage from './settings/+page.svelte';
-  import { goto } from '$lib/router';
   import SearchBar from '$lib/components/SearchBar.svelte';
   import TaskList from '$lib/components/TaskList.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
@@ -120,7 +119,6 @@
   function navigate(tab: string) {
     if (currentTab !== 'settings' && currentTab !== 'builder') prevTab = currentTab;
     currentTab = tab;
-    goto(`/${tab}`);
   }
 
   function handleSearchTaskTap(task: Task) {

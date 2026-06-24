@@ -404,7 +404,7 @@
           {:else if activeView === 'global'}
             <GlobalPage onTaskTap={handleTaskTap} />
           {:else if activeView === 'builder'}
-            <BuilderPage />
+            <BuilderPage onNavigate={onNavigate} />
           {:else}
             <SettingsPage />
           {/if}

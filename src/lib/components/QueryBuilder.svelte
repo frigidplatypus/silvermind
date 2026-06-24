@@ -2,9 +2,10 @@
   import Icon from './Icon.svelte';
   import { saveQuery, testQuery, checkHelpers, deployHelpers } from '$lib/api/queries';
   import { loadQueryPages } from '$lib/stores/queries.svelte';
-  import { goto } from '$lib/router';
   import { getBuilderEdit, clearBuilderEdit } from '$lib/stores/builder-edit.svelte';
   import { onMount } from 'svelte';
+
+  let { onNavigate }: { onNavigate?: (view: string) => void } = $props();
 
   let page = $state('');
   let title = $state('');
@@ -377,7 +378,9 @@
       });
       success = `Saved to "${page.trim()}" as "${title.trim()}"`;
       await loadQueryPages();
-      setTimeout(() => goto(`/queries:${page.trim()}`), 1000);
+      setTimeout(() => {
+        if (onNavigate) onNavigate(`queries:${page.trim()}`);
+      }, 1000);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to save query';
     } finally {
@@ -412,7 +415,7 @@
 </script>
 
 <div class="query-builder">
-  <h2 class="builder-title">New Query</h2>
+  <h2 class="builder-title">{create ? 'New Query' : 'Edit Query'}</h2>
 
   {#if success}
     <div class="success-banner" role="status">{success}</div>
