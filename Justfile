@@ -119,7 +119,8 @@ build-ios: dist-mobile sbtask-fetch cap-sync
 # Auto-generates the Android project if it doesn't exist (first time setup)
 install-android-plugin:
     @if [ ! -f android/app/build.gradle ]; then \
-        echo "[prowl] Android project not found — running cap add android..."; \
+        echo "[prowl] Broken or missing Android project — creating..."; \
+        rm -rf android; \
         pnpm exec cap add android; \
     fi
     bash scripts/install-android-plugin.sh
