@@ -65,7 +65,18 @@ public class SbtaskProcess {
     public void start() {
         restartCount = 0;
         stopping = false;
-        launchProcess();
+        emitStateChange("starting", null);
+        // Run binary copy on background thread — reading 9MB from assets
+        // on the main thread blocks the UI and causes a black screen.
+        new Thread(() -> {
+            String binary = setupBinary();
+            if (binary == null) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                    emitStateChange("failed", "sbtask binary not found in assets"));
+                return;
+            }
+            launchProcess(binary);
+        }).start();
     }
 
     public void stop() {
@@ -108,15 +119,7 @@ public class SbtaskProcess {
         }
     }
 
-    private void launchProcess() {
-        String binary = setupBinary();
-        if (binary == null) {
-            emitStateChange("failed", "sbtask binary not found in assets");
-            return;
-        }
-
-        emitStateChange("starting", null);
-
+    private void launchProcess(String binary) {
         try {
             ProcessBuilder pb = new ProcessBuilder(binary, "serve");
             pb.environment().put("HOME", context.getFilesDir().getAbsolutePath());
@@ -137,7 +140,7 @@ public class SbtaskProcess {
                             restartCount++;
                             emitStateChange("restarting",
                                 "sbtask " + reason + " (attempt " + restartCount + "/" + MAX_RESTARTS + ")");
-                            handler.postDelayed(this::launchProcess, RESTART_DELAY_MS);
+                            handler.postDelayed(() -> launchProcess(setupBinary()), RESTART_DELAY_MS);
                         } else {
                             stopHealthChecks();
                             emitStateChange("failed",
