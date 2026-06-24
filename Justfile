@@ -120,7 +120,7 @@ build-ios: dist-mobile sbtask-fetch cap-sync
 install-android-plugin:
     @if [ ! -d android/app/src/main/java/ai/silvermind/app ]; then \
         echo "[prowl] Android project not found — running cap add android..."; \
-        npx cap add android; \
+        pnpm exec cap add android; \
     fi
     bash scripts/install-android-plugin.sh
 
@@ -130,7 +130,7 @@ build-android: dist-mobile sbtask-fetch-android install-android-plugin cap-sync-
 
 # Build and install APK to connected device via adb
 install-android: build-android
-    @for cmd in npx pnpm go java adb; do \
+    @for cmd in pnpm go java adb; do \
         if ! command -v $cmd >/dev/null 2>&1; then \
             echo "ERROR: '$cmd' not found. Run this first:"; \
             echo "  nix develop .#android"; \
