@@ -154,6 +154,9 @@
           {:else}
             <span class="query-page-name">{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span>
           {/if}
+          {#if qp.errors && qp.errors.length > 0}
+            <Icon name="alert-triangle" size="0.75rem" />
+          {/if}
         </button>
       {:else}
         <div class="query-page-group">
@@ -169,6 +172,9 @@
               </span>
             {:else}
               <span class="query-page-name">{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span>
+            {/if}
+            {#if qp.errors && qp.errors.length > 0}
+              <Icon name="alert-triangle" size="0.75rem" />
             {/if}
           </button>
           {#each qp.blocks as block}

@@ -5,6 +5,7 @@ export interface QueryPage {
   page: string;
   block_count: number;
   blocks: QueryBlockInfo[];
+  errors?: string[];
 }
 
 export interface QueryBlockInfo {

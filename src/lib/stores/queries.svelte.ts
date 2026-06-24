@@ -1,10 +1,11 @@
 import type { Task } from '$lib/types/task';
 import type { QueryPage, QueryBlockInfo, QueryExecuteResult } from '$lib/api/queries';
-import { getQueryPages, executeQuery } from '$lib/api/queries';
+import { getQueryPages, executeQuery, getQueryBlocks } from '$lib/api/queries';
 
 let queryPages = $state<QueryPage[]>([]);
 let isLoading = $state(false);
 let error = $state<string | null>(null);
+let errorSLIQ = $state<string | null>(null);
 let currentQueryTasks = $state<Task[]>([]);
 let currentQueryTitle = $state<string | null>(null);
 let queryLoading = $state(false);
@@ -15,6 +16,7 @@ export function getQueryPagesError(): string | null { return error; }
 export function getCurrentQueryTasks(): Task[] { return currentQueryTasks; }
 export function getCurrentQueryTitle(): string | null { return currentQueryTitle; }
 export function getQueryLoading(): boolean { return queryLoading; }
+export function getErrorSLIQ(): string | null { return errorSLIQ; }
 
 export async function loadQueryPages(): Promise<void> {
   isLoading = true;
@@ -31,12 +33,12 @@ export async function loadQueryPages(): Promise<void> {
 export async function runQuery(page: string, index?: number): Promise<void> {
   queryLoading = true;
   error = null;
+  errorSLIQ = null;
   currentQueryTasks = [];
   currentQueryTitle = null;
   try {
     const results = await executeQuery(page, index);
     if (results.length > 0) {
-      // Flatten all tasks from all results
       const allTasks: Task[] = [];
       const titles: string[] = [];
       for (const result of results) {
@@ -48,6 +50,12 @@ export async function runQuery(page: string, index?: number): Promise<void> {
     }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to run query';
+    // Fetch the SLIQ so the user can open it in the editor
+    try {
+      const blocks = await getQueryBlocks(page);
+      const block = index ? blocks.find(b => b.number === index) : blocks[0];
+      if (block?.sliq) errorSLIQ = block.sliq;
+    } catch { /* best effort */ }
   } finally {
     queryLoading = false;
   }
@@ -56,4 +64,6 @@ export async function runQuery(page: string, index?: number): Promise<void> {
 export function clearQueryResults(): void {
   currentQueryTasks = [];
   currentQueryTitle = null;
+  error = null;
+  errorSLIQ = null;
 }

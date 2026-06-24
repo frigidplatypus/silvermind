@@ -13,7 +13,7 @@
   import Icon from './Icon.svelte';
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
   import { getTasks, loadInbox, loadToday } from '$lib/stores/tasks.svelte';
-  import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults } from '$lib/stores/queries.svelte';
+  import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults, getErrorSLIQ, getQueryPagesError } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import { getQueryBlocks } from '$lib/api/queries';
   import type { Task } from '$lib/types/task';
@@ -156,7 +156,10 @@
         const blocks = await getQueryBlocks(page);
         const block = blocks.find(b => b.number === blockNumber);
         sliq = block?.sliq;
-      } catch { /* pre-fill without SLIQ if fetch fails */ }
+      } catch { /* fall through to error SLIQ */ }
+    }
+    if (!sliq) {
+      sliq = getErrorSLIQ() ?? undefined;
     }
 
     setBuilderEdit(page, title, blockNumber, sliq);
@@ -193,6 +196,7 @@
   const queryTitle = $derived(getCurrentQueryTitle());
   const queryTasks = $derived(getCurrentQueryTasks());
   const queryLoading = $derived(getQueryLoading());
+  const queryError = $derived(getQueryPagesError());
 
   const viewTitle = $derived(
     getIsActive() ? 'Search'
@@ -367,6 +371,14 @@
         {#snippet left()}
           {#if queryLoading}
             <div class="query-loading">Running query…</div>
+          {:else if queryError}
+            <div class="query-error">
+              <Icon name="alert-triangle" size="1rem" />
+              <span class="query-error-text">{queryError}</span>
+              <button class="query-fix-btn" onclick={handleEditQuery}>
+                <Icon name="edit-3" size="0.875rem" /> Fix Query
+              </button>
+            </div>
           {:else}
             <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} emptyMessage="No tasks found" />
           {/if}
@@ -485,6 +497,40 @@
     justify-content: center;
     padding: 3rem 1rem;
     color: var(--color-text-secondary);
+  }
+  .query-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-lg);
+    color: var(--color-danger);
+    text-align: center;
+  }
+  .query-error-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    max-width: 32rem;
+    line-height: 1.5;
+  }
+  .query-fix-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    border-radius: var(--radius-md);
+  }
+  .query-fix-btn:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
   }
   .search-results {
     flex: 1;

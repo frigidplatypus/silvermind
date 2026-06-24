@@ -31,6 +31,7 @@ type QueryPageInfo struct {
 	Page       string            `json:"page"`
 	BlockCount int               `json:"block_count"`
 	Blocks     []QueryBlockInfo  `json:"blocks,omitempty"`
+	Errors     []string          `json:"errors,omitempty"`
 }
 
 // QueryExecuteRequest is the JSON body for the queries/execute endpoint.
@@ -108,10 +109,28 @@ func (s *Server) handleQueryPages(w http.ResponseWriter, r *http.Request) {
 				defer wg.Done()
 				content, _, err := c.ReadPage(p)
 				if err != nil || content == "" {
+					info := QueryPageInfo{
+						Page:   p,
+						Errors: []string{"Could not read page — check the page exists and is accessible."},
+					}
+					cacheKey := cacheKeyPrefix + p
+					s.pageBlockCache.Store(cacheKey, info)
+					mu.Lock()
+					result = append(result, info)
+					mu.Unlock()
 					return
 				}
 				blocks := query.ExtractQueryBlocks(content)
 				if len(blocks) == 0 {
+					info := QueryPageInfo{
+						Page:   p,
+						Errors: []string{"No query blocks found — the page may use unsupported SLIQ syntax. View in SilverBullet to confirm."},
+					}
+					cacheKey := cacheKeyPrefix + p
+					s.pageBlockCache.Store(cacheKey, info)
+					mu.Lock()
+					result = append(result, info)
+					mu.Unlock()
 					return
 				}
 				info := QueryPageInfo{Page: p, BlockCount: len(blocks)}
@@ -249,7 +268,7 @@ func (s *Server) handleQueryExecute(w http.ResponseWriter, r *http.Request) {
 		filter, postFilter := query.TranslateSLIQ(b.SLIQ)
 		tasks, err := q.Execute(filter)
 		if err != nil {
-			writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
+			writeError(w, http.StatusBadGateway, "upstream_unavailable", wrapQueryError(err).Error())
 			return
 		}
 		if postFilter != nil {
@@ -334,6 +353,18 @@ func containsFold(haystack, needle string) bool {
 	return strings.Contains(strings.ToLower(haystack), strings.ToLower(needle))
 }
 
+// wrapQueryError translates cryptic SilverBullet runtime errors into
+// user-friendly messages with actionable guidance.
+func wrapQueryError(err error) error {
+	msg := err.Error()
+	if strings.Contains(msg, "Cannot read properties of null (reading 'length')") {
+		return fmt.Errorf("%s\n\nThis is a SilverBullet bug — some tasks have empty or null tags. "+
+			"Edit the query in SilverMind's Query Builder and use the tag filter controls instead of "+
+			"hand-editing table.includes in the SLIQ", msg)
+	}
+	return err
+}
+
 type QueryTestRequest struct {
 	SLIQ string `json:"sliq"`
 }
@@ -365,7 +396,7 @@ func (s *Server) handleQueryTest(w http.ResponseWriter, r *http.Request) {
 	q := query.NewQuery(c)
 	tasks, err := q.Execute(filter)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
+		writeError(w, http.StatusBadGateway, "upstream_unavailable", wrapQueryError(err).Error())
 		return
 	}
 	if postFilter != nil {
