@@ -118,7 +118,7 @@ build-ios: dist-mobile sbtask-fetch cap-sync
 # Install Android custom plugin into generated project
 # Auto-generates the Android project if it doesn't exist (first time setup)
 install-android-plugin:
-    @if [ ! -d android/app/src/main/java/ai/silvermind/app ]; then \
+    @if [ ! -f android/app/build.gradle ]; then \
         echo "[prowl] Android project not found — running cap add android..."; \
         pnpm exec cap add android; \
     fi
