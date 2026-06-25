@@ -96,23 +96,27 @@ public class SbtaskProcess {
 
     private String setupBinary() {
         try {
-            File destDir = new File(context.getFilesDir(), "sbtask");
-            destDir.mkdirs();
-            File destFile = new File(destDir, "sbtask");
-
-            if (!destFile.exists()) {
-                try (InputStream in = context.getAssets().open("sbtask");
-                     FileOutputStream out = new FileOutputStream(destFile)) {
-                    byte[] buf = new byte[8192];
-                    int len;
-                    while ((len = in.read(buf)) != -1) {
-                        out.write(buf, 0, len);
-                    }
-                }
-                destFile.setExecutable(true);
+            // On Android 10+, binaries can only be executed from the native lib dir.
+            // We prefer the APK's jniLibs copy (auto-extracted by Android) and
+            // fall back to extracting from assets into the lib directory.
+            String nativeLibDir = context.getApplicationInfo().nativeLibraryDir;
+            File libPath = new File(nativeLibDir, "libsbtask_exec.so");
+            
+            if (libPath.exists() && libPath.canExecute()) {
+                return libPath.getAbsolutePath();
             }
 
-            return destFile.getAbsolutePath();
+            try (InputStream in = context.getAssets().open("sbtask");
+                 FileOutputStream out = new FileOutputStream(libPath)) {
+                byte[] buf = new byte[8192];
+                int len;
+                while ((len = in.read(buf)) != -1) {
+                    out.write(buf, 0, len);
+                }
+            }
+            libPath.setExecutable(true);
+
+            return libPath.getAbsolutePath();
         } catch (Exception e) {
             Log.e(TAG, "Failed to setup binary", e);
             return null;
@@ -121,7 +125,7 @@ public class SbtaskProcess {
 
     private void launchProcess(String binary) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(binary, "serve");
+            ProcessBuilder pb = new ProcessBuilder(binary, "serve", "--port", String.valueOf(HEALTH_PORT));
             pb.environment().put("HOME", context.getFilesDir().getAbsolutePath());
             pb.redirectErrorStream(true);
 
@@ -153,6 +157,7 @@ public class SbtaskProcess {
             }).start();
 
         } catch (Exception e) {
+            Log.e(TAG, "Failed to start sbtask: " + e.getMessage(), e);
             emitStateChange("failed", "Failed to start sbtask: " + e.getMessage());
         }
     }

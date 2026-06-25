@@ -3,6 +3,7 @@
   import Icon from './Icon.svelte';
   import { getOnboardingStep, getSbtaskSpaces, startOnboarding, closeOnboarding } from '$lib/stores/onboarding.svelte';
   import { isDesktopApp, setSharedConfigDesktop, migrateSbtaskConfigDesktop, verifySpaceDesktop, addSpaceDesktop } from '$lib/desktop-bridge';
+  import { addSpace, verifySpace } from '$lib/api/spaces';
   import { loadSpaces } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { deployHelpers } from '$lib/api/queries';
@@ -40,6 +41,9 @@
     try {
       if (isDesktopApp()) {
         verifyResult = await verifySpaceDesktop(url.trim(), authToken || undefined);
+      } else {
+        const res = await verifySpace({ url: url.trim(), auth_token: authToken || undefined });
+        verifyResult = { ok: res.ok, task_count: res.task_count, error: res.error };
       }
     } catch (e: any) {
       verifyResult = { ok: false, error: e?.error || e?.message || 'Verification failed' };
@@ -55,11 +59,13 @@
     try {
       if (isDesktopApp()) {
         await addSpaceDesktop(name.trim(), url.trim(), 'Tasks', 'Inbox', authToken);
-        await loadSpaces();
-        deployHelpers().catch(() => {});
-        loadInbox();
-        closeOnboarding();
+      } else {
+        await addSpace({ name: name.trim(), url: url.trim(), auth_token: authToken || undefined });
       }
+      await loadSpaces();
+      deployHelpers().catch(() => {});
+      loadInbox();
+      closeOnboarding();
     } catch (e: any) {
       error = e?.error || e?.message || String(e);
     } finally {
@@ -98,6 +104,8 @@
       saving = false;
     }
   }
+
+  const showMigrationOptions = $derived(isDesktopApp());
 </script>
 
 <div class="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Silvermind Setup">
@@ -107,7 +115,7 @@
       <h1>Silvermind</h1>
     </div>
 
-    {#if getOnboardingStep() === 'migration'}
+    {#if getOnboardingStep() === 'migration' && showMigrationOptions}
       <p class="onboarding-desc">Found existing sbtask configuration.</p>
       <div class="migration-spaces">
         {#each getSbtaskSpaces() as s}
@@ -135,7 +143,7 @@
         </button>
         <span class="action-hint">Skip and add spaces manually</span>
       </div>
-    {:else if getOnboardingStep() === 'add-space'}
+    {:else if getOnboardingStep() === 'add-space' || (getOnboardingStep() === 'migration' && !showMigrationOptions)}
       <p class="onboarding-desc">Connect to your SilverBullet wiki to get started.</p>
 
       <div class="form-field">
@@ -317,3 +325,4 @@
   .btn-ghost { background: transparent; color: var(--color-text-tertiary); }
   .btn-ghost:hover:not(:disabled) { color: var(--color-text-secondary); }
 </style>
+

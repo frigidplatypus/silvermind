@@ -28,11 +28,14 @@
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
   import { getDefaultView, getShowToday, loadShowToday } from '$lib/stores/landing.svelte';
   import type { Task } from '$lib/types/task';
+  import QueriesPage from './queries/+page.svelte';
+  import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, getQueryError, runQuery, clearQueryResults, loadQueryPages } from '$lib/stores/queries.svelte';
 
   let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
   let prevTab = $state<string>('inbox');
   let searchSelectedTask = $state<Task | null>(null);
+  let querySelectedTask = $state<Task | null>(null);
 
   function isEditing(): boolean {
     const el = document.activeElement;
@@ -96,7 +99,12 @@
             if (wailsRuntime?.BrowserOpenURL) {
               wailsRuntime.BrowserOpenURL(link.href);
             } else {
-              window.open(link.href, '_blank');
+              const Browser = (window as any).Capacitor?.Plugins?.Browser;
+              if (Browser?.open) {
+                Browser.open({ url: link.href });
+              } else {
+                window.open(link.href, '_blank');
+              }
             }
           }
         }
@@ -111,13 +119,30 @@
     if (spaceId) { loadInbox(); loadTaskNames(); loadTagNames(); }
   });
 
+  $effect(() => {
+    if (currentTab.startsWith('queries:')) {
+      const parts = currentTab.slice(8).split(':');
+      const page = parts[0];
+      const index = parts[1] ? parseInt(parts[1]) : undefined;
+      querySelectedTask = null;
+      clearQueryResults();
+      runQuery(page, index);
+    }
+  });
+
+  $effect(() => {
+    if (currentTab === 'queries') {
+      loadQueryPages();
+    }
+  });
+
   function handleSearchClick() {
     activateSearch(currentTab === 'global' ? 'global' : 'active');
     setTimeout(() => document.getElementById('search-input')?.focus(), 0);
   }
 
   function navigate(tab: string) {
-    if (currentTab !== 'settings' && currentTab !== 'builder') prevTab = currentTab;
+    if (currentTab !== 'settings' && currentTab !== 'builder' && !currentTab.startsWith('queries:')) prevTab = currentTab;
     currentTab = tab;
   }
 
@@ -135,8 +160,10 @@
     : currentTab === 'inbox' ? 'Task List'
     : currentTab === 'today' ? 'Today'
     : currentTab === 'global' ? 'All Tasks'
+    : currentTab === 'queries' ? 'Queries'
     : currentTab === 'builder' ? 'New Query'
     : currentTab === 'settings' ? 'Settings'
+    : currentTab.startsWith('queries:') ? (getCurrentQueryTitle() || 'Query Results')
     : ''
   );
 </script>
@@ -152,7 +179,7 @@
           <button class="header-btn" onclick={() => deactivateSearch()} aria-label="Back"><Icon name="arrow-left" /></button>
         {/if}
         <h1 class="app-title">{pageTitle}</h1>
-        {#if !getIsActive() && currentTab !== 'settings' && currentTab !== 'builder'}
+        {#if !getIsActive() && currentTab !== 'settings' && currentTab !== 'builder' && !currentTab.startsWith('queries:')}
           <button class="header-btn" onclick={handleSearchClick} aria-label="Search">
             <Icon name="search" />
           </button>
@@ -160,7 +187,7 @@
           <button class="header-btn" onclick={() => navigate('settings')} aria-label="Settings">
             <Icon name="settings" />
           </button>
-        {:else if !getIsActive() && (currentTab === 'settings' || currentTab === 'builder')}
+        {:else if !getIsActive() && (currentTab === 'settings' || currentTab === 'builder' || currentTab.startsWith('queries:'))}
           <button class="header-btn" onclick={() => navigate(prevTab)} aria-label="Back"><Icon name="arrow-left" /></button>
         {/if}
       </div>
@@ -183,8 +210,24 @@
       {/if}
     {:else}
       <main class="app-main">
-        {#if currentTab === 'inbox'}<InboxPage />{:else if currentTab === 'today'}<TodayPage />{:else if currentTab === 'global'}<GlobalPage />{:else if currentTab === 'builder'}<BuilderPage />{:else}<SettingsPage />{/if}
+        {#if currentTab === 'inbox'}<InboxPage />
+        {:else if currentTab === 'today'}<TodayPage />
+        {:else if currentTab === 'global'}<GlobalPage />
+        {:else if currentTab === 'queries'}<QueriesPage onNavigate={navigate} />
+        {:else if currentTab === 'builder'}<BuilderPage />
+        {:else if currentTab.startsWith('queries:')}
+          {#if getQueryLoading()}
+            <div class="search-empty">Running query...</div>
+          {:else if getQueryError()}
+            <div class="search-empty">{getQueryError()}</div>
+          {:else}
+            <TaskList tasks={getCurrentQueryTasks()} onTaskTap={(t) => (querySelectedTask = t)} emptyMessage="No tasks matched." />
+          {/if}
+        {:else}<SettingsPage />{/if}
       </main>
+    {/if}
+    {#if querySelectedTask}
+      <TaskDetail task={querySelectedTask} variant="overlay" onclose={() => (querySelectedTask = null)} />
     {/if}
     <nav class="tab-bar" role="tablist" aria-label="Main navigation" style="padding-bottom: var(--safe-area-bottom)">
       <button class="tab-button" class:active={currentTab === 'inbox'} role="tab" aria-selected={currentTab === 'inbox'} onclick={() => navigate('inbox')}>
@@ -198,8 +241,11 @@
       <button class="tab-button" class:active={currentTab === 'global'} role="tab" aria-selected={currentTab === 'global'} onclick={() => navigate('global')}>
         <span class="tab-icon"><Icon name="globe" /></span><span class="tab-label">All</span>
       </button>
+      <button class="tab-button" class:active={currentTab === 'queries' || currentTab.startsWith('queries:')} role="tab" aria-selected={currentTab === 'queries' || currentTab.startsWith('queries:')} onclick={() => navigate('queries')}>
+        <span class="tab-icon"><Icon name="search" /></span><span class="tab-label">Queries</span>
+      </button>
     </nav>
-    {#if currentTab !== 'settings' && currentTab !== 'builder' && !getIsActive()}<FloatingAddButton />{/if}
+    {#if currentTab !== 'settings' && currentTab !== 'builder' && !currentTab.startsWith('queries:') && !getIsActive()}<FloatingAddButton />{/if}
   </div>
 {/if}
 {#if getShowOnboarding()}

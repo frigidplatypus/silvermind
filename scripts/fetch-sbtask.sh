@@ -15,11 +15,18 @@ case "${TARGET}" in
     CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o "${SBTASK_OUTPUT}" ./cmd/sbtask
     ;;
   android)
-    SBTASK_OUTPUT="${SBTASK_OUTPUT:-${REPO_ROOT}/android/app/src/main/assets/sbtask}"
+    SBTASK_OUTPUT="${SBTASK_OUTPUT:-${REPO_ROOT}/android/app/src/main/jniLibs/arm64-v8a/libsbtask_exec.so}"
     mkdir -p "$(dirname "${SBTASK_OUTPUT}")"
-    echo "[prowl] Building sbtask for Android arm64 from ${SBTASK_SRC}..."
+    echo "[prowl] Building sbtask for Android arm64 (CGO) from ${SBTASK_SRC}..."
+
+    # Use NDK cross-compiler so DNS resolution uses the system resolver (required for Tailscale MagicDNS etc.)
+    NDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/ndk/27.0.12077973"
+    TOOLCHAIN="${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+    export CC="${TOOLCHAIN}/aarch64-linux-android21-clang"
+    export CXX="${TOOLCHAIN}/aarch64-linux-android21-clang++"
+
     cd "${SBTASK_SRC}"
-    CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -o "${SBTASK_OUTPUT}" ./cmd/sbtask
+    CGO_ENABLED=1 GOOS=android GOARCH=arm64 go build -o "${SBTASK_OUTPUT}" ./cmd/sbtask
     ;;
   *)
     echo "Usage: $0 [ios|android]"

@@ -53,6 +53,66 @@
 </script>
 
 {#if task && !editing}
+  {#snippet metaContent()}
+    <div class="detail-meta">
+      <div class="meta-row">
+        <span class="meta-label">Page</span>
+        <span class="meta-value">{task.page}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Position</span>
+        <span class="meta-value">{task.position}</span>
+      </div>
+      {#if task.parent}
+        <div class="meta-row">
+          <span class="meta-label">Parent</span>
+          <span class="meta-value">{task.parent}</span>
+        </div>
+      {/if}
+      <div class="meta-row">
+        <span class="meta-label">Priority</span>
+        <span class="meta-value">{task.priority || 'none'}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Status</span>
+        <span class="meta-value">{task.done ? 'Done' : 'Active'}</span>
+      </div>
+      {#if task.due_parsed?.date}
+        <div class="meta-row">
+          <span class="meta-label">Due</span>
+          <span class="meta-value">{task.due_parsed.date}</span>
+        </div>
+      {/if}
+      {#if task.scheduled_parsed?.date}
+        <div class="meta-row">
+          <span class="meta-label">Scheduled</span>
+          <span class="meta-value">{task.scheduled_parsed.date}</span>
+        </div>
+      {/if}
+      {#if task.tags.length > 0}
+        <div class="meta-row">
+          <span class="meta-label">Tags</span>
+          <div class="tags">
+            {#each task.tags as tag}
+              <span class="tag">{tag}</span>
+            {/each}
+          </div>
+        </div>
+      {/if}
+      {#if task.extra_attrs && Object.keys(task.extra_attrs).length > 0}
+        {#each Object.entries(task.extra_attrs) as [key, val]}
+          <div class="meta-row">
+            <span class="meta-label">{key}</span>
+            <span class="meta-value">{val}</span>
+          </div>
+        {/each}
+      {/if}
+    </div>
+    <button class="done-btn" class:is-done={task.done} onclick={toggleDone} disabled={toggling} aria-label={doneLabel}>
+      <Icon name={doneIcon} /> {toggling ? '…' : doneLabel}
+    </button>
+  {/snippet}
+
   {#if variant === 'panel'}
     <div class="panel" role="region" aria-label="Task details">
       <div class="panel-header">
@@ -62,65 +122,6 @@
       <div class="detail-body">
         <Markdown text={task.text} />
       </div>
-      {#snippet metaContent()}
-        <div class="detail-meta">
-          <div class="meta-row">
-            <span class="meta-label">Page</span>
-            <span class="meta-value">{task.page}</span>
-          </div>
-          <div class="meta-row">
-            <span class="meta-label">Position</span>
-            <span class="meta-value">{task.position}</span>
-          </div>
-          {#if task.parent}
-            <div class="meta-row">
-              <span class="meta-label">Parent</span>
-              <span class="meta-value">{task.parent}</span>
-            </div>
-          {/if}
-          <div class="meta-row">
-            <span class="meta-label">Priority</span>
-            <span class="meta-value">{task.priority || 'none'}</span>
-          </div>
-          <div class="meta-row">
-            <span class="meta-label">Status</span>
-            <span class="meta-value">{task.done ? 'Done' : 'Active'}</span>
-          </div>
-          {#if task.due_parsed?.date}
-            <div class="meta-row">
-              <span class="meta-label">Due</span>
-              <span class="meta-value">{task.due_parsed.date}</span>
-            </div>
-          {/if}
-          {#if task.scheduled_parsed?.date}
-            <div class="meta-row">
-              <span class="meta-label">Scheduled</span>
-              <span class="meta-value">{task.scheduled_parsed.date}</span>
-            </div>
-          {/if}
-          {#if task.tags.length > 0}
-            <div class="meta-row">
-              <span class="meta-label">Tags</span>
-              <div class="tags">
-                {#each task.tags as tag}
-                  <span class="tag">{tag}</span>
-                {/each}
-              </div>
-            </div>
-          {/if}
-          {#if task.extra_attrs && Object.keys(task.extra_attrs).length > 0}
-            {#each Object.entries(task.extra_attrs) as [key, val]}
-              <div class="meta-row">
-                <span class="meta-label">{key}</span>
-                <span class="meta-value">{val}</span>
-              </div>
-            {/each}
-          {/if}
-        </div>
-        <button class="done-btn" class:is-done={task.done} onclick={toggleDone} disabled={toggling} aria-label={doneLabel}>
-          <Icon name={doneIcon} /> {toggling ? '…' : doneLabel}
-        </button>
-      {/snippet}
       {@render metaContent()}
     </div>
   {:else}

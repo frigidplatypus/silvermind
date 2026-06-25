@@ -1,7 +1,7 @@
 import { mount, unmount } from 'svelte';
 import './app.css';
 import { initServiceListener } from '$lib/stores/service.svelte';
-import { loadSpaces } from '$lib/stores/space.svelte';
+import { loadSpaces, getSpacesList, getSpacesLoading } from '$lib/stores/space.svelte';
 import { loadTheme } from '$lib/stores/theme.svelte';
 import { loadDefaultView, getDefaultView, loadShowToday } from '$lib/stores/landing.svelte';
 import { isDesktopApp, getConfigStatusDesktop } from '$lib/desktop-bridge';
@@ -14,17 +14,25 @@ loadSpaces().catch(() => {});
 startSbtaskService().catch(() => {});
 
 async function checkOnboarding() {
-  if (!isDesktopApp()) return;
-  try {
-    const status = await getConfigStatusDesktop();
-    if (!status.exists || status.space_count === 0) {
-      if (status.sbtask_exists && status.space_count > 0) {
-        startOnboarding('migration', status.spaces.map(s => ({ name: s.name, url: s.url })));
-      } else {
-        startOnboarding('add-space');
+  if (isDesktopApp()) {
+    try {
+      const status = await getConfigStatusDesktop();
+      if (!status.exists || status.space_count === 0) {
+        if (status.sbtask_exists && status.space_count > 0) {
+          startOnboarding('migration', status.spaces.map(s => ({ name: s.name, url: s.url })));
+        } else {
+          startOnboarding('add-space');
+        }
       }
-    }
-  } catch { /* silently skip onboarding if bridge fails */ }
+    } catch { /* silently skip onboarding if bridge fails */ }
+    return;
+  }
+
+  await new Promise(r => setTimeout(r, 2000));
+  await loadSpaces().catch(() => {});
+  if (getSpacesList().length === 0) {
+    startOnboarding('add-space');
+  }
 }
 
 loadTheme();

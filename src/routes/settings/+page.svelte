@@ -6,6 +6,7 @@
   import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
   import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
+  import { addSpace, updateSpace, removeSpace, setActiveSpaceApi, verifySpace } from '$lib/api/spaces';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
   import { deployHelpers } from '$lib/api/queries';
 
@@ -35,7 +36,12 @@
     verifyingAdd = true;
     verifyAddResult = null;
     try {
-      verifyAddResult = await verifySpaceDesktop(newUrl.trim(), newAuthToken || undefined);
+      if (isDesktop) {
+        verifyAddResult = await verifySpaceDesktop(newUrl.trim(), newAuthToken || undefined);
+      } else {
+        const res = await verifySpace({ url: newUrl.trim(), auth_token: newAuthToken || undefined });
+        verifyAddResult = { ok: res.ok, task_count: res.task_count, error: res.error };
+      }
     } catch (e: any) {
       verifyAddResult = { ok: false, error: e?.error || e?.message || 'Verification failed' };
     } finally {
@@ -48,7 +54,12 @@
     verifyingEdit = true;
     verifyEditResult = null;
     try {
-      verifyEditResult = await verifySpaceDesktop(editUrl.trim(), editAuthToken || undefined);
+      if (isDesktop) {
+        verifyEditResult = await verifySpaceDesktop(editUrl.trim(), editAuthToken || undefined);
+      } else {
+        const res = await verifySpace({ url: editUrl.trim(), auth_token: editAuthToken || undefined });
+        verifyEditResult = { ok: res.ok, task_count: res.task_count, error: res.error };
+      }
     } catch (e: any) {
       verifyEditResult = { ok: false, error: e?.error || e?.message || 'Verification failed' };
     } finally {
@@ -88,7 +99,11 @@
     saving = true;
     error = null;
     try {
-      await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage, editAuthToken);
+      if (isDesktop) {
+        await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage, editAuthToken);
+      } else {
+        await updateSpace(originalName, { name: name !== originalName ? name : undefined, url, default_page: editDefaultPage || undefined, inbox_page: editInboxPage || undefined, auth_token: editAuthToken || undefined });
+      }
       editingSpace = null;
       await loadSpaces();
       deployHelpers().catch(() => {});
@@ -109,7 +124,11 @@
     saving = true;
     error = null;
     try {
-      await addSpaceDesktop(name, url, '', '', newAuthToken);
+      if (isDesktop) {
+        await addSpaceDesktop(name, url, '', '', newAuthToken);
+      } else {
+        await addSpace({ name, url, auth_token: newAuthToken || undefined });
+      }
       newName = '';
       newUrl = '';
       newAuthToken = '';
@@ -129,7 +148,11 @@
     saving = true;
     error = null;
     try {
-      await removeSpaceDesktop(name);
+      if (isDesktop) {
+        await removeSpaceDesktop(name);
+      } else {
+        await removeSpace(name);
+      }
       await loadSpaces();
       showSuccess('Space removed');
     } catch (e: any) {
@@ -153,6 +176,9 @@
         error = msg;
       }
     } else {
+      try {
+        await setActiveSpaceApi(name);
+      } catch {}
       await setActiveSpace(name);
     }
   }
@@ -203,7 +229,7 @@
     <div class="space-list">
       {#each getSpacesList() as space}
         <div class="space-item">
-          {#if isDesktop && editingSpace === space.name}
+          {#if editingSpace === space.name}
             <div class="space-edit-form">
               <label class="field-label" for="edit-name-{space.name}">Name</label>
               <input id="edit-name-{space.name}" type="text" class="field" bind:value={editName} disabled={saving} />
@@ -250,8 +276,7 @@
               {:else}
                 <span class="active-badge">Active</span>
               {/if}
-              {#if isDesktop}
-                <button class="action-btn edit" onclick={() => startEdit(space)} aria-label="Edit space {space.name}">
+              <button class="action-btn edit" onclick={() => startEdit(space)} aria-label="Edit space {space.name}">
                   <Icon name="edit-3" size="1rem" />
                 </button>
                 {#if getSpacesList().length > 1}
@@ -259,16 +284,14 @@
                     <Icon name="trash-2" size="1rem" />
                   </button>
                 {/if}
-              {/if}
             </div>
           {/if}
         </div>
       {/each}
     </div>
 
-    {#if isDesktop}
-      <div class="add-space-form">
-        <h4 class="form-title">Add Space</h4>
+    <div class="add-space-form">
+      <h4 class="form-title">Add Space</h4>
         <input type="text" class="field" placeholder="Space name" bind:value={newName} disabled={saving} />
         <input type="text" class="field" placeholder="Space URL" bind:value={newUrl} disabled={saving} />
         <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
@@ -292,9 +315,6 @@
           {saving ? 'Adding…' : 'Add Space'}
         </button>
       </div>
-    {:else}
-      <p class="section-desc">Spaces are configured in your Silvermind config file (~/.config/silvermind/config.yaml).</p>
-    {/if}
   </section>
 
   <section class="section">

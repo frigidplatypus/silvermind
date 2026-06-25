@@ -32,15 +32,14 @@ export async function loadSpaces(): Promise<void> {
   errorVal = null;
   try {
     const res = await getSpaces();
-    // sbtask serve returns plain array: [{name, url, active}]
     const raw = Array.isArray(res) ? res : [];
     spacesVal = raw.map((s: any) => ({
-      id: s.name || s.url,
-      name: s.name || s.url,
-      url: s.url,
-      active: s.active ?? false,
-      is_default: s.is_default ?? false,
-    }));
+        id: s.name || s.url,
+        name: s.name || s.url,
+        url: s.url,
+        active: s.active ?? false,
+        is_default: s.is_default ?? false,
+      }));
     const value = restore(ACTIVE_SPACE_KEY);
     if (value && spacesVal.some((s) => s.id === value)) {
       activeIdVal = value;

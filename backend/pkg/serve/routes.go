@@ -5,6 +5,11 @@ import "net/http"
 func registerRoutes(s *Server, mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /spaces", s.handleSpaces)
+	mux.HandleFunc("POST /spaces", s.handleSpacesAdd)
+	mux.HandleFunc("PUT /spaces/{name}", s.handleSpacesUpdate)
+	mux.HandleFunc("DELETE /spaces/{name}", s.handleSpacesRemove)
+	mux.HandleFunc("PUT /spaces/active", s.handleSpacesSetActive)
+	mux.HandleFunc("POST /spaces/verify", s.handleSpacesVerify)
 	mux.HandleFunc("GET /today", s.handleToday)
 	mux.HandleFunc("GET /tasks", s.handleListTasks)
 	mux.HandleFunc("GET /tasks/{pos}", s.handleGetTask)
@@ -20,5 +25,4 @@ func registerRoutes(s *Server, mux *http.ServeMux) {
 	mux.HandleFunc("GET /helpers/check", s.handleHelpersCheck)
 	mux.HandleFunc("POST /helpers/deploy", s.handleHelpersDeploy)
 	mux.HandleFunc("GET /config/status", s.handleConfigStatus)
-	mux.HandleFunc("POST /spaces/verify", s.handleSpacesVerify)
 }

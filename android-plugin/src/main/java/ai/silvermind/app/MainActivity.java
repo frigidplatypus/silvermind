@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "onCreate — starting Silvermind");
+        registerPlugin(SbtaskPlugin.class);
         super.onCreate(savedInstanceState);
         try {
             Toast.makeText(this, "Silvermind starting...", Toast.LENGTH_SHORT).show();

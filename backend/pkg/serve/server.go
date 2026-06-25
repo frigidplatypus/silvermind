@@ -17,22 +17,25 @@ import (
 type Server struct {
 	httpServer     *http.Server
 	cfg            *config.ConfigFile
+	configPath     string
 	spaceName      string
 	spaceURL       string
 	defaultPage    string
 	mux            *http.ServeMux
 	pageBlockCache sync.Map
+	mu             sync.Mutex
 }
 
-func NewServer(cfg *config.ConfigFile, spaceName, spaceURL, defaultPage, host string, port int) *Server {
+func NewServer(cfg *config.ConfigFile, configPath, spaceName, spaceURL, defaultPage, host string, port int) *Server {
 	mux := http.NewServeMux()
 
 	s := &Server{
-		cfg:         cfg,
-		spaceName:   spaceName,
-		spaceURL:    spaceURL,
+		cfg:        cfg,
+		configPath: configPath,
+		spaceName:  spaceName,
+		spaceURL:   spaceURL,
 		defaultPage: defaultPage,
-		mux:         mux,
+		mux:        mux,
 	}
 
 	registerRoutes(s, mux)

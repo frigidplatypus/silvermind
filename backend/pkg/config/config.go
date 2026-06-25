@@ -30,14 +30,7 @@ type ConfigFile struct {
 
 func DefaultConfig() *ConfigFile {
 	return &ConfigFile{
-		Spaces: map[string]SpaceConfig{
-			"main": {
-				Space:       "http://localhost:3000",
-				DefaultPage: "Tasks",
-				InboxPage:   "Inbox",
-			},
-		},
-		ActiveSpace: "main",
+		Spaces: map[string]SpaceConfig{},
 	}
 }
 

@@ -96,7 +96,7 @@
 <style>
   .fab {
     position: fixed;
-    bottom: calc(1.5rem + var(--safe-area-bottom, 0px));
+    bottom: calc(5rem + var(--safe-area-bottom, 0px));
     right: 1.5rem;
     width: 3.5rem;
     height: 3.5rem;

@@ -39,7 +39,11 @@ Endpoints:
 			return err
 		}
 
-		s := serve.NewServer(cfg, spaceName, spaceURLFlag, defaultPage, serveHost, servePort)
+		path := cfgFile
+		if path == "" {
+			path = config.DefaultConfigPath()
+		}
+		s := serve.NewServer(cfg, path, spaceName, spaceURLFlag, defaultPage, serveHost, servePort)
 		if serveWebGUI != "" {
 			s.SetWebGUI(serveWebGUI)
 		}

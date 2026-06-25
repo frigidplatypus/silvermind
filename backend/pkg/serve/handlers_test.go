@@ -26,7 +26,7 @@ func newTestServer(t *testing.T, fsHandler http.HandlerFunc) (fs *httptest.Serve
 		ActiveSpace: "main",
 	}
 
-	srv = NewServer(cfg, "main", fs.URL, "", "127.0.0.1", 0)
+	srv = NewServer(cfg, "", "main", fs.URL, "", "127.0.0.1", 0)
 	httpSrv = httptest.NewServer(srv.Handler())
 	t.Cleanup(httpSrv.Close)
 
