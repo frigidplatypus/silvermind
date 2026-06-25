@@ -451,6 +451,51 @@ func (s *Server) handleMarkUndone(w http.ResponseWriter, r *http.Request) {
 	s.handleToggleDone(w, r, task.StatusActive)
 }
 
+func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
+	page := r.URL.Query().Get("page")
+	if !checkPage(w, page) {
+		return
+	}
+	pos, ok := parsePos(w, r)
+	if !ok {
+		return
+	}
+
+	c, _, err := s.resolveSpace(r)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	var notFound bool
+	err = c.ReadModifyWrite(page, func(content string) (string, error) {
+		if content == "" {
+			notFound = true
+			return "", &notFoundError{fmt.Sprintf("page %s not found", page)}
+		}
+
+		lines := strings.Split(content, "\n")
+		idx := task.FindNthTask(lines, pos)
+		if idx == -1 {
+			notFound = true
+			return "", &notFoundError{fmt.Sprintf("task not found on page %s at position %d", page, pos)}
+		}
+
+		newLines := append(lines[:idx], lines[idx+1:]...)
+		return strings.Join(newLines, "\n"), nil
+	})
+	if err != nil {
+		if notFound {
+			writeError(w, http.StatusNotFound, "not_found", err.Error())
+		} else {
+			writeError(w, http.StatusBadGateway, "upstream_unavailable", err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) handleToggleDone(w http.ResponseWriter, r *http.Request, newStatus string) {
 	page := r.URL.Query().Get("page")
 	if !checkPage(w, page) {

@@ -17,6 +17,7 @@ func registerRoutes(s *Server, mux *http.ServeMux) {
 	mux.HandleFunc("PUT /tasks/{pos}", s.handleModifyTask)
 	mux.HandleFunc("PUT /tasks/{pos}/done", s.handleMarkDone)
 	mux.HandleFunc("PUT /tasks/{pos}/undo", s.handleMarkUndone)
+	mux.HandleFunc("DELETE /tasks/{pos}", s.handleDeleteTask)
 	mux.HandleFunc("GET /queries", s.handleQueryPages)
 	mux.HandleFunc("GET /queries/{page...}", s.handleQueryBlockList)
 	mux.HandleFunc("POST /queries/execute", s.handleQueryExecute)
