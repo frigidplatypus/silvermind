@@ -4,7 +4,7 @@
   import Markdown from './Markdown.svelte';
   import { getSelectedTaskId } from '$lib/stores/desktop.svelte';
 
-  let { task, onclick, id, showSpace = false }: { task: Task; onclick?: (id: string) => void; id: string; showSpace?: boolean } = $props();
+  let { task, onclick, id, showSpace = false, onToggleDone }: { task: Task; onclick?: (id: string) => void; id: string; showSpace?: boolean; onToggleDone?: (task: Task) => void } = $props();
 
   let highlighted = $derived(getSelectedTaskId() === id);
 
@@ -35,10 +35,20 @@
   function handleClick() {
     onclick?.(id);
   }
+
+  function handleToggle(e: Event) {
+    e.stopPropagation();
+    onToggleDone?.(task);
+  }
 </script>
 
 <button id="task-{id}" class="task-row" class:highlighted onclick={handleClick} aria-label="Task: {task.text}. {priorityLabel}. {dueLabel?.text ?? ''}">
   <div class="task-row-left">
+    <span class="task-checkbox" class:done={task.done} onclick={handleToggle} role="checkbox" aria-checked={task.done} aria-label={task.done ? 'Mark task as active' : 'Mark task as done'} tabindex="0" onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e as any); } }}>
+      {#if task.done}
+        <Icon name="check" size="0.75rem" />
+      {/if}
+    </span>
     <div class="priority-dot" class:high={task.priority === 'high'} class:medium={task.priority === 'medium'} class:low={task.priority === 'low'}></div>
     {#if task.blocked}
       <span class="status-icon-block" role="img" aria-label="Blocked by dependencies"><Icon name="lock" size="0.875rem" /></span>
@@ -67,6 +77,9 @@
   .task-row:hover { background: var(--color-bg-secondary); }
   .task-row.highlighted { background: var(--color-bg-tertiary); outline: 2px solid var(--color-accent); outline-offset: -2px; }
   .task-row-left { display: flex; align-items: flex-start; gap: 0.625rem; flex: 1; min-width: 0; }
+  .task-checkbox { width: 1.25rem; height: 1.25rem; border-radius: 0.25rem; border: 2px solid var(--color-separator); display: flex; align-items: center; justify-content: center; margin-top: 0.2rem; flex-shrink: 0; color: transparent; cursor: pointer; }
+  .task-checkbox:active { background: var(--color-bg-tertiary); }
+  .task-checkbox.done { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
   .priority-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--color-priority-none); margin-top: 0.45rem; flex-shrink: 0; }
   .priority-dot.high { background: var(--color-priority-high); }
   .priority-dot.medium { background: var(--color-priority-medium); }

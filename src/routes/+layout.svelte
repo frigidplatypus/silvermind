@@ -3,6 +3,7 @@
   import { getServiceState } from '$lib/stores/service.svelte';
   import { getActiveId } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
+  import { toggleTaskDone } from '$lib/helpers/task-actions';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
   import { loadTagNames } from '$lib/stores/tagnames.svelte';
   import { getIsDesktop, setDesktopMode } from '$lib/stores/desktop.svelte';
@@ -155,6 +156,15 @@
     loadInbox();
   }
 
+  function handleQueryToggle(task: Task) {
+    toggleTaskDone(task, () => {
+      if (currentTab.startsWith('queries:')) {
+        const parts = currentTab.split(':');
+        runQuery(parts[1], parts[2] ? parseInt(parts[2]) : undefined);
+      }
+    });
+  }
+
   const pageTitle = $derived(
     getIsActive() ? 'Search'
     : currentTab === 'inbox' ? 'Task List'
@@ -221,7 +231,7 @@
           {:else if getQueryError()}
             <div class="search-empty">{getQueryError()}</div>
           {:else}
-            <TaskList tasks={getCurrentQueryTasks()} onTaskTap={(t) => (querySelectedTask = t)} emptyMessage="No tasks matched." />
+            <TaskList tasks={getCurrentQueryTasks()} onTaskTap={(t) => (querySelectedTask = t)} onToggleDone={handleQueryToggle} emptyMessage="No tasks matched." />
           {/if}
         {:else}<SettingsPage />{/if}
       </main>

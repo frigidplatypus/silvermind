@@ -5,11 +5,13 @@
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
   import Icon from '$lib/components/Icon.svelte';
+  import { toggleTaskDone } from '$lib/helpers/task-actions';
 
-  let { onTaskTap: externalOnTaskTap }: { onTaskTap?: (t: Task) => void } = $props();
+  let { onTaskTap: externalOnTaskTap, onToggleDone }: { onTaskTap?: (t: Task) => void; onToggleDone?: (t: Task) => void } = $props();
 
   let selectedTask = $state<Task | null>(null);
   let tasks = $derived(getGlobalTasks());
+  let handleToggle = onToggleDone ?? ((task: Task) => toggleTaskDone(task, () => loadGlobalView()));
 
   onMount(() => { loadGlobalView(); });
 
@@ -40,7 +42,7 @@
     <div class="global-status">No tasks across any space</div>
   {:else}
     {#each tasks as t (tid(t))}
-      <TaskRow task={t} id={tid(t)} showSpace={true} onclick={() => handleTaskTap(t)} />
+      <TaskRow task={t} id={tid(t)} showSpace={true} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />
     {/each}
   {/if}
 </div>

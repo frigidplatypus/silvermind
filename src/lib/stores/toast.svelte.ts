@@ -13,3 +13,7 @@ export function showError(message: string) {
 export function showSuccess(message: string) {
   _toastRef?.showSuccess(message);
 }
+
+export function showUndo(message: string, onUndo: () => void) {
+  _toastRef?.showUndo(message, onUndo);
+}

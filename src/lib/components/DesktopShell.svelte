@@ -21,6 +21,7 @@
   import ServiceErrorBanner from './ServiceErrorBanner.svelte';
   import Toast from './Toast.svelte';
   import { showError, showSuccess } from '$lib/stores/toast.svelte';
+  import { toggleTaskDone } from '$lib/helpers/task-actions';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
   import { setBuilderEdit } from '$lib/stores/builder-edit.svelte';
   import GlobalPage from '../../routes/global/+page.svelte';
@@ -111,6 +112,15 @@
 
   function handleTaskTap(task: any) {
     setSelectedTaskId(`${task.page}/${task.position}`);
+  }
+
+  function handleToggleDone(task: Task) {
+    toggleTaskDone(task, () => {
+      loadInbox();
+      if (activeView === 'today') loadToday();
+      if (isQueryView) handleQueryTaskChanged();
+      if (activeView === 'global') loadGlobalView();
+    });
   }
 
   function handleDetailClose() {
@@ -361,7 +371,7 @@
         {:else if getQuery() && getIsSearching()}
           <div class="search-status">Searching&hellip;</div>
         {:else if getResults().length > 0}
-          <TaskList tasks={getResults()} onTaskTap={handleSearchResultTap} emptyMessage="No results" />
+          <TaskList tasks={getResults()} onTaskTap={handleSearchResultTap} onToggleDone={handleToggleDone} emptyMessage="No results" />
         {:else}
           <div class="search-empty">Type to search tasks</div>
         {/if}
@@ -387,7 +397,7 @@
               </button>
             </div>
           {:else}
-            <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} emptyMessage="No tasks found" />
+            <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} onToggleDone={handleToggleDone} emptyMessage="No tasks found" />
           {/if}
         {/snippet}
         {#snippet right()}
@@ -400,11 +410,11 @@
       <SplitPane showRight={!!selectedTask}>
         {#snippet left()}
           {#if activeView === 'inbox'}
-            <InboxPage onTaskTap={handleTaskTap} />
+            <InboxPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
           {:else if activeView === 'today'}
-            <TodayPage onTaskTap={handleTaskTap} />
+            <TodayPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
           {:else if activeView === 'global'}
-            <GlobalPage onTaskTap={handleTaskTap} />
+            <GlobalPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
           {:else if activeView === 'builder'}
             <BuilderPage onNavigate={onNavigate} />
           {:else}

@@ -8,6 +8,7 @@
     isLoading = false,
     error = null,
     onTaskTap,
+    onToggleDone,
     onRefresh,
     emptyMessage = 'No tasks',
   }: {
@@ -15,6 +16,7 @@
     isLoading?: boolean;
     error?: string | null;
     onTaskTap?: (task: Task) => void;
+    onToggleDone?: (task: Task) => void;
     onRefresh?: () => Promise<void>;
     emptyMessage?: string;
   } = $props();
@@ -88,7 +90,7 @@
       </div>
     {/if}
     {#each tasks as task (tid(task))}
-      <TaskRow {task} id={tid(task)} onclick={() => onTaskTap?.(task)} />
+      <TaskRow {task} id={tid(task)} onclick={() => onTaskTap?.(task)} onToggleDone={onToggleDone} />
     {/each}
   {/if}
 </div>

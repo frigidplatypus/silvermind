@@ -5,10 +5,12 @@
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
   import Icon from '$lib/components/Icon.svelte';
+  import { toggleTaskDone } from '$lib/helpers/task-actions';
 
-  let { onTaskTap: externalOnTaskTap }: { onTaskTap?: (t: Task) => void } = $props();
+  let { onTaskTap: externalOnTaskTap, onToggleDone }: { onTaskTap?: (t: Task) => void; onToggleDone?: (t: Task) => void } = $props();
 
   let selectedTask = $state<Task | null>(null);
+  let handleToggle = onToggleDone ?? ((task: Task) => toggleTaskDone(task, () => loadToday()));
 
   let _pollTimer: ReturnType<typeof setInterval> | null = null;
   onMount(async () => {
@@ -53,15 +55,15 @@
       </div>
     {/if}
     <section><h2 class="heading overdue">Overdue</h2>
-      {#each overdue as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
+      {#each overdue as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />{/each}
       {#if overdue.length === 0}<p class="empty">No overdue tasks</p>{/if}
     </section>
     <section><h2 class="heading">Due Today</h2>
-      {#each dueToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
+      {#each dueToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />{/each}
       {#if dueToday.length === 0}<p class="empty">No tasks due today</p>{/if}
     </section>
     <section><h2 class="heading">Scheduled Today</h2>
-      {#each scheduledToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} />{/each}
+      {#each scheduledToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />{/each}
       {#if scheduledToday.length === 0}<p class="empty">No tasks scheduled for today</p>{/if}
     </section>
   {/if}
