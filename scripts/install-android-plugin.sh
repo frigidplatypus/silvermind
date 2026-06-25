@@ -16,4 +16,5 @@ fi
 echo "[prowl] Copying Android plugin to ${ANDROID_DEST}..."
 cp "${ANDROID_SRC}/ai/silvermind/app/SbtaskPlugin.java" "${ANDROID_DEST}/ai/silvermind/app/"
 cp "${ANDROID_SRC}/ai/silvermind/app/SbtaskProcess.java" "${ANDROID_DEST}/ai/silvermind/app/"
+cp "${ANDROID_SRC}/ai/silvermind/app/MainActivity.java" "${ANDROID_DEST}/ai/silvermind/app/"
 echo "[prowl] Android plugin installed"
