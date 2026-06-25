@@ -20,11 +20,11 @@ public class SbtaskProcess {
     private static final int HEALTH_PORT = 7433;
 
     private final Context context;
-    private Process process;
+    private volatile Process process;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable healthCheckRunnable;
     private int restartCount = 0;
-    private boolean stopping = false;
+    private volatile boolean stopping = false;
     private OnStateChangeListener onStateChange;
 
     public interface OnStateChangeListener {
@@ -162,6 +162,7 @@ public class SbtaskProcess {
         healthCheckRunnable = new Runnable() {
             @Override
             public void run() {
+                if (stopping) return;
                 checkHealth();
                 if (!stopping) {
                     handler.postDelayed(this, HEALTH_CHECK_INTERVAL_MS);
@@ -179,24 +180,28 @@ public class SbtaskProcess {
     }
 
     private void checkHealth() {
-        try {
-            URL url = new URL("http://127.0.0.1:" + HEALTH_PORT + "/health");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(HEALTH_CHECK_TIMEOUT_MS);
-            conn.setReadTimeout(HEALTH_CHECK_TIMEOUT_MS);
-            int responseCode = conn.getResponseCode();
-            conn.disconnect();
+        new Thread(() -> {
+            try {
+                URL url = new URL("http://127.0.0.1:" + HEALTH_PORT + "/health");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(HEALTH_CHECK_TIMEOUT_MS);
+                conn.setReadTimeout(HEALTH_CHECK_TIMEOUT_MS);
+                int responseCode = conn.getResponseCode();
+                conn.disconnect();
 
-            if (responseCode != 200) {
+                if (responseCode != 200) {
+                    if (process == null || !process.isAlive()) {
+                        handler.post(() ->
+                            emitStateChange("unhealthy", "Health check failed: status " + responseCode));
+                    }
+                }
+            } catch (Exception e) {
                 if (process == null || !process.isAlive()) {
-                    emitStateChange("unhealthy", "Health check failed: status " + responseCode);
+                    handler.post(() ->
+                        emitStateChange("unhealthy", "Health check failed: " + e.getMessage()));
                 }
             }
-        } catch (Exception e) {
-            if (process == null || !process.isAlive()) {
-                emitStateChange("unhealthy", "Health check failed: " + e.getMessage());
-            }
-        }
+        }).start();
     }
 
     private void emitStateChange(String state, String error) {
