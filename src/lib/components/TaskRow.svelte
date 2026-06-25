@@ -49,7 +49,6 @@
         <Icon name="check" size="0.75rem" />
       {/if}
     </span>
-    <div class="priority-dot" class:high={task.priority === 'high'} class:medium={task.priority === 'medium'} class:low={task.priority === 'low'}></div>
     {#if task.blocked}
       <span class="status-icon-block" role="img" aria-label="Blocked by dependencies"><Icon name="lock" size="0.875rem" /></span>
     {/if}
@@ -68,6 +67,7 @@
       <span class="task-due" class:overdue={dueLabel.class === 'overdue'} class:today={dueLabel.class === 'today'}>{dueLabel.text}</span>
     {/if}
     <span class="page-tag">{showSpace && (task as any)._spaceName ? (task as any)._spaceName : task.page}</span>
+    <div class="priority-dot" class:high={task.priority === 'high'} class:medium={task.priority === 'medium'} class:low={task.priority === 'low'}></div>
   </div>
 </button>
 
