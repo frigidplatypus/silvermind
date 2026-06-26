@@ -20,6 +20,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/report': {
+        target: 'http://127.0.0.1:7433',
+        changeOrigin: true,
+      },
     },
   },
   build: {

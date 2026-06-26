@@ -4,6 +4,12 @@ const SBTASK_PORT = 7433;
 const REPORT_PATH = '/report';
 const MAX_BUFFER = 100;
 
+// Mirror API_BASE logic from client.ts: direct localhost in production,
+// Vite proxy path in dev mode.
+const REPORT_URL = typeof window !== 'undefined' && ((window as any).go?.main?.App || (window as any).Capacitor)
+  ? `http://127.0.0.1:${SBTASK_PORT}${REPORT_PATH}`
+  : REPORT_PATH;
+
 interface ErrorEntry {
   message: string;
   stack?: string;
@@ -23,7 +29,7 @@ function sendToServer(entry: ErrorEntry) {
   try {
     const controller = new AbortController();
     setTimeout(() => controller.abort(), 3000);
-    fetch(`http://127.0.0.1:${SBTASK_PORT}${REPORT_PATH}`, {
+    fetch(REPORT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
