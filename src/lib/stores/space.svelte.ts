@@ -60,5 +60,10 @@ export async function setActiveSpace(spaceId: string): Promise<void> {
     activeIdVal = spaceId;
     persist(ACTIVE_SPACE_KEY, spaceId);
     setApiSpace(spaceId);
+    // Reload task lists with the new active space
+    const { loadInbox, loadToday } = await import('./tasks.svelte');
+    const { loadGlobalView } = await import('./global.svelte');
+    Promise.all([loadInbox(), loadToday()]).catch(() => {});
+    loadGlobalView();
   }
 }

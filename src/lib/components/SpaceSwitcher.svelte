@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getSpacesList, getActiveSpace, getActiveId, setActiveSpace, getSpacesLoading } from '$lib/stores/space.svelte';
+  import { getSpacesList, getActiveSpace, getActiveId, setActiveSpace, getSpacesLoading, getSpacesError } from '$lib/stores/space.svelte';
   import Icon from './Icon.svelte';
 
   let isOpen = $state(false);
@@ -24,6 +24,8 @@
     <div class="space-menu" role="menu" aria-label="Workspaces" onkeydown={(e) => { if (e.key === 'Escape') isOpen = false; }}>
       {#if getSpacesLoading()}
         <div class="menu-loading">Loading spaces…</div>
+      {:else if getSpacesError()}
+        <div class="menu-error">{getSpacesError()}</div>
       {:else}
         {#each getSpacesList() as space (space.id)}
           <button
@@ -92,6 +94,13 @@
   .menu-loading {
     padding: 0.75rem;
     color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: center;
+  }
+
+  .menu-error {
+    padding: 0.75rem;
+    color: var(--color-danger);
     font-size: var(--font-size-sm);
     text-align: center;
   }
