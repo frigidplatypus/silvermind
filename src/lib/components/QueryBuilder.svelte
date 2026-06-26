@@ -127,13 +127,20 @@
         }
       }
 
-      if (line.includes('p.due != nil') || line.includes('p.scheduled != nil')) {
+      if ((line.includes('p.due != nil') || line.includes('p.scheduled != nil')) && line.includes(' or ')) {
         hasDateFilter = 'has';
+        dateField = 'both';
+      } else if (line.includes('p.due != nil') || line.includes('p.scheduled != nil')) {
+        hasDateFilter = 'has';
+      } else if ((line.includes('p.due == nil') || line.includes('p.scheduled == nil')) && line.includes(' and ')) {
+        hasDateFilter = 'missing';
+        dateField = 'both';
       } else if (line.includes('p.due == nil') || line.includes('p.scheduled == nil')) {
         hasDateFilter = 'missing';
       }
 
       if (line.includes('p.scheduled')) dateField = 'scheduled';
+      if ((line.includes('p.due') || line.includes('p.')) && line.includes('p.scheduled')) dateField = 'both';
 
       if (!activePresetLabel) {
         if ((line.includes('"@today"') || line.includes('today()')) && line.includes('==')) {
@@ -186,26 +193,37 @@
 
   let pageFilterType = $state<'equals' | 'starts' | 'not-starts'>('equals');
   let pageFilterValue = $state('');
-  let dateField = $state<'due' | 'scheduled'>('due');
+  let dateField = $state<'due' | 'scheduled' | 'both'>('due');
   let dateMode = $state<'relative' | 'calendar'>('relative');
   let rangeStart = $state('');
   let rangeEnd = $state('');
   let hasDateFilter = $state<'none' | 'has' | 'missing'>('none');
-  const datePresets: { label: string; sliq: string }[] = [
-    { label: 'Today',      sliq: `p.${dateField} == today()` },
-    { label: 'Tomorrow',   sliq: `p.${dateField} == tomorrow()` },
-    { label: 'Overdue',    sliq: `p.${dateField} < today()` },
-    { label: 'This week',  sliq: `p.${dateField} >= weekStart() and p.${dateField} <= weekEnd()` },
-    { label: 'Next week',  sliq: `p.${dateField} >= addDays(7) and p.${dateField} <= addDays(13)` },
-    { label: 'This month', sliq: `p.${dateField} >= monthStart() and p.${dateField} <= monthEnd()` },
-  ];
-  let activePresetLabel = $state<string | null>(null);
+
+  function presetSLIQFor(field: string): string {
+    if (!activePresetLabel) return '';
+    const p = datePresets.find(x => x.label === activePresetLabel);
+    return p ? p.sliq.replace(/\$\{field\}/g, `p.${field}`) : '';
+  }
 
   function presetSLIQ(): string {
     if (!activePresetLabel) return '';
-    const p = datePresets.find(x => x.label === activePresetLabel);
-    return p ? p.sliq : '';
+    if (dateField === 'both') {
+      const due = presetSLIQFor('due');
+      const sched = presetSLIQFor('scheduled');
+      if (due && sched) return `(${due} or ${sched})`;
+      return due || sched;
+    }
+    return presetSLIQFor(dateField);
   }
+
+  const datePresets: { label: string; sliq: string }[] = [
+    { label: 'Today',      sliq: '${field} == today()' },
+    { label: 'Tomorrow',   sliq: '${field} == tomorrow()' },
+    { label: 'Overdue',    sliq: '${field} < today()' },
+    { label: 'This week',  sliq: '${field} >= weekStart() and ${field} <= weekEnd()' },
+    { label: 'Next week',  sliq: '${field} >= addDays(7) and ${field} <= addDays(13)' },
+    { label: 'This month', sliq: '${field} >= monthStart() and ${field} <= monthEnd()' },
+  ];
 
   function applyPreset(label: string) {
     activePresetLabel = label;
@@ -297,28 +315,39 @@
     if (activePresetLabel) {
       const sliq = presetSLIQ();
       if (sliq) {
-        const clauses = sliq.split(' and ');
-        for (const clause of clauses) {
-          const prefix = lines.length <= 1 ? 'where' : 'and';
-          lines.push(`${prefix} ${clause}`);
-        }
+        const prefix = lines.length <= 1 ? 'where' : 'and';
+        lines.push(`${prefix} ${sliq}`);
       }
     } else {
       if (hasDateFilter === 'has') {
         const prefix = lines.length <= 1 ? 'where' : 'and';
-        lines.push(`${prefix} p.${dateField} != nil`);
+        if (dateField === 'both') {
+          lines.push(`${prefix} (p.due != nil or p.scheduled != nil)`);
+        } else {
+          lines.push(`${prefix} p.${dateField} != nil`);
+        }
       } else if (hasDateFilter === 'missing') {
         const prefix = lines.length <= 1 ? 'where' : 'and';
-        lines.push(`${prefix} p.${dateField} == nil`);
+        if (dateField === 'both') {
+          lines.push(`${prefix} (p.due == nil and p.scheduled == nil)`);
+        } else {
+          lines.push(`${prefix} p.${dateField} == nil`);
+        }
       }
 
-      if (rangeStart) {
-        const prefix = lines.length <= 1 ? 'where' : 'and';
-        lines.push(`${prefix} p.${dateField} > "${rangeStart}"`);
-      }
-      if (rangeEnd) {
-        const prefix = lines.length <= 1 ? 'where' : 'and';
-        lines.push(`${prefix} p.${dateField} < "${rangeEnd}"`);
+      if (rangeStart || rangeEnd) {
+        const fields = dateField === 'both' ? ['due', 'scheduled'] : [dateField];
+        const parts: string[] = [];
+        for (const f of fields) {
+          const clauses: string[] = [];
+          if (rangeStart) clauses.push(`p.${f} > "${rangeStart}"`);
+          if (rangeEnd) clauses.push(`p.${f} < "${rangeEnd}"`);
+          if (clauses.length > 0) parts.push(`(${clauses.join(' and ')})`);
+        }
+        if (parts.length > 0) {
+          const prefix = lines.length <= 1 ? 'where' : 'and';
+          lines.push(`${prefix} ${parts.join(' or ')}`);
+        }
       }
     }
 
@@ -522,7 +551,8 @@
         <span class="filter-label">Date filter</span>
         <div class="date-field-toggle">
           <button class="toggle-btn" class:active={dateField === 'due'} onclick={() => (dateField = 'due')}>Due</button>
-          <button class="toggle-btn" class:active={dateField === 'scheduled'} onclick={() => (dateField = 'scheduled')}>Scheduled</button>
+          <button class="toggle-btn" class:active={dateField === 'scheduled'} onclick={() => (dateField = 'scheduled')}>Sch</button>
+          <button class="toggle-btn" class:active={dateField === 'both'} onclick={() => (dateField = 'both')}>Both</button>
         </div>
       </div>
       <div class="date-mode-toggle">
