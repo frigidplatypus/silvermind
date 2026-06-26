@@ -26,6 +26,7 @@
   import TaskList from '$lib/components/TaskList.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
   import Toast from '$lib/components/Toast.svelte';
+  import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
   import { getDefaultView, getShowToday, loadShowToday } from '$lib/stores/landing.svelte';
   import type { Task } from '$lib/types/task';
@@ -37,6 +38,7 @@
   let prevTab = $state<string>('inbox');
   let searchSelectedTask = $state<Task | null>(null);
   let querySelectedTask = $state<Task | null>(null);
+  let showShortcuts = $state(false);
 
   function isEditing(): boolean {
     const el = document.activeElement;
@@ -63,6 +65,11 @@
       }
       case 'Escape': {
         (document.activeElement as HTMLElement)?.blur();
+        break;
+      }
+      case '?': {
+        e.preventDefault();
+        showShortcuts = !showShortcuts;
         break;
       }
     }
@@ -262,6 +269,10 @@
   <OnboardingModal />
 {/if}
 <Toast />
+
+{#if showShortcuts}
+  <KeyboardShortcuts platform="mobile" onclose={() => (showShortcuts = false)} />
+{/if}
 
 <style>
   .app-shell { display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; }

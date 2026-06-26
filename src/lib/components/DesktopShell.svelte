@@ -20,6 +20,7 @@
   import SearchBar from './SearchBar.svelte';
   import ServiceErrorBanner from './ServiceErrorBanner.svelte';
   import Toast from './Toast.svelte';
+  import KeyboardShortcuts from './KeyboardShortcuts.svelte';
   import { showError, showSuccess } from '$lib/stores/toast.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
@@ -38,6 +39,7 @@
 
   let prevView = $state(activeView);
   let editing = $state(false);
+  let showShortcuts = $state(false);
 
   let sidebarWidth = $state(loadSidebarWidth());
   let sidebarDragging = $state(false);
@@ -335,6 +337,11 @@
           (document.activeElement as HTMLElement)?.blur();
           break;
         }
+        case '?': {
+          e.preventDefault();
+          showShortcuts = !showShortcuts;
+          break;
+        }
       }
     }
 
@@ -433,6 +440,10 @@
 </div>
 
 <Toast />
+
+{#if showShortcuts}
+  <KeyboardShortcuts platform="desktop" onclose={() => (showShortcuts = false)} />
+{/if}
 
 {#if editing && selectedTask}
   <TaskEditor task={selectedTask} mode="modal" onclose={() => (editing = false)} onsaved={handleEditSaved} />
