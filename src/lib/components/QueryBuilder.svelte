@@ -159,11 +159,21 @@
 
       if (line.startsWith('order by ')) {
         const rest = line.slice('order by '.length).trim();
-        const parts = rest.split(/\s+/);
-        const field = parts[0].replace(/^p\./, '').replace(',', '').trim();
-        if ((sortOptions as {value:string}[]).some(o => o.value === field)) {
-          sortBy = field;
-          sortOrder = parts[1] === 'desc' ? 'desc' : 'asc';
+        const keys = rest.split(',').map(k => k.trim());
+        sortKeys = [];
+        for (const key of keys) {
+          const parts = key.split(/\s+/);
+          const field = parts[0].replace(/^p\./, '').replace(',', '').trim();
+          if (sortFieldOptions.some(o => o.value === field)) {
+            const dir = parts[1] === 'desc' ? 'desc' as const : 'asc' as const;
+            let nulls: '' | 'first' | 'last' = '';
+            const nullsIdx = parts.indexOf('nulls');
+            if (nullsIdx >= 0 && nullsIdx + 1 < parts.length) {
+              const n = parts[nullsIdx + 1];
+              if (n === 'first' || n === 'last') nulls = n;
+            }
+            sortKeys = [...sortKeys, { field, dir, nulls }];
+          }
         }
       }
 
@@ -210,8 +220,7 @@
   let includeTags = $state('');
   let excludeTags = $state('');
   let extraAttrs = $state<{ key: string; value: string }[]>([]);
-  let sortBy = $state('');
-  let sortOrder = $state<'asc' | 'desc'>('asc');
+  let sortKeys = $state<{ field: string; dir: 'asc' | 'desc'; nulls: '' | 'first' | 'last' }[]>([]);
   let limit = $state(100);
 
   let testing = $state(false);
@@ -224,16 +233,27 @@
     { value: 'someday', label: 'Someday' },
   ];
   const availablePriorities = ['high', 'medium', 'low'];
-  const sortOptions = [
-    { value: '', label: 'Default' },
+  const sortFieldOptions = [
     { value: 'priority', label: 'Priority' },
     { value: 'due', label: 'Due date' },
-    { value: 'scheduled', label: 'Scheduled date' },
+    { value: 'scheduled', label: 'Scheduled' },
     { value: 'page', label: 'Page' },
+    { value: 'name', label: 'Name' },
+    { value: 'lastModified', label: 'Last modified' },
+    { value: 'created', label: 'Created' },
+    { value: 'tags', label: 'Tags' },
   ];
 
   function addExtraAttr() {
     extraAttrs = [...extraAttrs, { key: '', value: '' }];
+  }
+
+  function addSortKey() {
+    sortKeys = [...sortKeys, { field: 'priority', dir: 'desc', nulls: '' }];
+  }
+
+  function removeSortKey(index: number) {
+    sortKeys = sortKeys.filter((_, i) => i !== index);
   }
 
   function removeExtraAttr(index: number) {
@@ -325,8 +345,13 @@
       }
     }
 
-    if (sortBy) {
-      lines.push(`order by p.${sortBy}${sortOrder === 'desc' ? ' desc' : ''}`);
+    if (sortKeys.length > 0) {
+      const parts = sortKeys.map(sk => {
+        let p = `p.${sk.field} ${sk.dir}`;
+        if (sk.nulls) p += ` nulls ${sk.nulls}`;
+        return p;
+      });
+      lines.push(`order by ${parts.join(', ')}`);
     }
 
     if (limit && limit !== 100) {
@@ -405,8 +430,7 @@
     includeTags = '';
     excludeTags = '';
     extraAttrs = [];
-    sortBy = '';
-    sortOrder = 'asc';
+    sortKeys = [];
     limit = 100;
     error = null;
     success = null;
@@ -563,42 +587,55 @@
   </div>
 
   <div class="form-section">
-    <h3 class="section-title">Options</h3>
-    <div class="options-row">
-      <label class="field-label">
-        <span>Sort by</span>
-        <select bind:value={sortBy} class="field-input">
-          {#each sortOptions as opt}
+    <div class="filter-label-row">
+      <h3 class="section-title">Sorting</h3>
+      {#if sortKeys.length < 3}
+        <button class="add-btn" onclick={addSortKey} aria-label="Add sort key"><Icon name="plus" size="0.875rem" /></button>
+      {/if}
+    </div>
+    {#each sortKeys as sk, i}
+      <div class="sort-key-row">
+        <select bind:value={sk.field} class="field-input sort-field">
+          {#each sortFieldOptions as opt}
             <option value={opt.value}>{opt.label}</option>
           {/each}
         </select>
-      </label>
-      <label class="field-label">
-        <span>Order</span>
-        <select bind:value={sortOrder} class="field-input">
-          <option value="asc">Ascending</option>
-          <option value="desc">Descending</option>
+        <select bind:value={sk.dir} class="field-input sort-dir">
+          <option value="asc">Asc</option>
+          <option value="desc">Desc</option>
         </select>
-      </label>
-      <label class="field-label">
-        <span>Limit</span>
-        <input type="number" bind:value={limit} min="1" max="1000" class="field-input" />
-      </label>
-    </div>
+        <select bind:value={sk.nulls} class="field-input sort-nulls">
+          <option value="">Default</option>
+          <option value="first">Nulls first</option>
+          <option value="last">Nulls last</option>
+        </select>
+        <button class="remove-btn" onclick={() => removeSortKey(i)} aria-label="Remove sort key"><Icon name="x" size="0.875rem" /></button>
+      </div>
+    {:else}
+      <p class="field-hint">No sort keys. Results will be returned in default order.</p>
+    {/each}
   </div>
 
   <div class="form-section">
-    <div class="preview-header">
+    <label class="field-label">
+      <span>Result limit</span>
+      <input type="number" bind:value={limit} min="1" max="1000" class="field-input" style="max-width:8rem" />
+      <span class="field-hint">Maximum tasks returned (max 1000)</span>
+    </label>
+  </div>
+
+  <div class="form-section">
       <h3 class="section-title">SLIQ Preview</h3>
       <button class="btn btn-secondary btn-test" onclick={handleTest} disabled={testing || !hasFilters}>
         {testing ? 'Testing…' : 'Test'}
       </button>
-    </div>
     <pre class="sliq-preview">{sliqPreview || '(no filters selected)'}</pre>
     {#if testResult}
       <div class="test-result" role="status">
         <span class="test-count">{testResult.count} task{testResult.count === 1 ? '' : 's'} found</span>
-        {#if testResult.preview.length > 0}
+        {#if testResult.count === 0}
+          <p class="test-empty">No tasks match these filters.</p>
+        {:else if testResult.preview.length > 0}
           <ul class="test-preview">
             {#each testResult.preview as t}
               <li>{t}</li>
@@ -785,6 +822,15 @@
     flex: 1;
     margin-bottom: 0;
   }
+  .sort-key-row {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.375rem;
+  }
+  .sort-field { flex: 1; min-width: 0; }
+  .sort-dir { width: 5rem; flex-shrink: 0; }
+  .sort-nulls { width: 7rem; flex-shrink: 0; }
   .extra-row {
     display: flex;
     align-items: center;
@@ -853,6 +899,11 @@
   .test-more {
     color: var(--color-text-tertiary);
     font-style: italic;
+  }
+  .test-empty {
+    margin-top: var(--space-1);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
   }
   .button-row {
     display: flex;
