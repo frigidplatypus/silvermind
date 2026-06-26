@@ -28,6 +28,25 @@ func initSentry() {
 		Release:          "sbtask@0.1.0",
 		EnableTracing:    false,
 		AttachStacktrace: true,
+		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+			// Strip auth tokens from request headers
+			if event.Request != nil && event.Request.Cookies != "" {
+				event.Request.Cookies = "[redacted]"
+			}
+			if event.Request != nil {
+				event.Request.QueryString = sanitizeQuery(event.Request.QueryString)
+				for k := range event.Request.Headers {
+					if k == "Authorization" || k == "Cookie" {
+						event.Request.Headers[k] = "[redacted]"
+					}
+				}
+			}
+			// Strip page names from request URLs
+			if event.Request != nil && event.Request.URL != "" {
+				event.Request.URL = sanitizeURL(event.Request.URL)
+			}
+			return event
+		},
 	})
 	if err != nil {
 		slog.Error("sentry init failed", "error", err)
@@ -137,4 +156,51 @@ func splitLines(s string) []string {
 		lines = append(lines, string(current))
 	}
 	return lines
+}
+
+func sanitizeQuery(q string) string {
+	if q == "" {
+		return q
+	}
+	// Replace page names in ?page=... with [redacted]
+	qs := []byte(q)
+	pageStart := indexBytes(qs, "page=")
+	if pageStart >= 0 {
+		valStart := pageStart + 5
+		end := len(qs)
+		amp := indexBytes(qs[valStart:], "&")
+		if amp >= 0 {
+			end = valStart + amp
+		}
+		for i := valStart; i < end; i++ {
+			qs[i] = '*'
+		}
+	}
+	return string(qs)
+}
+
+func sanitizeURL(u string) string {
+	if u == "" {
+		return u
+	}
+	// Redact page paths that look like names (e.g. /tasks/Western/2026)
+	// Keep the endpoint prefix, redact the rest
+	qs := []byte(u)
+	// Find ? and only sanitize the query part
+	qi := indexBytes(qs, "?")
+	if qi < 0 {
+		return u
+	}
+	rest := string(qs[qi:])
+	sanitized := sanitizeQuery(rest)
+	return string(qs[:qi]) + sanitized
+}
+
+func indexBytes(b []byte, sub string) int {
+	for i := 0; i <= len(b)-len(sub); i++ {
+		if string(b[i:i+len(sub)]) == sub {
+			return i
+		}
+	}
+	return -1
 }

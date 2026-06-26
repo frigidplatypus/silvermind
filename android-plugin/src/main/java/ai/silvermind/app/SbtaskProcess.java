@@ -127,6 +127,8 @@ public class SbtaskProcess {
         try {
             ProcessBuilder pb = new ProcessBuilder(binary, "serve", "--port", String.valueOf(HEALTH_PORT));
             pb.environment().put("HOME", context.getFilesDir().getAbsolutePath());
+            // Set your Sentry/GlitchTip DSN here for crash reporting:
+            // pb.environment().put("SBTASK_SENTRY_DSN", "https://key@sentry.io/project");
             pb.redirectErrorStream(true);
 
             process = pb.start();

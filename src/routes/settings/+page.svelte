@@ -8,6 +8,8 @@
   import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
   import { addSpace, updateSpace, removeSpace, setActiveSpaceApi, verifySpace } from '$lib/api/spaces';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
+  import { isCrashReportingEnabled, setCrashReporting } from '$lib/stores/privacy.svelte';
+  import { downloadLogs } from '$lib/helpers/crash-reporting';
   import { deployHelpers } from '$lib/api/queries';
 
   let currentTheme = $state<Theme>(getTheme());
@@ -217,6 +219,16 @@
       <input type="checkbox" checked={getShowToday()} onchange={(e) => onShowTodayChange((e.target as HTMLInputElement).checked)} />
       <span>Show Today view</span>
     </label>
+  </section>
+
+  <section class="section">
+    <h3 class="section-title">Privacy</h3>
+    <label class="checkbox-item" style="margin-bottom:0.75rem">
+      <input type="checkbox" checked={isCrashReportingEnabled()} onchange={(e) => setCrashReporting((e.target as HTMLInputElement).checked)} />
+      <span>Share anonymous crash reports</span>
+    </label>
+    <p class="section-desc">Helps us fix bugs. No task content, page names, or personal data is ever sent.</p>
+    <button class="btn btn-secondary" onclick={downloadLogs} style="margin-top:0.5rem"><Icon name="download" size="0.875rem" /> Export debug logs</button>
   </section>
 
   <section class="section">

@@ -21,6 +21,7 @@
   import ServiceErrorBanner from './ServiceErrorBanner.svelte';
   import Toast from './Toast.svelte';
   import KeyboardShortcuts from './KeyboardShortcuts.svelte';
+  import PrivacyConsent from './PrivacyConsent.svelte';
   import { showError, showSuccess } from '$lib/stores/toast.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
@@ -40,6 +41,7 @@
   let prevView = $state(activeView);
   let editing = $state(false);
   let showShortcuts = $state(false);
+  let consentRef: { show(): void } | undefined = $state();
 
   let sidebarWidth = $state(loadSidebarWidth());
   let sidebarDragging = $state(false);
@@ -346,6 +348,7 @@
     }
 
     document.addEventListener('keydown', handleKeydown);
+    setTimeout(() => consentRef?.show(), 2000);
     return () => document.removeEventListener('keydown', handleKeydown);
   });
 </script>
@@ -444,6 +447,8 @@
 {#if showShortcuts}
   <KeyboardShortcuts platform="desktop" onclose={() => (showShortcuts = false)} />
 {/if}
+
+<PrivacyConsent bind:this={consentRef} />
 
 {#if editing && selectedTask}
   <TaskEditor task={selectedTask} mode="modal" onclose={() => (editing = false)} onsaved={handleEditSaved} />

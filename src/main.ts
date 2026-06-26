@@ -7,10 +7,12 @@ import { loadDefaultView, getDefaultView, loadShowToday } from '$lib/stores/land
 import { isDesktopApp, getConfigStatusDesktop } from '$lib/desktop-bridge';
 import { startOnboarding } from '$lib/stores/onboarding.svelte';
 import { startSbtaskService } from '$lib/native/sbtask-bridge';
-import { initErrorReporting } from '$lib/helpers/error-reporting';
+import { initCrashReporting } from '$lib/helpers/crash-reporting';
+import { initPrivacy } from '$lib/stores/privacy.svelte';
 import Layout from './routes/+layout.svelte';
 
-initErrorReporting();
+initPrivacy();
+initCrashReporting();
 
 initServiceListener();
 loadSpaces().catch(() => {});

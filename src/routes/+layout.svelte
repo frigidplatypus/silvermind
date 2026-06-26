@@ -27,6 +27,7 @@
   import TaskDetail from '$lib/components/TaskDetail.svelte';
   import Toast from '$lib/components/Toast.svelte';
   import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
+  import PrivacyConsent from '$lib/components/PrivacyConsent.svelte';
   import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
   import { getDefaultView, getShowToday, loadShowToday } from '$lib/stores/landing.svelte';
   import type { Task } from '$lib/types/task';
@@ -39,6 +40,7 @@
   let searchSelectedTask = $state<Task | null>(null);
   let querySelectedTask = $state<Task | null>(null);
   let showShortcuts = $state(false);
+  let consentRef: { show(): void } | undefined = $state();
 
   function isEditing(): boolean {
     const el = document.activeElement;
@@ -142,6 +144,11 @@
     if (currentTab === 'queries') {
       loadQueryPages();
     }
+  });
+
+  onMount(() => {
+    // Show privacy consent after splash fades, before onboarding
+    setTimeout(() => consentRef?.show(), 2000);
   });
 
   function handleSearchClick() {
@@ -273,6 +280,8 @@
 {#if showShortcuts}
   <KeyboardShortcuts platform="mobile" onclose={() => (showShortcuts = false)} />
 {/if}
+
+<PrivacyConsent bind:this={consentRef} />
 
 <style>
   .app-shell { display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; }
