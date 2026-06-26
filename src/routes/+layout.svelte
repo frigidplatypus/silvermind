@@ -215,7 +215,7 @@
         {#if getQuery() && getResults().length === 0 && !getIsSearching()}
           <div class="search-empty">No results for &ldquo;{getQuery()}&rdquo;</div>
         {:else if getResults().length > 0}
-          <TaskList tasks={getResults()} onTaskTap={handleSearchTaskTap} emptyMessage="No results" />
+          <TaskList tasks={getResults()} onTaskTap={handleSearchTaskTap} emptyMessage="No results" showSpace />
         {:else if getIsSearching()}
           <div class="search-empty">Searching&hellip;</div>
         {:else}
@@ -238,7 +238,7 @@
           {:else if getQueryError()}
             <div class="search-empty">{getQueryError()}</div>
           {:else}
-            <TaskList tasks={getCurrentQueryTasks()} onTaskTap={(t) => (querySelectedTask = t)} onToggleDone={handleQueryToggle} emptyMessage="No tasks matched." />
+            <TaskList tasks={getCurrentQueryTasks()} onTaskTap={(t) => (querySelectedTask = t)} onToggleDone={handleQueryToggle} emptyMessage="No tasks matched." showSpace />
           {/if}
         {:else}<SettingsPage />{/if}
       </main>

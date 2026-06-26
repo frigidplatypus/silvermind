@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { getQuery, setQuery, deactivateSearch, getIsSearching, getIsActive } from '$lib/stores/search.svelte';
+  import { getQuery, setQuery, deactivateSearch, getIsSearching, getIsActive, getScope } from '$lib/stores/search.svelte';
 
   let inputEl: HTMLInputElement | undefined = $state();
 
@@ -34,7 +34,7 @@
       bind:this={inputEl}
       type="search"
       class="search-input"
-      placeholder="Search tasks…"
+      placeholder={getScope() === 'global' ? 'Search all spaces…' : 'Search tasks…'}
       aria-label="Search tasks"
       value={getQuery()}
       oninput={handleInput}

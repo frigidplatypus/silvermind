@@ -15,6 +15,7 @@ export function getQuery(): string { return query; }
 export function getResults(): Task[] { return results; }
 export function getIsSearching(): boolean { return isSearching; }
 export function getIsActive(): boolean { return isActive; }
+export function getScope(): SearchScope { return scope; }
 
 export function activateSearch(s?: SearchScope): void {
   scope = s ?? 'active';

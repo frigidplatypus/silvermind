@@ -11,6 +11,7 @@
     onToggleDone,
     onRefresh,
     emptyMessage = 'No tasks',
+    showSpace = false,
   }: {
     tasks: Task[];
     isLoading?: boolean;
@@ -19,6 +20,7 @@
     onToggleDone?: (task: Task) => void;
     onRefresh?: () => Promise<void>;
     emptyMessage?: string;
+    showSpace?: boolean;
   } = $props();
 
   let isRefreshing = $state(false);
@@ -90,7 +92,7 @@
       </div>
     {/if}
     {#each tasks as task (tid(task))}
-      <TaskRow {task} id={tid(task)} onclick={() => onTaskTap?.(task)} onToggleDone={onToggleDone} />
+      <TaskRow {task} id={tid(task)} onclick={() => onTaskTap?.(task)} onToggleDone={onToggleDone} {showSpace} />
     {/each}
   {/if}
 </div>

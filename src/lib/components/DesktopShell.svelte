@@ -378,7 +378,7 @@
         {:else if getQuery() && getIsSearching()}
           <div class="search-status">Searching&hellip;</div>
         {:else if getResults().length > 0}
-          <TaskList tasks={getResults()} onTaskTap={handleSearchResultTap} onToggleDone={handleToggleDone} emptyMessage="No results" />
+          <TaskList tasks={getResults()} onTaskTap={handleSearchResultTap} onToggleDone={handleToggleDone} emptyMessage="No results" showSpace />
         {:else}
           <div class="search-empty">Type to search tasks</div>
         {/if}
@@ -404,7 +404,7 @@
               </button>
             </div>
           {:else}
-            <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} onToggleDone={handleToggleDone} emptyMessage="No tasks found" />
+            <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} onToggleDone={handleToggleDone} emptyMessage="No tasks found" showSpace />
           {/if}
         {/snippet}
         {#snippet right()}
