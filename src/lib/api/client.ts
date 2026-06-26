@@ -3,6 +3,7 @@ const SBTASK_PORT = 7433;
 const API_BASE = typeof window !== 'undefined' && ((window as any).go?.main?.App || (window as any).Capacitor)
   ? `http://127.0.0.1:${SBTASK_PORT}`
   : '/api';
+const REQUEST_TIMEOUT_MS = 30_000;
 
 let _activeSpace = '';
 
@@ -48,33 +49,55 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     'Content-Type': 'application/json',
   };
 
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...headers, ...(options.headers as Record<string, string>) },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  if (res.status === 204) {
-    return undefined as T;
-  }
-
-  let body: any;
   try {
-    body = await res.json();
-  } catch {
-    const text = await res.text().catch(() => '');
-    throw new ApiClientError(res.status, {
-      error: {
-        code: 'PARSE_ERROR',
-        message: text ? `Server returned: ${text.slice(0, 200)}` : `HTTP ${res.status} ${res.statusText}`,
-      },
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: { ...headers, ...(options.headers as Record<string, string>) },
     });
-  }
+    clearTimeout(timer);
 
-  if (!res.ok) {
-    throw new ApiClientError(res.status, body);
-  }
+    if (res.status === 204) {
+      return undefined as T;
+    }
 
-  return body as T;
+    let body: any;
+    try {
+      body = await res.json();
+    } catch {
+      const text = await res.text().catch(() => '');
+      throw new ApiClientError(res.status, {
+        error: {
+          code: 'PARSE_ERROR',
+          message: text ? `Server returned: ${text.slice(0, 200)}` : `HTTP ${res.status} ${res.statusText}`,
+        },
+      });
+    }
+
+    if (!res.ok) {
+      throw new ApiClientError(res.status, body);
+    }
+
+    return body as T;
+  } catch (e) {
+    clearTimeout(timer);
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      const timeoutErr = new ApiClientError(0, {
+        error: { code: 'TIMEOUT', message: 'Request timed out' },
+      });
+      console.error(`[api] ${url} — timed out after ${REQUEST_TIMEOUT_MS / 1000}s`);
+      throw timeoutErr;
+    }
+    if (e instanceof ApiClientError) {
+      console.error(`[api] ${url} — HTTP ${e.status} (${e.code}): ${e.message}`);
+    } else {
+      console.error(`[api] ${url} — network error:`, e);
+    }
+    throw e;
+  }
 }
 
 export { API_BASE, ApiClientError };

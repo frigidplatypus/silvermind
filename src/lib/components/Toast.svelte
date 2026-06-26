@@ -11,8 +11,7 @@
   export function showError(message: string) {
     const id = ++counter;
     toasts = [...toasts, { id, message, type: 'error' }];
-    const t = setTimeout(() => dismiss(id), 5000);
-    timers.set(id, t);
+    // Error toasts persist — user must dismiss manually
   }
 
   export function showSuccess(message: string) {

@@ -2,9 +2,9 @@ import type { Task } from '$lib/types/task';
 import { getInbox } from '$lib/api/inbox';
 import { getToday } from '$lib/api/today';
 import { createTask } from '$lib/api/tasks';
-import { ApiClientError } from '$lib/api/client';
 import { getActiveSpace } from '$lib/stores/space.svelte';
 import { loadGlobalView } from '$lib/stores/global.svelte';
+import { formatError } from '$lib/helpers/format-error';
 
 let _tasks = $state<Task[]>([]);
 let _isLoading = $state(false);
@@ -21,19 +21,6 @@ export function getTodayOverdue(): Task[] { return _overdue; }
 export function getTodayDue(): Task[] { return _dueToday; }
 export function getTodayDeferred(): Task[] { return _deferredToday; }
 
-function formatError(e: unknown): string {
-  const space = getActiveSpace();
-  const spaceTag = space ? `[${space.name}] ` : '';
-  if (e instanceof ApiClientError) {
-    const detail = e.details ? ` — ${JSON.stringify(e.details)}` : '';
-    return `${spaceTag}HTTP ${e.status}${e.code ? ` (${e.code})` : ''}: ${e.message}${detail}`;
-  }
-  if (e instanceof TypeError && e.message === 'Failed to fetch') {
-    return `${spaceTag}Cannot reach server at localhost:7433. Is sbtask running?`;
-  }
-  return `${spaceTag}${e instanceof Error ? e.message : String(e)}`;
-}
-
 export async function loadInbox(): Promise<Task[]> {
   _isLoading = true;
   _lastError = null;
@@ -41,7 +28,8 @@ export async function loadInbox(): Promise<Task[]> {
     _tasks = await getInbox();
     ensurePolling();
   } catch (e) {
-    _lastError = formatError(e);
+    _lastError = formatError(e, getActiveSpace()?.name);
+    console.error('[tasks] loadInbox failed:', e);
   } finally {
     _isLoading = false;
   }
@@ -58,7 +46,8 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
     _deferredToday = data.deferred_today;
     return data;
   } catch (e) {
-    _lastError = formatError(e);
+    _lastError = formatError(e, getActiveSpace()?.name);
+    console.error('[tasks] loadToday failed:', e);
     return { overdue: [], due_today: [], deferred_today: [] };
   } finally {
     _isLoading = false;
@@ -73,7 +62,8 @@ export async function addTask(text: string): Promise<Task | null> {
     loadGlobalView();
     return task;
   } catch (e) {
-    _lastError = formatError(e);
+    _lastError = formatError(e, getActiveSpace()?.name);
+    console.error('[tasks] addTask failed:', e);
     return null;
   }
 }
