@@ -375,7 +375,7 @@
       const result = await testQuery(sliqPreview);
       testResult = {
         count: result.tasks.length,
-        preview: result.tasks.slice(0, 5).map(t => t.text),
+        preview: result.tasks.slice(0, 5).map(t => t.text.replace(/\s*\[.*?\]/g, '').trim()),
       };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to test query';
@@ -652,9 +652,9 @@
   <div class="form-section">
     <label class="checkbox-item">
       <input type="checkbox" bind:checked={create} />
-      <span>Create as new page</span>
+      <span>Save as new page</span>
     </label>
-    <p class="field-hint">Checked: creates a new page with this query. Unchecked: appends to an existing page.</p>
+    <p class="field-hint">{create ? 'Creates a new page with this query.' : 'Appends this query to the existing page.'}</p>
   </div>
 
   <div class="button-row">
@@ -797,6 +797,11 @@
     display: flex;
     gap: 0.125rem;
   }
+  .date-mode-toggle {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
   .preset-group {
     display: flex;
     flex-wrap: wrap;
@@ -808,6 +813,8 @@
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+    white-space: nowrap;
   }
   .toggle-btn.active {
     background: var(--color-accent);
