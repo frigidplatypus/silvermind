@@ -4,7 +4,7 @@
   import { notifySuccess } from '$lib/native/haptics';
   import { getTaskNames, loadTaskNames } from '$lib/stores/tasknames.svelte';
   import { getTagNames, loadTagNames } from '$lib/stores/tagnames.svelte';
-  import { showError } from '$lib/stores/toast.svelte';
+  import { showError, showUndo } from '$lib/stores/toast.svelte';
   import Icon from './Icon.svelte';
   import Autocomplete from './Autocomplete.svelte';
 
@@ -151,11 +151,17 @@
 
   async function handleToggleDone() {
     try {
-      const updated = task.done
-        ? await undoTask(task.page, task.position)
-        : await markTaskDone(task.page, task.position);
+      if (task.done) {
+        await undoTask(task.page, task.position);
+      } else {
+        await markTaskDone(task.page, task.position);
+        showUndo(`${(task.text || '').slice(0, 40)}${(task.text || '').length > 40 ? '…' : ''} marked done`, async () => {
+          try { await undoTask(task.page, task.position); } catch {}
+          onsaved?.(task);
+        });
+      }
       notifySuccess();
-      onsaved?.(updated);
+      onsaved?.(task);
       onclose();
     } catch (e) {
       console.error('Toggle done failed', e);

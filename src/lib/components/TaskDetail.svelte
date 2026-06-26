@@ -5,7 +5,7 @@
   import Icon from './Icon.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import { notifySuccess } from '$lib/native/haptics';
-  import { showError } from '$lib/stores/toast.svelte';
+  import { showError, showUndo } from '$lib/stores/toast.svelte';
 
   let { task, onclose, ontaskchanged, variant = 'overlay', onedit }: {
     task: Task | null;
@@ -22,11 +22,17 @@
     if (!task || toggling) return;
     toggling = true;
     try {
-      const updated = task.done
-        ? await undoTask(task.page, task.position)
-        : await markTaskDone(task.page, task.position);
+      if (task.done) {
+        await undoTask(task.page, task.position);
+      } else {
+        await markTaskDone(task.page, task.position);
+        showUndo(`${(task.text || '').slice(0, 40)}${(task.text || '').length > 40 ? '…' : ''} marked done`, async () => {
+          try { await undoTask(task.page, task.position); } catch {}
+          ontaskchanged?.(task);
+        });
+      }
       notifySuccess();
-      ontaskchanged?.(updated);
+      ontaskchanged?.(task);
       onclose();
     } catch (e) {
       console.error('[silvermind] toggleDone failed:', e);
@@ -71,7 +77,7 @@
       {/if}
       <div class="meta-row">
         <span class="meta-label">Priority</span>
-        <span class="meta-value">{task.priority || 'none'}</span>
+        <span class="meta-value">{task.priority || '—'}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">Status</span>
