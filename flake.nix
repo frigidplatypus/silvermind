@@ -4,9 +4,11 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    sbtask-src.url = "path:/home/justin/development/go/sbtask";
+    sbtask-src.flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils, sbtask-src, ... }:
     let
       eachSystem = flake-utils.lib.eachDefaultSystem (system:
         let
@@ -22,8 +24,7 @@
           sbtask = pkgs.buildGoModule {
             pname = "sbtask";
             version = "0.1.0";
-            src = ./.;
-            modRoot = "backend";
+            src = sbtask-src;
             vendorHash = "sha256-8jBRZ5TOjjhXp/YZINvqkdMqOqLzAAQw7KLP16mVVN4=";
             proxyVendor = true;
             nativeBuildInputs = [ pkgs.go ];
@@ -51,6 +52,10 @@
             preBuild = ''
               export HOME=$TMPDIR
               export CGO_ENABLED=1
+              # Point go.mod replace to the flake's sbtask-src input
+              substituteInPlace desktop/go.mod --replace-fail \
+                "/home/justin/development/go/sbtask" \
+                "${sbtask-src}"
             '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
               export CGO_LDFLAGS="-framework UniformTypeIdentifiers $CGO_LDFLAGS"
             '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''

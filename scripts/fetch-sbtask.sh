@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SBTASK_SRC="${REPO_ROOT}/backend"
+SBTASK_SRC="${SBTASK_SRC:-/home/justin/development/go/sbtask}"
 
 TARGET="${1:-ios}"
 

@@ -75,15 +75,15 @@ web_dist_dir := "frontend/dist"
 build-web:
     pnpm build:web
 
-# Build sbtask CLI binary (backend/)
+# Build sbtask CLI binary (from standalone repo)
 build-sbtask:
-    cd backend && go build -o ../sbtask ./cmd/sbtask
+    cd /home/justin/development/go/sbtask && go build -o {{justfile_directory()}}/sbtask ./cmd/sbtask
     @echo "✓ Built sbtask"
 
 # Run sbtask serve with web GUI enabled
 serve-web: build-web build-sbtask
     @echo "Starting sbtask serve with web GUI at http://localhost:9876"
-    cd backend && ../sbtask serve --web-gui ../{{web_dist_dir}}
+    ./sbtask serve --web-gui {{web_dist_dir}}
 
 # ── iOS / Capacitor ──────────────────────────────────────────────────────────
 

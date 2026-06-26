@@ -50,7 +50,7 @@ func StartSbtaskServer(cfgPath string) (*SbtaskServer, error) {
 	s.health.SpaceURL = spaceURL
 
 	log.Printf("[silvermind] starting sbtask serve: space=%q url=%s port=%d", activeSpace, spaceURL, defaultPort)
-	s.srv = serve.NewServer(cfg, activeSpace, spaceURL, "", "localhost", defaultPort)
+	s.srv = serve.NewServer(cfg, "", activeSpace, spaceURL, "", "localhost", defaultPort)
 
 	go func() {
 		s.health.State = "running"
