@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/justin/sbtask/pkg/config"
 )
 
@@ -44,6 +45,7 @@ func NewServer(cfg *config.ConfigFile, configPath, spaceName, spaceURL, defaultP
 	h = corsMiddleware(h)
 	h = loggingMiddleware(h)
 	h = recoveryMiddleware(h)
+	h = sentryMiddleware(h)
 	h = limitBodySizeMiddleware(1 << 20)(h) // 1MB
 
 	addr := fmt.Sprintf("%s:%d", host, port)
@@ -62,6 +64,9 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Run() error {
+	initSentry()
+	defer sentry.Flush(2 * time.Second)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 

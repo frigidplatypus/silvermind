@@ -26,4 +26,5 @@ func registerRoutes(s *Server, mux *http.ServeMux) {
 	mux.HandleFunc("GET /helpers/check", s.handleHelpersCheck)
 	mux.HandleFunc("POST /helpers/deploy", s.handleHelpersDeploy)
 	mux.HandleFunc("GET /config/status", s.handleConfigStatus)
+	mux.HandleFunc("POST /report", handleReportError)
 }
