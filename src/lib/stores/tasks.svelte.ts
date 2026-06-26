@@ -68,7 +68,8 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
 export async function addTask(text: string): Promise<Task | null> {
   try {
     const task = await createTask({ text });
-    await Promise.all([loadInbox(), loadToday()]);
+    // Refresh lists in background — don't block the FAB from closing
+    Promise.all([loadInbox(), loadToday()]).catch(() => {});
     loadGlobalView();
     return task;
   } catch (e) {

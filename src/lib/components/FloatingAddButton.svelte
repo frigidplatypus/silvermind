@@ -2,7 +2,7 @@
   import { addTask } from '$lib/stores/tasks.svelte';
   import { notifySuccess, notifyError } from '$lib/native/haptics';
   import { getAddTaskTrigger } from '$lib/stores/add-task.svelte';
-  import { showError } from '$lib/stores/toast.svelte';
+  import { showError, showSuccess } from '$lib/stores/toast.svelte';
   import Icon from './Icon.svelte';
 
   let open = $state(false);
@@ -25,6 +25,7 @@
         inputValue = '';
         open = false;
         notifySuccess();
+        showSuccess('Task added');
       } else {
         notifyError();
         showError('Failed to add task');
@@ -52,7 +53,7 @@
   }
 
   function handleOverlayClick() {
-    if (!inputValue.trim()) handleCancel();
+    handleCancel();
   }
 
   export function trigger() {
