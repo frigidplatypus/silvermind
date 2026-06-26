@@ -1,0 +1,10 @@
+# Copy this file to ~/.config/sbtask/config.yaml and edit for your spaces.
+# Or: run `sbtask config init` to generate one interactively.
+
+spaces:
+  my-space:
+    space: https://your-silverbullet-instance.example.com
+    auth_token: your-auth-token
+    default_page: Tasks
+    inbox_page: Inbox
+active_space: my-space

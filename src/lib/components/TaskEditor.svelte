@@ -7,6 +7,7 @@
   import { showError, showUndo } from '$lib/stores/toast.svelte';
   import Icon from './Icon.svelte';
   import Autocomplete from './Autocomplete.svelte';
+import { devLog } from '$lib/helpers/dev-log';
 
   let {
     task,
@@ -144,7 +145,7 @@
       onsaved?.(updated);
       onclose();
     } catch (e) {
-      console.error('Save failed', e);
+      devLog('Save failed', e);
       showError(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { isSaving = false; }
   }
@@ -164,7 +165,7 @@
       onsaved?.(task);
       onclose();
     } catch (e) {
-      console.error('Toggle done failed', e);
+      devLog('Toggle done failed', e);
       showError(`Toggle done failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -176,7 +177,7 @@
       onsaved?.(task);
       onclose();
     } catch (e) {
-      console.error('Delete failed', e);
+      devLog('Delete failed', e);
       showError(`Delete failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }

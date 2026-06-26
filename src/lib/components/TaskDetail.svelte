@@ -6,6 +6,7 @@
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import { notifySuccess } from '$lib/native/haptics';
   import { showError, showUndo } from '$lib/stores/toast.svelte';
+import { devLog } from '$lib/helpers/dev-log';
 
   let { task, onclose, ontaskchanged, variant = 'overlay', onedit }: {
     task: Task | null;
@@ -35,7 +36,7 @@
       ontaskchanged?.(task);
       onclose();
     } catch (e) {
-      console.error('[silvermind] toggleDone failed:', e);
+      devLog('[silvermind] toggleDone failed:', e);
       showError(`Toggle done failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       toggling = false;

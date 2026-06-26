@@ -2,6 +2,7 @@ import { getTasksForSpace } from '$lib/api/tasks';
 import { getSpaces } from '$lib/api/spaces';
 import { formatError } from '$lib/helpers/format-error';
 import type { Task } from '$lib/types/task';
+import { devLog } from '$lib/helpers/dev-log';
 
 interface RawSpace { name: string; url: string; active: boolean; }
 
@@ -46,7 +47,7 @@ export async function loadGlobalView(): Promise<void> {
     tasks = merged;
   } catch (e) {
     error = formatError(e);
-    console.error('[global] loadGlobalView failed:', e);
+    devLog('[global] loadGlobalView failed:', e);
     tasks = [];
   } finally {
     isLoading = false;

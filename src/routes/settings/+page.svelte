@@ -11,6 +11,7 @@
   import { isCrashReportingEnabled, setCrashReporting } from '$lib/stores/privacy.svelte';
   import { downloadLogs } from '$lib/helpers/crash-reporting';
   import { deployHelpers } from '$lib/api/queries';
+import { devLog } from '$lib/helpers/dev-log';
 
   let currentTheme = $state<Theme>(getTheme());
   let currentDefault = $state<string>(getDefaultView());
@@ -112,7 +113,7 @@
       showSuccess('Space updated');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
-      console.error('[silvermind] UpdateSpace failed:', msg, e);
+      devLog('[silvermind] UpdateSpace failed:', msg, e);
       error = msg;
     } finally {
       saving = false;
@@ -139,7 +140,7 @@
       showSuccess('Space added');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
-      console.error('[silvermind] AddSpace failed:', msg, e);
+      devLog('[silvermind] AddSpace failed:', msg, e);
       error = msg;
     } finally {
       saving = false;
@@ -159,7 +160,7 @@
       showSuccess('Space removed');
     } catch (e: any) {
       const msg = e?.error || e?.message || String(e);
-      console.error('[silvermind] RemoveSpace failed:', msg, e);
+      devLog('[silvermind] RemoveSpace failed:', msg, e);
       error = msg;
     } finally {
       saving = false;
@@ -174,7 +175,7 @@
         await loadSpaces();
       } catch (e: any) {
         const msg = e?.error || e?.message || String(e);
-        console.error('[silvermind] SetActiveSpace failed:', msg, e);
+        devLog('[silvermind] SetActiveSpace failed:', msg, e);
         error = msg;
       }
     } else {
@@ -228,7 +229,7 @@
       <span>Share anonymous crash reports</span>
     </label>
     <p class="section-desc">Helps us fix bugs. No task content, page names, or personal data is ever sent.</p>
-    <button class="btn btn-secondary" onclick={downloadLogs} style="margin-top:0.5rem"><Icon name="download" size="0.875rem" /> Export debug logs</button>
+    <button class="btn btn-secondary" onclick={downloadLogs} style="margin-top:0.5rem"><Icon name="download" size="0.875rem" /> Export diagnostic logs</button>
   </section>
 
   <section class="section">

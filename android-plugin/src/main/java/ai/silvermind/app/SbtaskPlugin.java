@@ -1,6 +1,5 @@
 package ai.silvermind.app;
 
-import android.util.Log;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -14,13 +13,10 @@ public class SbtaskPlugin extends Plugin {
 
     @Override
     public void load() {
-        Log.i("SbtaskPlugin", "load() — initializing plugin");
         processManager = new SbtaskProcess(getContext());
         processManager.setOnStateChange(payload -> {
-            Log.i("SbtaskPlugin", "state change: " + payload.state);
             notifyListeners("serviceStateChanged", payload.toJson());
         });
-        Log.i("SbtaskPlugin", "load() — complete");
     }
 
     @PluginMethod

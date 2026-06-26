@@ -93,7 +93,7 @@
 │   │   ├── stores/
 │   │   │   ├── desktop.svelte.ts  # Desktop state (split ratio, selected task)
 │   │   │   ├── service.svelte.ts  # sbtask server health
-│   │   │   ├── settings.svelte.ts # (unused)
+│   │   │   ├── privacy.svelte.ts  # Crash reporting consent
 │   │   │   ├── space.svelte.ts    # Spaces from API + localStorage
 │   │   │   ├── tasknames.svelte.ts# Task names for autocomplete
 │   │   │   ├── tasks.svelte.ts    # Inbox/today tasks, error formatting
@@ -133,7 +133,48 @@
 
 ---
 
-## Getting Started
+## Quick Start (Alpha Testers)
+
+### 1. Download
+
+Grab the latest binary or APK from [Releases](https://git.fluffy-rooster.ts.net/FRGD/Silvermind/releases).
+
+### 2. Configure your spaces
+
+Copy the example config to its expected location:
+
+```bash
+mkdir -p ~/.config/sbtask
+cp sbtask-config.example.yaml ~/.config/sbtask/config.yaml
+# Edit the file with your SilverBullet URL and auth token
+```
+
+Or run the interactive config generator:
+
+```bash
+sbtask config init
+```
+
+### 3. Start the server
+
+**Desktop (Linux/macOS):**
+```bash
+sbtask serve --web-gui frontend/dist
+# Open http://localhost:9876
+```
+
+**Android:** Install the APK and launch Silvermind from your app drawer.
+The app automatically starts the sbtask service on the device.
+
+### System Requirements
+
+- 64-bit Linux, macOS, or Android 10+
+- A running [SilverBullet](https://silverbullet.md) instance with the runtime-api Docker variant
+- Your SilverBullet auth token (found in your SilverBullet config)
+
+---
+
+## Getting Started (Development)
 
 ### Web Development (browser + Vite proxy)
 
@@ -255,7 +296,7 @@ CSS custom properties are defined in `src/app.css` with `[data-theme="dark"]` ov
 
 6. **Wails v2** — Only v2 available in nixpkgs. Uses `webkit2_41` build tag.
 
-7. **Toast-free** — Success/error feedback via haptics only (no toast notifications).
+7. **Visual feedback** — Toast notifications for success, error, and undo actions. Haptics provide complementary physical feedback on supported platforms.
 
 8. **External links** — All `<a>` links in Markdown and elsewhere open in the system default browser. Desktop uses `xdg-open` via Go bridge; mobile uses `window.open(_blank)`.
 

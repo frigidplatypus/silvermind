@@ -37,3 +37,4 @@ android/
 *.tsbuildinfo
 result
 desktop/silvermind-desktop
+sbtask-config.yaml

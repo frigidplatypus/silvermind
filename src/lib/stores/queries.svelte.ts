@@ -2,6 +2,7 @@ import type { Task } from '$lib/types/task';
 import type { QueryPage, QueryBlockInfo, QueryExecuteResult } from '$lib/api/queries';
 import { getQueryPages, executeQuery, getQueryBlocks } from '$lib/api/queries';
 import { formatError } from '$lib/helpers/format-error';
+import { devLog } from '$lib/helpers/dev-log';
 
 let queryPages = $state<QueryPage[]>([]);
 let pagesLoading = $state(false);
@@ -28,7 +29,7 @@ export async function loadQueryPages(): Promise<void> {
     queryPages = await getQueryPages();
   } catch (e) {
     pagesError = formatError(e);
-    console.error('[queries] loadQueryPages failed:', e);
+    devLog('[queries] loadQueryPages failed:', e);
   } finally {
     pagesLoading = false;
   }
@@ -60,7 +61,7 @@ export async function runQuery(page: string, index?: number): Promise<void> {
     }
   } catch (e) {
     queryError = formatError(e);
-    console.error('[queries] runQuery failed:', e);
+    devLog('[queries] runQuery failed:', e);
     // Fetch the SLIQ so the user can open it in the editor
     try {
       const blocks = await getQueryBlocks(page);
