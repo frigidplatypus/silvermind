@@ -14,7 +14,7 @@ var (
 	createPage      string
 	createStatus    string
 	createDue       string
-	createScheduled string
+	createDeferred string
 	createName      string
 	createPriority  string
 	createTags      []string
@@ -26,7 +26,7 @@ var createCmd = &cobra.Command{
 	Short: "Create a new task",
 	Long: `Create a new task on a SilverBullet page with optional attributes.
 
-The --due and --scheduled flags accept:
+The --due and --deferred flags accept:
   - YYYY-MM-DD (e.g., 2026-06-19)
   - YYYY-MM-DD HH:mm (e.g., 2026-06-19 14:00)
   - Natural language (e.g., "tomorrow", "next Friday at 3pm", "in 2 days")`,
@@ -81,13 +81,13 @@ The --due and --scheduled flags accept:
 			t.Due = task.FormatJournalLink(datePart, timePart)
 		}
 
-		if createScheduled != "" {
-			dateStr, err := task.ParseDate(createScheduled)
+		if createDeferred != "" {
+			dateStr, err := task.ParseDate(createDeferred)
 			if err != nil {
-				return fmt.Errorf("invalid --scheduled date: %w", err)
+				return fmt.Errorf("invalid --deferred date: %w", err)
 			}
 			datePart, timePart := task.SplitDateTime(dateStr)
-			t.Scheduled = task.FormatJournalLink(datePart, timePart)
+			t.Deferred = task.FormatJournalLink(datePart, timePart)
 		}
 
 		line := t.ToMarkdown()
@@ -131,7 +131,7 @@ func init() {
 	createCmd.Flags().StringVar(&createPage, "page", "", "Target page path (uses default page if not specified)")
 	createCmd.Flags().StringVar(&createStatus, "status", "", "Task status (waiting, maybe, or empty for active)")
 	createCmd.Flags().StringVar(&createDue, "due", "", "Due date (YYYY-MM-DD, YYYY-MM-DD HH:mm, or natural language)")
-	createCmd.Flags().StringVar(&createScheduled, "scheduled", "", "Scheduled date (same formats as --due)")
+	createCmd.Flags().StringVar(&createDeferred, "deferred", "", "Deferred date (same formats as --due)")
 	createCmd.Flags().StringVar(&createName, "name", "", "Name attribute for the task")
 
 	createCmd.Flags().StringVar(&createPriority, "priority", "", "Priority: high, medium, low")

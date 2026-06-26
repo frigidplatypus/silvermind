@@ -42,11 +42,11 @@ Supported SLIQ patterns:
   t.name == "my-task"        Name attribute filter
   t.due < "value"            Due before
   t.due > "value"            Due after
-  t.scheduled:find(date)     Scheduled on specific date
-  t.scheduled < value        Scheduled before
+  t.deferred:find(date)     Deferred on specific date
+  t.deferred < value        Deferred before
   t.due == nil               Tasks without due date
   t.due != nil               Tasks with due date
-  order by t.field desc      Sort (page, pos, due, scheduled, priority)
+  order by t.field desc      Sort (page, pos, due, deferred, priority)
 
 The select clause (e.g. select templates.taskItem(t)) is ignored —
 all queries return task data in the standard sbtask format.

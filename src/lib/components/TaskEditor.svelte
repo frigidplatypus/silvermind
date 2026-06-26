@@ -24,7 +24,7 @@
   let status = $state(task.status || '');
   let priority = $state(task.priority || 'none');
   let due = $state(task.due_parsed?.date || task.due || '');
-  let scheduled = $state(task.scheduled_parsed?.date || task.scheduled || '');
+  let deferred = $state(task.deferred_parsed?.date || task.deferred || '');
   let recur = $state(task.recur || '');
   let deps = $state<string[]>([...(task.depends_on || [])]);
   let parent = $state(task.parent || '');
@@ -39,14 +39,14 @@
   let extraAttrCounter = 0;
 
   const originalDue = $derived(task.due_parsed?.date || task.due || '');
-  const originalScheduled = $derived(task.scheduled_parsed?.date || task.scheduled || '');
+  const originalScheduled = $derived(task.deferred_parsed?.date || task.deferred || '');
 
   const hasChanges = $derived.by(() => {
     if (text !== task.text) return true;
     if (status !== (task.status || '')) return true;
     if (priority !== (task.priority || 'none')) return true;
     if (due !== originalDue) return true;
-    if (scheduled !== originalScheduled) return true;
+    if (deferred !== originalScheduled) return true;
     if (recur !== (task.recur || '')) return true;
     if (deps.join(',') !== (task.depends_on || []).join(',')) return true;
     if (parent !== (task.parent || '')) return true;
@@ -125,7 +125,7 @@
       if (status !== (task.status || '')) fields.status = status;
       if (priority !== (task.priority || 'none')) fields.priority = priority === 'none' ? '' : priority;
       if (due !== originalDue) fields.due = due || '';
-      if (scheduled !== originalScheduled) fields.scheduled = scheduled || '';
+      if (deferred !== originalScheduled) fields.deferred = deferred || '';
       if (recur !== (task.recur || '')) fields.recur = recur || '';
       const oldDeps = (task.depends_on || []).join(',');
       const newDeps = deps.join(',');
@@ -233,8 +233,8 @@
   <label class="field-label" for="edit-due">Due date</label>
   <input id="edit-due" type="date" class="field" bind:value={due} />
 
-  <label class="field-label" for="edit-scheduled">Scheduled date</label>
-  <input id="edit-scheduled" type="date" class="field" bind:value={scheduled} />
+  <label class="field-label" for="edit-deferred">Deferred date</label>
+  <input id="edit-deferred" type="date" class="field" bind:value={deferred} />
 
   <button class="advanced-toggle" onclick={() => (showAdvanced = !showAdvanced)}>
     <Icon name={showAdvanced ? 'chevron-down' : 'chevron-right'} size="0.875rem" />

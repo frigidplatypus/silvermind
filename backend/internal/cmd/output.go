@@ -58,7 +58,7 @@ func formatTable(tasks []task.Task, spaceURL string) string {
 	hdrStatus := headerStyle.Render(statusCol.Render("STATUS"))
 	hdrText := headerStyle.Render(textCol.Render("TEXT"))
 	hdrDue := headerStyle.Render(dateCol.Render("DUE"))
-	hdrSched := headerStyle.Render(dateCol.Render("SCHEDULED"))
+	hdrSched := headerStyle.Render(dateCol.Render("DEFERRED"))
 	hdrPage := headerStyle.Render(pageCol.Render("PAGE"))
 
 	b.WriteString(strings.Join([]string{hdrPos, hdrPri, hdrStatus, hdrText, hdrDue, hdrSched, hdrPage}, gap))
@@ -79,10 +79,10 @@ func renderRow(t task.Task, ref int, spaceURL string) string {
 	status := renderStatus(t.Status)
 	text := textCol.Render(renderText(t.Text, spaceURL))
 	due := renderDate(t.Due)
-	scheduled := renderDate(t.Scheduled)
+	deferred := renderDate(t.Deferred)
 	page := pageCol.Render(truncatePath(t.Page, 32))
 
-	return strings.Join([]string{pos, pri, status, text, due, scheduled, page}, gap)
+	return strings.Join([]string{pos, pri, status, text, due, deferred, page}, gap)
 }
 
 func renderText(s string, spaceURL string) string {

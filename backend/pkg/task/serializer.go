@@ -27,8 +27,8 @@ func (t *Task) ToMarkdown() string {
 	if t.Due != "" {
 		parts = append(parts, fmt.Sprintf(`[due: "%s"]`, t.Due))
 	}
-	if t.Scheduled != "" {
-		parts = append(parts, fmt.Sprintf(`[scheduled: "%s"]`, t.Scheduled))
+	if t.Deferred != "" {
+		parts = append(parts, fmt.Sprintf(`[deferred: "%s"]`, t.Deferred))
 	}
 	if t.Name != "" {
 		parts = append(parts, fmt.Sprintf("[name: %s]", t.Name))

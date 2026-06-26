@@ -4,7 +4,7 @@ import type { Task } from '$lib/types/task';
 export interface TodayResponse {
   overdue: Task[];
   due_today: Task[];
-  scheduled_today: Task[];
+  deferred_today: Task[];
   all_clear: boolean;
 }
 

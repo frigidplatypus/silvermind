@@ -273,7 +273,7 @@ Silvermind communicates with the sbtask server on `localhost:7433`:
 | PUT | `/tasks/:page/:position/done` | Mark done |
 | PUT | `/tasks/:page/:position/undo` | Undo done |
 | DELETE | `/tasks/:page/:position` | Delete task |
-| GET | `/today` | Today view (overdue, due_today, scheduled_today) |
+| GET | `/today` | Today view (overdue, due_today, deferred_today) |
 | GET | `/spaces` | List spaces |
 
 In browser dev, the Vite proxy rewrites `/api/*` → `/:1` (strips `/api` prefix).

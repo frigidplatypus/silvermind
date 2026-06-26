@@ -12,7 +12,7 @@ import (
 
 var (
 	inboxDue       string
-	inboxScheduled string
+	inboxDeferred string
 	inboxName      string
 	inboxPriority  string
 	inboxTags      []string
@@ -65,13 +65,13 @@ All create flags are supported for adding context during capture.`,
 			t.Due = task.FormatJournalLink(datePart, timePart)
 		}
 
-		if inboxScheduled != "" {
-			dateStr, err := task.ParseDate(inboxScheduled)
+		if inboxDeferred != "" {
+			dateStr, err := task.ParseDate(inboxDeferred)
 			if err != nil {
-				return fmt.Errorf("invalid --scheduled date: %w", err)
+				return fmt.Errorf("invalid --deferred date: %w", err)
 			}
 			datePart, timePart := task.SplitDateTime(dateStr)
-			t.Scheduled = task.FormatJournalLink(datePart, timePart)
+			t.Deferred = task.FormatJournalLink(datePart, timePart)
 		}
 
 		line := t.ToMarkdown()
@@ -113,7 +113,7 @@ All create flags are supported for adding context during capture.`,
 
 func init() {
 	inboxCmd.Flags().StringVar(&inboxDue, "due", "", "Due date")
-	inboxCmd.Flags().StringVar(&inboxScheduled, "scheduled", "", "Scheduled date")
+	inboxCmd.Flags().StringVar(&inboxDeferred, "deferred", "", "Deferred date")
 	inboxCmd.Flags().StringVar(&inboxName, "name", "", "Name attribute")
 	inboxCmd.Flags().StringVar(&inboxPriority, "priority", "", "Priority: high, medium, low")
 	inboxCmd.Flags().StringSliceVar(&inboxTags, "tag", nil, "Add hashtag (repeatable)")

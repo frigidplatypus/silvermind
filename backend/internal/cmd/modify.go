@@ -16,13 +16,13 @@ var (
 	modifyText      string
 	modifyStatus    string
 	modifyDue       string
-	modifyScheduled string
+	modifyDeferred string
 	modifyName      string
 	modifyPriority  string
 	modifyTags      []string
 	clearStatus     bool
 	clearDue        bool
-	clearScheduled  bool
+	clearDeferred  bool
 	clearName       bool
 	clearPriority   bool
 	clearTags       bool
@@ -87,8 +87,8 @@ Use --clear-* flags to remove a field. --status "" is an alias for --clear-statu
 			if clearDue {
 				pt.Due = ""
 			}
-			if clearScheduled {
-				pt.Scheduled = ""
+			if clearDeferred {
+				pt.Deferred = ""
 			}
 			if clearName {
 				pt.Name = ""
@@ -101,13 +101,13 @@ Use --clear-* flags to remove a field. --status "" is an alias for --clear-statu
 				datePart, timePart := task.SplitDateTime(dateStr)
 				pt.Due = task.FormatJournalLink(datePart, timePart)
 			}
-			if cmd.Flags().Changed("scheduled") {
-				dateStr, err := task.ParseDate(modifyScheduled)
+			if cmd.Flags().Changed("deferred") {
+				dateStr, err := task.ParseDate(modifyDeferred)
 				if err != nil {
-					return "", fmt.Errorf("invalid --scheduled date: %w", err)
+					return "", fmt.Errorf("invalid --deferred date: %w", err)
 				}
 				datePart, timePart := task.SplitDateTime(dateStr)
-				pt.Scheduled = task.FormatJournalLink(datePart, timePart)
+				pt.Deferred = task.FormatJournalLink(datePart, timePart)
 			}
 			if cmd.Flags().Changed("name") {
 				pt.Name = modifyName
@@ -187,8 +187,8 @@ func init() {
 	modifyCmd.Flags().BoolVar(&clearStatus, "clear-status", false, "Clear the task status (set to active)")
 	modifyCmd.Flags().StringVar(&modifyDue, "due", "", "New due date")
 	modifyCmd.Flags().BoolVar(&clearDue, "clear-due", false, "Remove the due date")
-	modifyCmd.Flags().StringVar(&modifyScheduled, "scheduled", "", "New scheduled date")
-	modifyCmd.Flags().BoolVar(&clearScheduled, "clear-scheduled", false, "Remove the scheduled date")
+	modifyCmd.Flags().StringVar(&modifyDeferred, "deferred", "", "New deferred date")
+	modifyCmd.Flags().BoolVar(&clearDeferred, "clear-deferred", false, "Remove the deferred date")
 	modifyCmd.Flags().StringVar(&modifyName, "name", "", "New name attribute")
 	modifyCmd.Flags().BoolVar(&clearName, "clear-name", false, "Remove the name attribute")
 

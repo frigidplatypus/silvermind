@@ -31,13 +31,13 @@ func TestToMarkdown(t *testing.T) {
 			want: "- [ ] task [name: myTask] [priority: high]",
 		},
 		{
-			name: "with due and scheduled",
+			name: "with due and deferred",
 			task: Task{
 				Text:      "task",
 				Due:       "[[Journal/2026-06-19]]",
-				Scheduled: "[[Journal/2026-06-20]]",
+				Deferred: "[[Journal/2026-06-20]]",
 			},
-			want: `- [ ] task [due: "[[Journal/2026-06-19]]"] [scheduled: "[[Journal/2026-06-20]]"]`,
+			want: `- [ ] task [due: "[[Journal/2026-06-19]]"] [deferred: "[[Journal/2026-06-20]]"]`,
 		},
 		{
 			name: "with recur",
@@ -108,7 +108,7 @@ func TestRoundTrip(t *testing.T) {
 		Name:      "groceries",
 		Recur:     "weekly:1",
 		Due:       "[[Journal/2026-06-19]]",
-		Scheduled: "[[Journal/2026-06-20]]",
+		Deferred: "[[Journal/2026-06-20]]",
 		DependsOn: []string{"a", "b"},
 	}
 	line := original.ToMarkdown()
@@ -134,8 +134,8 @@ func TestRoundTrip(t *testing.T) {
 	if parsed.Due != original.Due {
 		t.Errorf("Due = %q, want %q", parsed.Due, original.Due)
 	}
-	if parsed.Scheduled != original.Scheduled {
-		t.Errorf("Scheduled = %q, want %q", parsed.Scheduled, original.Scheduled)
+	if parsed.Deferred != original.Deferred {
+		t.Errorf("Deferred = %q, want %q", parsed.Deferred, original.Deferred)
 	}
 	if len(parsed.DependsOn) != 2 {
 		t.Errorf("DependsOn = %v, want 2 items", parsed.DependsOn)

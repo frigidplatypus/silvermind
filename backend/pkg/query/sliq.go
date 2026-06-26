@@ -297,27 +297,27 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 					if name != "" {
 						filter.Name = name
 					}
-				case strings.Contains(sub, "t.scheduled:find"):
-					dateStr := extractSLIQString(sub, "t.scheduled:find")
+				case strings.Contains(sub, "t.deferred:find"):
+					dateStr := extractSLIQString(sub, "t.deferred:find")
 					if dateStr != "" {
 						today := "[[Journal/" + dateStr + "]]"
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
 							for _, t := range tasks {
-								if strings.Contains(t.Scheduled, today) {
+								if strings.Contains(t.Deferred, today) {
 									out = append(out, t)
 								}
 							}
 							return out
 						})
 					}
-				case strings.Contains(sub, "t.scheduled") && strings.Contains(sub, "<"):
+				case strings.Contains(sub, "t.deferred") && strings.Contains(sub, "<"):
 					dateVal := extractQuotedValue(sub)
 					if dateVal != "" {
 						clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 							var out []task.Task
 							for _, t := range tasks {
-								if t.Scheduled != "" && t.Scheduled < dateVal {
+								if t.Deferred != "" && t.Deferred < dateVal {
 									out = append(out, t)
 								}
 							}
@@ -357,11 +357,11 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 					if len(parts) == 2 {
 						field := strings.TrimSpace(parts[0])
 						field = strings.TrimPrefix(field, "t.")
-						if field == "due" || field == "scheduled" {
+						if field == "due" || field == "deferred" {
 							clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 								var out []task.Task
 								for _, t := range tasks {
-									if (field == "due" && t.Due != "") || (field == "scheduled" && t.Scheduled != "") {
+									if (field == "due" && t.Due != "") || (field == "deferred" && t.Deferred != "") {
 										out = append(out, t)
 									}
 								}
@@ -374,11 +374,11 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 					if len(parts) == 2 {
 						field := strings.TrimSpace(parts[0])
 						field = strings.TrimPrefix(field, "t.")
-						if field == "due" || field == "scheduled" {
+						if field == "due" || field == "deferred" {
 							clientFilters = append(clientFilters, func(tasks []task.Task) []task.Task {
 								var out []task.Task
 								for _, t := range tasks {
-									if (field == "due" && t.Due == "") || (field == "scheduled" && t.Scheduled == "") {
+									if (field == "due" && t.Due == "") || (field == "deferred" && t.Deferred == "") {
 										out = append(out, t)
 									}
 								}
@@ -415,7 +415,7 @@ func TranslateSLIQ(sliq string) (task.TaskFilter, func([]task.Task) []task.Task)
 			parts := strings.Fields(line)
 			if len(parts) >= 1 {
 				field := strings.TrimPrefix(parts[0], "t.")
-				validSorts := map[string]bool{"page": true, "pos": true, "due": true, "scheduled": true, "priority": true}
+				validSorts := map[string]bool{"page": true, "pos": true, "due": true, "deferred": true, "priority": true}
 				if validSorts[field] {
 					filter.SortBy = field
 					if len(parts) >= 2 && parts[1] == "desc" {

@@ -88,9 +88,9 @@ func FromRuntime(rt client.RuntimeTask) task.Task {
 		t.Due = v
 		delete(extra, "due")
 	}
-	if v, ok := extra["scheduled"]; ok {
-		t.Scheduled = v
-		delete(extra, "scheduled")
+	if v, ok := extra["deferred"]; ok {
+		t.Deferred = v
+		delete(extra, "deferred")
 	}
 	if v, ok := extra["name"]; ok {
 		t.Name = v
@@ -173,11 +173,11 @@ func filterToQueryParams(f task.TaskFilter) map[string]string {
 	if f.DueBefore != "" {
 		params["where[due][lte]"] = f.DueBefore
 	}
-	if f.ScheduledAfter != "" {
-		params["where[scheduled][gte]"] = f.ScheduledAfter
+	if f.DeferredAfter != "" {
+		params["where[deferred][gte]"] = f.DeferredAfter
 	}
-	if f.ScheduledBefore != "" {
-		params["where[scheduled][lte]"] = f.ScheduledBefore
+	if f.DeferredBefore != "" {
+		params["where[deferred][lte]"] = f.DeferredBefore
 	}
 
 	if f.SortBy != "" {
@@ -296,9 +296,9 @@ func sortTasks(tasks []task.Task, sortBy, order string) {
 				return true
 			}
 			less = di < dj
-		case "scheduled":
-			si, _, oki := task.ParseJournalLink(tasks[i].Scheduled)
-			sj, _, okj := task.ParseJournalLink(tasks[j].Scheduled)
+		case "deferred":
+			si, _, oki := task.ParseJournalLink(tasks[i].Deferred)
+			sj, _, okj := task.ParseJournalLink(tasks[j].Deferred)
 			if !oki {
 				return false
 			}

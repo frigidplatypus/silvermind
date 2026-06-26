@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { loadToday, getTasksError, getTasksLoading, getTodayOverdue, getTodayDue, getTodayScheduled } from '$lib/stores/tasks.svelte';
+  import { loadToday, getTasksError, getTasksLoading, getTodayOverdue, getTodayDue, getTodayDeferred } from '$lib/stores/tasks.svelte';
   import type { Task } from '$lib/types/task';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskDetail from '$lib/components/TaskDetail.svelte';
@@ -21,7 +21,7 @@
 
   const overdue = $derived(getTodayOverdue());
   const dueToday = $derived(getTodayDue());
-  const scheduledToday = $derived(getTodayScheduled());
+  const deferredToday = $derived(getTodayDeferred());
 
   function tid(t: Task) { return `${t.page}/${t.position}`; }
 
@@ -38,9 +38,9 @@
 </script>
 
 <div class="today-page">
-  {#if getTasksLoading() && overdue.length === 0 && dueToday.length === 0 && scheduledToday.length === 0}
+  {#if getTasksLoading() && overdue.length === 0 && dueToday.length === 0 && deferredToday.length === 0}
     <div class="loading-state">Loading today's tasks…</div>
-  {:else if getTasksError() && overdue.length === 0 && dueToday.length === 0 && scheduledToday.length === 0}
+  {:else if getTasksError() && overdue.length === 0 && dueToday.length === 0 && deferredToday.length === 0}
     <div class="error-state" role="alert">
       <Icon name="alert-triangle" size="1.25rem" />
       <p class="error-message">{getTasksError()}</p>
@@ -62,9 +62,9 @@
       {#each dueToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />{/each}
       {#if dueToday.length === 0}<p class="empty">No tasks due today</p>{/if}
     </section>
-    <section><h2 class="heading">Scheduled Today</h2>
-      {#each scheduledToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />{/each}
-      {#if scheduledToday.length === 0}<p class="empty">No tasks scheduled for today</p>{/if}
+    <section><h2 class="heading">Deferred Today</h2>
+      {#each deferredToday as t (tid(t))}<TaskRow task={t} id={tid(t)} onclick={() => handleTaskTap(t)} onToggleDone={handleToggle} />{/each}
+      {#if deferredToday.length === 0}<p class="empty">No tasks deferred for today</p>{/if}
     </section>
   {/if}
   {#if !externalOnTaskTap}

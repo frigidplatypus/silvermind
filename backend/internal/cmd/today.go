@@ -14,7 +14,7 @@ import (
 var todayCmd = &cobra.Command{
 	Use:   "today",
 	Short: "Show today's task landscape",
-	Long: `Show tasks due today, scheduled today, and overdue tasks.
+	Long: `Show tasks due today, deferred today, and overdue tasks.
 
 This gives you a quick view of what's on your plate right now.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,31 +35,31 @@ This gives you a quick view of what's on your plate right now.`,
 			DueBefore: today,
 		})
 
-		schedToday, err3 := q.Execute(task.TaskFilter{
-			ScheduledAfter:  today,
-			ScheduledBefore: today,
+		defToday, err3 := q.Execute(task.TaskFilter{
+			DeferredAfter:  today,
+			DeferredBefore: today,
 		})
 
 		if err1 != nil && err2 != nil && err3 != nil {
 			return fmt.Errorf("all today queries failed: %w", err1)
 		}
 
-		// Filter out done tasks from due/scheduled
+		// Filter out done tasks from due/deferred
 		dueToday = filterNotDone(dueToday)
-		schedToday = filterNotDone(schedToday)
+		defToday = filterNotDone(defToday)
 
-		total := len(overdue) + len(dueToday) + len(schedToday)
+		total := len(overdue) + len(dueToday) + len(defToday)
 
 		if jsonOutput {
 			type todayResult struct {
 				Overdue    []task.Task `json:"overdue"`
 				DueToday   []task.Task `json:"due_today"`
-				SchedToday []task.Task `json:"scheduled_today"`
+				SchedToday []task.Task `json:"deferred_today"`
 			}
 			data, err := json.MarshalIndent(todayResult{
 				Overdue:    overdue,
 				DueToday:   dueToday,
-				SchedToday: schedToday,
+				SchedToday: defToday,
 			}, "", "  ")
 			if err != nil {
 				return fmt.Errorf("encode result: %w", err)
@@ -88,10 +88,10 @@ This gives you a quick view of what's on your plate right now.`,
 			fmt.Println()
 		}
 
-		if len(schedToday) > 0 {
-			fmt.Println("── SCHEDULED TODAY ───────────────────────────────────────────────────────────")
+		if len(defToday) > 0 {
+			fmt.Println("── DEFERRED TODAY ───────────────────────────────────────────────────────────")
 			fmt.Println()
-			for i, t := range schedToday {
+			for i, t := range defToday {
 				fmt.Print(formatRow(t, i+1, sc.Space))
 				fmt.Println()
 			}

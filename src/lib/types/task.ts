@@ -7,8 +7,8 @@ export interface Task {
   done: boolean;
   due: string;
   due_parsed: { date: string } | null;
-  scheduled: string;
-  scheduled_parsed: { date: string } | null;
+  deferred: string;
+  deferred_parsed: { date: string } | null;
   name: string;
   priority: string;
   tags: string[];
@@ -23,7 +23,7 @@ export interface NewTaskInput {
   text: string;
   page?: string;
   due?: string;
-  scheduled?: string;
+  deferred?: string;
   priority?: string;
   name?: string;
   tags?: string[];

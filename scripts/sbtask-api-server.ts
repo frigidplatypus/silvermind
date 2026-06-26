@@ -14,7 +14,7 @@ interface Task {
   status: 'active' | 'done';
   priority: 'high' | 'medium' | 'none';
   due_date: string | null;
-  scheduled_date: string | null;
+  deferred_date: string | null;
   space_id: string;
   created_at: string;
   updated_at: string;
@@ -57,7 +57,7 @@ function parseTask(raw: any, spaceId: string): Task {
     status: raw.status || raw.state || 'active',
     priority: raw.priority || raw.prio || 'none',
     due_date: raw.due_date || raw.dueDate || raw.deadline || null,
-    scheduled_date: raw.scheduled_date || raw.scheduledDate || raw.schedule || null,
+    deferred_date: raw.deferred_date || raw.deferredDate || raw.schedule || null,
     space_id: raw.space || spaceId,
     created_at: raw.created_at || raw.createdAt || now,
     updated_at: raw.updated_at || raw.updatedAt || now,
@@ -136,11 +136,11 @@ const server = createServer(async (req, res) => {
         return json(res, {
           overdue: (data.overdue || []).map((t: any) => parseTask(t, spaceId)),
           due_today: (data.due_today || data.dueToday || []).map((t: any) => parseTask(t, spaceId)),
-          scheduled_today: (data.scheduled_today || data.scheduledToday || []).map((t: any) => parseTask(t, spaceId)),
+          deferred_today: (data.deferred_today || data.deferredToday || []).map((t: any) => parseTask(t, spaceId)),
           date: new Date().toISOString().slice(0, 10),
         });
       } catch (e: any) {
-        return json(res, { overdue: [], due_today: [], scheduled_today: [], date: '' });
+        return json(res, { overdue: [], due_today: [], deferred_today: [], date: '' });
       }
     }
 

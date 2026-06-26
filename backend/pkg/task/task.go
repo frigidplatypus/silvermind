@@ -7,7 +7,7 @@ type Task struct {
 	Status    string   `json:"status"`
 	Done      bool     `json:"done"`
 	Due       string   `json:"due,omitempty"`
-	Scheduled string   `json:"scheduled,omitempty"`
+	Deferred string   `json:"deferred,omitempty"`
 	Name      string   `json:"name,omitempty"`
 	Priority  string   `json:"priority,omitempty"`
 	Tags      []string `json:"tags,omitempty"`
@@ -31,8 +31,8 @@ type TaskFilter struct {
 	Page            string
 	DueBefore       string
 	DueAfter        string
-	ScheduledBefore string
-	ScheduledAfter  string
+	DeferredBefore string
+	DeferredAfter  string
 	Name            string
 	Priority        string
 	Tags            []string

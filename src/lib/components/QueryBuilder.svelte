@@ -127,20 +127,20 @@
         }
       }
 
-      if ((line.includes('p.due != nil') || line.includes('p.scheduled != nil')) && line.includes(' or ')) {
+      if ((line.includes('p.due != nil') || line.includes('p.deferred != nil')) && line.includes(' or ')) {
         hasDateFilter = 'has';
         dateField = 'both';
-      } else if (line.includes('p.due != nil') || line.includes('p.scheduled != nil')) {
+      } else if (line.includes('p.due != nil') || line.includes('p.deferred != nil')) {
         hasDateFilter = 'has';
-      } else if ((line.includes('p.due == nil') || line.includes('p.scheduled == nil')) && line.includes(' and ')) {
+      } else if ((line.includes('p.due == nil') || line.includes('p.deferred == nil')) && line.includes(' and ')) {
         hasDateFilter = 'missing';
         dateField = 'both';
-      } else if (line.includes('p.due == nil') || line.includes('p.scheduled == nil')) {
+      } else if (line.includes('p.due == nil') || line.includes('p.deferred == nil')) {
         hasDateFilter = 'missing';
       }
 
-      if (line.includes('p.scheduled')) dateField = 'scheduled';
-      if ((line.includes('p.due') || line.includes('p.')) && line.includes('p.scheduled')) dateField = 'both';
+      if (line.includes('p.deferred')) dateField = 'deferred';
+      if ((line.includes('p.due') || line.includes('p.')) && line.includes('p.deferred')) dateField = 'both';
 
       if (!activePresetLabel) {
         if ((line.includes('"@today"') || line.includes('today()')) && line.includes('==')) {
@@ -159,7 +159,7 @@
       }
 
       if (!activePresetLabel) {
-        const prefix = line.includes('p.scheduled') ? 'p.scheduled' : 'p.due';
+        const prefix = line.includes('p.deferred') ? 'p.deferred' : 'p.due';
         if (line.includes(`${prefix} > "`)) rangeStart = extractQuoted(line, `${prefix} > `) ?? '';
         if (line.includes(`${prefix} < "`)) rangeEnd = extractQuoted(line, `${prefix} < `) ?? '';
       }
@@ -193,7 +193,7 @@
 
   let pageFilterType = $state<'equals' | 'starts' | 'not-starts'>('equals');
   let pageFilterValue = $state('');
-  let dateField = $state<'due' | 'scheduled' | 'both'>('due');
+  let dateField = $state<'due' | 'deferred' | 'both'>('due');
   let dateMode = $state<'relative' | 'calendar'>('relative');
   let rangeStart = $state('');
   let rangeEnd = $state('');
@@ -209,9 +209,9 @@
     if (!activePresetLabel) return '';
     if (dateField === 'both') {
       const due = presetSLIQFor('due');
-      const sched = presetSLIQFor('scheduled');
-      if (due && sched) return `(${due} or ${sched})`;
-      return due || sched;
+      const def = presetSLIQFor('deferred');
+      if (due && def) return `(${due} or ${def})`;
+      return due || def;
     }
     return presetSLIQFor(dateField);
   }
@@ -254,7 +254,7 @@
   const sortFieldOptions = [
     { value: 'priority', label: 'Priority' },
     { value: 'due', label: 'Due date' },
-    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'deferred', label: 'Deferred' },
     { value: 'page', label: 'Page' },
     { value: 'name', label: 'Name' },
     { value: 'lastModified', label: 'Last modified' },
@@ -322,21 +322,21 @@
       if (hasDateFilter === 'has') {
         const prefix = lines.length <= 1 ? 'where' : 'and';
         if (dateField === 'both') {
-          lines.push(`${prefix} (p.due != nil or p.scheduled != nil)`);
+          lines.push(`${prefix} (p.due != nil or p.deferred != nil)`);
         } else {
           lines.push(`${prefix} p.${dateField} != nil`);
         }
       } else if (hasDateFilter === 'missing') {
         const prefix = lines.length <= 1 ? 'where' : 'and';
         if (dateField === 'both') {
-          lines.push(`${prefix} (p.due == nil and p.scheduled == nil)`);
+          lines.push(`${prefix} (p.due == nil and p.deferred == nil)`);
         } else {
           lines.push(`${prefix} p.${dateField} == nil`);
         }
       }
 
       if (rangeStart || rangeEnd) {
-        const fields = dateField === 'both' ? ['due', 'scheduled'] : [dateField];
+        const fields = dateField === 'both' ? ['due', 'deferred'] : [dateField];
         const parts: string[] = [];
         for (const f of fields) {
           const clauses: string[] = [];
@@ -551,7 +551,7 @@
         <span class="filter-label">Date filter</span>
         <div class="date-field-toggle">
           <button class="toggle-btn" class:active={dateField === 'due'} onclick={() => (dateField = 'due')}>Due</button>
-          <button class="toggle-btn" class:active={dateField === 'scheduled'} onclick={() => (dateField = 'scheduled')}>Sch</button>
+          <button class="toggle-btn" class:active={dateField === 'deferred'} onclick={() => (dateField = 'deferred')}>Sch</button>
           <button class="toggle-btn" class:active={dateField === 'both'} onclick={() => (dateField = 'both')}>Both</button>
         </div>
       </div>

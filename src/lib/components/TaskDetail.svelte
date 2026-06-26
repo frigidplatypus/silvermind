@@ -89,10 +89,10 @@
           <span class="meta-value">{task.due_parsed.date}</span>
         </div>
       {/if}
-      {#if task.scheduled_parsed?.date}
+      {#if task.deferred_parsed?.date}
         <div class="meta-row">
-          <span class="meta-label">Scheduled</span>
-          <span class="meta-value">{task.scheduled_parsed.date}</span>
+          <span class="meta-label">Deferred</span>
+          <span class="meta-value">{task.deferred_parsed.date}</span>
         </div>
       {/if}
       {#if task.tags.length > 0}

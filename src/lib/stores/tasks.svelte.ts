@@ -12,14 +12,14 @@ let _lastError = $state<string | null>(null);
 
 let _overdue = $state<Task[]>([]);
 let _dueToday = $state<Task[]>([]);
-let _scheduledToday = $state<Task[]>([]);
+let _deferredToday = $state<Task[]>([]);
 
 export function getTasks(): Task[] { return _tasks; }
 export function getTasksLoading(): boolean { return _isLoading; }
 export function getTasksError(): string | null { return _lastError; }
 export function getTodayOverdue(): Task[] { return _overdue; }
 export function getTodayDue(): Task[] { return _dueToday; }
-export function getTodayScheduled(): Task[] { return _scheduledToday; }
+export function getTodayDeferred(): Task[] { return _deferredToday; }
 
 function formatError(e: unknown): string {
   const space = getActiveSpace();
@@ -48,18 +48,18 @@ export async function loadInbox(): Promise<Task[]> {
   return _tasks;
 }
 
-export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[]; scheduled_today: Task[] }> {
+export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[]; deferred_today: Task[] }> {
   _isLoading = true;
   _lastError = null;
   try {
     const data = await getToday();
     _overdue = data.overdue;
     _dueToday = data.due_today;
-    _scheduledToday = data.scheduled_today;
+    _deferredToday = data.deferred_today;
     return data;
   } catch (e) {
     _lastError = formatError(e);
-    return { overdue: [], due_today: [], scheduled_today: [] };
+    return { overdue: [], due_today: [], deferred_today: [] };
   } finally {
     _isLoading = false;
   }

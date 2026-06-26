@@ -57,7 +57,7 @@ func ParseTaskLine(line string) (*Task, error) {
 		RawLine: line,
 	}
 
-	known := map[string]bool{"due": true, "scheduled": true, "name": true, "priority": true, "dependsOn": true, "recur": true}
+	known := map[string]bool{"due": true, "deferred": true, "name": true, "priority": true, "dependsOn": true, "recur": true}
 
 	for k, v := range attrs {
 		if known[k] {
@@ -72,8 +72,8 @@ func ParseTaskLine(line string) (*Task, error) {
 	if v, ok := attrs["due"]; ok {
 		t.Due = v
 	}
-	if v, ok := attrs["scheduled"]; ok {
-		t.Scheduled = v
+	if v, ok := attrs["deferred"]; ok {
+		t.Deferred = v
 	}
 	if v, ok := attrs["name"]; ok {
 		t.Name = v

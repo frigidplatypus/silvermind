@@ -124,7 +124,7 @@ func toggleDone(args []string, newStatus string) error {
 						Priority:  toggledTask.Priority,
 						Recur:     toggledTask.Recur,
 						Due:       task.FormatJournalLink(dueDate, ""),
-						Scheduled: toggledTask.Scheduled,
+						Deferred: toggledTask.Deferred,
 						DependsOn: toggledTask.DependsOn,
 					}
 					line := newTask.ToMarkdown()

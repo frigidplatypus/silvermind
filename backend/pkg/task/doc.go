@@ -5,7 +5,7 @@
 //   - Parsing task lines from markdown content
 //   - Serializing Task structs back to valid SilverBullet markdown
 //   - Natural language date parsing via the when library
-//   - Journal link formatting for [due: ...] and [scheduled: ...] attributes
+//   - Journal link formatting for [due: ...] and [deferred: ...] attributes
 //   - Recurrence parsing and date arithmetic (daily/weekly/monthly/yearly)
 //
 // Tasks are uniquely identified by (page, position) where position is the

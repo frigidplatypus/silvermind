@@ -28,8 +28,8 @@ type TaskResponse struct {
 	Done            bool           `json:"done"`
 	Due             string         `json:"due"`
 	DueParsed       *DateParsed    `json:"due_parsed,omitempty"`
-	Scheduled       string         `json:"scheduled"`
-	ScheduledParsed *DateParsed    `json:"scheduled_parsed,omitempty"`
+	Deferred       string         `json:"deferred"`
+	DeferredParsed *DateParsed    `json:"deferred_parsed,omitempty"`
 	Name            string         `json:"name,omitempty"`
 	Priority        string         `json:"priority,omitempty"`
 	Tags            []string       `json:"tags,omitempty"`
@@ -50,7 +50,7 @@ type DateParsed struct {
 type CreateTaskRequest struct {
 	Text      string   `json:"text"`
 	Due       string   `json:"due,omitempty"`
-	Scheduled string   `json:"scheduled,omitempty"`
+	Deferred string   `json:"deferred,omitempty"`
 	Status    string   `json:"status,omitempty"`
 	Name      string   `json:"name,omitempty"`
 	Priority  string   `json:"priority,omitempty"`
@@ -63,7 +63,7 @@ type ModifyTaskRequest struct {
 	Text      string    `json:"text,omitempty"`
 	Status    string    `json:"status,omitempty"`
 	Due       string    `json:"due,omitempty"`
-	Scheduled string    `json:"scheduled,omitempty"`
+	Deferred string    `json:"deferred,omitempty"`
 	Name      string    `json:"name,omitempty"`
 	Priority  string    `json:"priority,omitempty"`
 	Tags      []string  `json:"tags,omitempty"`
@@ -81,7 +81,7 @@ type HealthResponse struct {
 type TodayResponse struct {
 	Overdue        []TaskResponse `json:"overdue"`
 	DueToday       []TaskResponse `json:"due_today"`
-	ScheduledToday []TaskResponse `json:"scheduled_today"`
+	DeferredToday []TaskResponse `json:"deferred_today"`
 }
 
 type SpaceInfo struct {
@@ -170,18 +170,18 @@ func (s *Server) handleToday(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("today due_today query failed", "error", err)
 	}
-	schedToday, err := q.Execute(task.TaskFilter{ScheduledAfter: todayStr, ScheduledBefore: todayStr})
+	defToday, err := q.Execute(task.TaskFilter{DeferredAfter: todayStr, DeferredBefore: todayStr})
 	if err != nil {
-		slog.Error("today scheduled_today query failed", "error", err)
+		slog.Error("today deferred_today query failed", "error", err)
 	}
 
 	dueToday = filterNotDone(dueToday)
-	schedToday = filterNotDone(schedToday)
+	defToday = filterNotDone(defToday)
 
 	writeOK(w, TodayResponse{
 		Overdue:        tasksToResponse(overdue, sc.Space),
 		DueToday:       tasksToResponse(dueToday, sc.Space),
-		ScheduledToday: tasksToResponse(schedToday, sc.Space),
+		DeferredToday: tasksToResponse(defToday, sc.Space),
 	})
 }
 
@@ -198,8 +198,8 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		Page:            r.URL.Query().Get("page"),
 		DueBefore:       r.URL.Query().Get("due_before"),
 		DueAfter:        r.URL.Query().Get("due_after"),
-		ScheduledBefore: r.URL.Query().Get("scheduled_before"),
-		ScheduledAfter:  r.URL.Query().Get("scheduled_after"),
+		DeferredBefore: r.URL.Query().Get("deferred_before"),
+		DeferredAfter:  r.URL.Query().Get("deferred_after"),
 		Name:            r.URL.Query().Get("name"),
 		Priority:        r.URL.Query().Get("priority"),
 		Tags:            r.URL.Query()["tag"],
@@ -328,14 +328,14 @@ func (s *Server) handleCreateInbox(w http.ResponseWriter, r *http.Request) {
 		tk.Due = task.FormatJournalLink(dp, tp)
 	}
 
-	if req.Scheduled != "" {
-		dateStr, err := task.ParseDate(req.Scheduled)
+	if req.Deferred != "" {
+		dateStr, err := task.ParseDate(req.Deferred)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "validation_error", fmt.Sprintf("invalid scheduled date: %s", err))
+			writeError(w, http.StatusBadRequest, "validation_error", fmt.Sprintf("invalid deferred date: %s", err))
 			return
 		}
 		dp, tp := task.SplitDateTime(dateStr)
-		tk.Scheduled = task.FormatJournalLink(dp, tp)
+		tk.Deferred = task.FormatJournalLink(dp, tp)
 	}
 
 	if len(req.ExtraAttrs) > 0 {
@@ -571,7 +571,7 @@ func (s *Server) handleToggleDone(w http.ResponseWriter, r *http.Request, newSta
 					Priority:   toggledTask.Priority,
 					Recur:      toggledTask.Recur,
 					Due:        task.FormatJournalLink(next, ""),
-					Scheduled:  toggledTask.Scheduled,
+					Deferred:  toggledTask.Deferred,
 					DependsOn:  toggledTask.DependsOn,
 					ExtraAttrs: toggledTask.ExtraAttrs,
 				}
@@ -583,7 +583,7 @@ func (s *Server) handleToggleDone(w http.ResponseWriter, r *http.Request, newSta
 					Page:      page,
 					Text:      nextTask.Text,
 					Due:       nextTask.Due,
-					Scheduled: nextTask.Scheduled,
+					Deferred: nextTask.Deferred,
 					Name:      nextTask.Name,
 					Priority:  nextTask.Priority,
 					Recur:     nextTask.Recur,
@@ -606,7 +606,7 @@ func taskToResponse(tk task.Task, spaceURL string) TaskResponse {
 		Status:    tk.Status,
 		Done:      tk.Done,
 		Due:       tk.Due,
-		Scheduled: tk.Scheduled,
+		Deferred: tk.Deferred,
 		Name:      tk.Name,
 		Priority:  tk.Priority,
 		Tags:      tk.Tags,
@@ -623,10 +623,10 @@ func taskToResponse(tk task.Task, spaceURL string) TaskResponse {
 			resp.DueParsed = &DateParsed{Date: date, Time: timeStr}
 		}
 	}
-	if tk.Scheduled != "" {
-		date, timeStr, ok := task.ParseJournalLink(tk.Scheduled)
+	if tk.Deferred != "" {
+		date, timeStr, ok := task.ParseJournalLink(tk.Deferred)
 		if ok {
-			resp.ScheduledParsed = &DateParsed{Date: date, Time: timeStr}
+			resp.DeferredParsed = &DateParsed{Date: date, Time: timeStr}
 		}
 	}
 
@@ -679,13 +679,13 @@ func applyModify(tk *task.Task, req *ModifyTaskRequest) error {
 		dp, tp := task.SplitDateTime(dateStr)
 		tk.Due = task.FormatJournalLink(dp, tp)
 	}
-	if req.Scheduled != "" {
-		dateStr, err := task.ParseDate(req.Scheduled)
+	if req.Deferred != "" {
+		dateStr, err := task.ParseDate(req.Deferred)
 		if err != nil {
-			return &task.ValidationError{Field: "scheduled", Message: err.Error()}
+			return &task.ValidationError{Field: "deferred", Message: err.Error()}
 		}
 		dp, tp := task.SplitDateTime(dateStr)
-		tk.Scheduled = task.FormatJournalLink(dp, tp)
+		tk.Deferred = task.FormatJournalLink(dp, tp)
 	}
 	if req.Name != "" {
 		tk.Name = req.Name

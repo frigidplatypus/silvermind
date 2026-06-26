@@ -55,8 +55,8 @@ or --status all to see everything.`,
 			Page:            listPage,
 			DueBefore:       listDueBefore,
 			DueAfter:        listDueAfter,
-			ScheduledBefore: listSchedBefore,
-			ScheduledAfter:  listSchedAfter,
+			DeferredBefore: listSchedBefore,
+			DeferredAfter:  listSchedAfter,
 			Name:            listName,
 			Priority:        listPriority,
 			Tags:            listTags,
@@ -117,12 +117,12 @@ func init() {
 	listCmd.Flags().StringVar(&listPage, "page", "", "Filter by page path")
 	listCmd.Flags().StringVar(&listDueBefore, "due-before", "", "Tasks due before date (YYYY-MM-DD)")
 	listCmd.Flags().StringVar(&listDueAfter, "due-after", "", "Tasks due after date (YYYY-MM-DD)")
-	listCmd.Flags().StringVar(&listSchedBefore, "scheduled-before", "", "Tasks scheduled before date (YYYY-MM-DD)")
-	listCmd.Flags().StringVar(&listSchedAfter, "scheduled-after", "", "Tasks scheduled after date (YYYY-MM-DD)")
+	listCmd.Flags().StringVar(&listSchedBefore, "deferred-before", "", "Tasks deferred before date (YYYY-MM-DD)")
+	listCmd.Flags().StringVar(&listSchedAfter, "deferred-after", "", "Tasks deferred after date (YYYY-MM-DD)")
 	listCmd.Flags().StringVar(&listName, "name", "", "Filter by name attribute")
 	listCmd.Flags().BoolVar(&listOverdue, "overdue", false, "Show only overdue tasks (due before today, not done)")
 	listCmd.Flags().StringVar(&listSearch, "search", "", "Search task text")
-	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: due, scheduled, page, pos")
+	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: due, deferred, page, pos")
 	listCmd.Flags().StringVar(&listSortOrder, "sort-order", "asc", "Sort order: asc or desc")
 	listCmd.Flags().IntVar(&listLimit, "limit", 0, "Maximum results (default 100)")
 	listCmd.Flags().IntVar(&listOffset, "offset", 0, "Results offset for pagination")
