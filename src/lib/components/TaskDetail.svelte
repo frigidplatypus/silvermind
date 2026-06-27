@@ -106,6 +106,16 @@ import { devLog } from '$lib/helpers/dev-log';
           </div>
         </div>
       {/if}
+      {#if task.alerts && task.alerts.length > 0}
+        <div class="meta-row">
+          <span class="meta-label">Alerts</span>
+          <div class="alerts-list">
+            {#each task.alerts as alert}
+              <span class="alert-item"><Icon name="bell" size="0.75rem" /> {alert}</span>
+            {/each}
+          </div>
+        </div>
+      {/if}
       {#if task.extra_attrs && Object.keys(task.extra_attrs).length > 0}
         {#each Object.entries(task.extra_attrs) as [key, val]}
           <div class="meta-row">
@@ -170,6 +180,8 @@ import { devLog } from '$lib/helpers/dev-log';
   .meta-value { color: var(--color-text); text-align: right; word-break: break-word; }
   .tags { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-end; }
   .tag { font-size: var(--font-size-xs); padding: 0.125rem var(--space-2); border-radius: var(--radius-sm); background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
+  .alerts-list { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-end; }
+  .alert-item { display: inline-flex; align-items: center; gap: 0.375rem; font-size: var(--font-size-xs); padding: 0.25rem var(--space-2); border-radius: var(--radius-sm); background: var(--color-accent-light); color: var(--color-accent); }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 </style>
