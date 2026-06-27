@@ -20,9 +20,12 @@ export interface QueryExecuteResult {
   tasks: Task[];
 }
 
-export async function getQueryPages(tag?: string): Promise<QueryPage[]> {
-  const param = tag ? `?tag=${encodeURIComponent(tag)}` : '';
-  return api.get<QueryPage[]>(`/queries${param}`);
+export async function getQueryPages(tag?: string, refresh = false): Promise<QueryPage[]> {
+  const params: string[] = [];
+  if (tag) params.push(`tag=${encodeURIComponent(tag)}`);
+  if (refresh) params.push('refresh=true');
+  const qs = params.length > 0 ? `?${params.join('&')}` : '';
+  return api.get<QueryPage[]>(`/queries${qs}`);
 }
 
 export async function getQueryBlocks(page: string): Promise<QueryBlockInfo[]> {

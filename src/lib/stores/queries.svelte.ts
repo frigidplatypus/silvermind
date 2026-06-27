@@ -22,11 +22,11 @@ export function getCurrentQueryTitle(): string | null { return currentQueryTitle
 export function getQueryLoading(): boolean { return queryLoading; }
 export function getErrorSLIQ(): string | null { return errorSLIQ; }
 
-export async function loadQueryPages(): Promise<void> {
+export async function loadQueryPages(refresh = false): Promise<void> {
   pagesLoading = true;
   pagesError = null;
   try {
-    queryPages = await getQueryPages();
+    queryPages = await getQueryPages(undefined, refresh);
   } catch (e) {
     pagesError = formatError(e);
     devLog('[queries] loadQueryPages failed:', e);

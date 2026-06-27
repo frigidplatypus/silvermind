@@ -38,7 +38,7 @@
   async function handleRefreshQueries() {
     refreshingQueries = true;
     try {
-      await loadQueryPages();
+      await loadQueryPages(true);
     } finally {
       refreshingQueries = false;
     }

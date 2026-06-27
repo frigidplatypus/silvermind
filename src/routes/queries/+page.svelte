@@ -7,7 +7,7 @@
 
   async function handleRefresh() {
     refreshing = true;
-    try { await loadQueryPages(); } finally { refreshing = false; }
+    try { await loadQueryPages(true); } finally { refreshing = false; }
   }
 
   function handleQueryClick(page: string, blockNumber?: number) {
