@@ -30,7 +30,6 @@
   let recur = $state(task.recur || '');
   let deps = $state<string[]>([...(task.depends_on || [])]);
   let parent = $state(task.parent || '');
-  let showAdvanced = $state(!!(task.recur || (task.depends_on && task.depends_on.length > 0) || task.parent));
   let isSaving = $state(false);
   let showDeleteConfirm = $state(false);
   let tags = $state<string[]>([...(task.tags || [])]);
@@ -248,75 +247,68 @@
   <label class="field-label" for="edit-deferred">Deferred date</label>
   <input id="edit-deferred" type="date" class="field" bind:value={deferred} />
 
-  <button class="advanced-toggle" onclick={() => (showAdvanced = !showAdvanced)}>
-    <Icon name={showAdvanced ? 'chevron-down' : 'chevron-right'} size="0.875rem" />
-    <span>Advanced</span>
-  </button>
-
-  {#if showAdvanced}
-    <label class="field-label" for="ac-parent">Parent task</label>
-    <Autocomplete id="ac-parent" items={taskNames} placeholder="Search tasks…" onselect={(name) => (parent = name)} />
-    {#if parent}
-      <div class="chip-row">
-        <span class="chip"><Icon name="corner-right-up" size="0.75rem" /> {parent} <button class="chip-remove" onclick={() => (parent = '')} aria-label="Remove parent">×</button></span>
-      </div>
-    {/if}
-
-    <label class="field-label" for="edit-recur">Recurrence</label>
-    <select id="edit-recur" class="field" bind:value={recur}>
-      <option value="">None</option>
-      <option value="daily:1">Daily</option>
-      <option value="weekly:1">Weekly</option>
-      <option value="monthly:1">Monthly</option>
-      <option value="yearly:1">Yearly</option>
-    </select>
-
-    <label class="field-label" for="ac-deps">Dependencies</label>
-    <Autocomplete id="ac-deps" items={taskNames} placeholder="Add dependency…" onselect={(name) => { if (!deps.includes(name)) deps = [...deps, name]; }} />
-    {#if deps.length > 0}
-      <div class="chip-row">
-        {#each deps as dep}
-          <span class="chip"><Icon name="link" size="0.75rem" /> {dep} <button class="chip-remove" onclick={() => (deps = deps.filter(d => d !== dep))} aria-label="Remove {dep}">×</button></span>
-        {/each}
-      </div>
-    {/if}
-
-    <label class="field-label">Alerts</label>
-    {#if alerts.length > 0}
-      <div class="chip-row alert-chips">
-        {#each alerts as alert}
-          <span class="chip alert-chip"><Icon name="bell" size="1rem" /> {alert} <button class="chip-remove" onclick={() => (alerts = alerts.filter(a => a !== alert))} aria-label="Remove alert">×</button></span>
-        {/each}
-      </div>
-    {/if}
-    <div class="alert-input-row">
-      <input type="date" class="field alert-date" bind:value={newAlertDate} />
-      <input type="time" class="field alert-time" bind:value={newAlertTime} />
-      <button class="alert-add-btn" disabled={!newAlertDate || !newAlertTime}
-        onclick={() => {
-          const entry = `${newAlertDate} ${newAlertTime}`;
-          if (!alerts.includes(entry)) alerts = [...alerts, entry];
-          newAlertDate = '';
-          newAlertTime = '';
-        }}>+ Add</button>
-    </div>
-
-    <label class="field-label">Custom Attributes</label>
-    <div class="extra-attrs">
-      {#each Object.keys(extraAttrs) as key}
-        <div class="extra-attr-row">
-          <input type="text" class="field extra-key" value={key} placeholder="key"
-            oninput={(e) => { const v = (e.target as HTMLInputElement).value; const val = extraAttrs[key]; delete extraAttrs[key]; extraAttrs[v] = val; extraAttrs = { ...extraAttrs }; }}
-          />
-          <input type="text" class="field extra-val" value={extraAttrs[key]} placeholder="value"
-            oninput={(e) => { extraAttrs[key] = (e.target as HTMLInputElement).value; extraAttrs = { ...extraAttrs }; }}
-          />
-          <button class="extra-remove" onclick={() => { delete extraAttrs[key]; extraAttrs = { ...extraAttrs }; }} aria-label="Remove attribute"><Icon name="x" size="0.875rem" /></button>
-        </div>
-      {/each}
-      <button class="extra-add" onclick={() => { extraAttrs[`__new_${++extraAttrCounter}`] = ''; extraAttrs = { ...extraAttrs }; }}>+ Add attribute</button>
+  <label class="field-label" for="ac-parent">Parent task</label>
+  <Autocomplete id="ac-parent" items={taskNames} placeholder="Search tasks…" onselect={(name) => (parent = name)} />
+  {#if parent}
+    <div class="chip-row">
+      <span class="chip"><Icon name="corner-right-up" size="0.75rem" /> {parent} <button class="chip-remove" onclick={() => (parent = '')} aria-label="Remove parent">×</button></span>
     </div>
   {/if}
+
+  <label class="field-label" for="edit-recur">Recurrence</label>
+  <select id="edit-recur" class="field" bind:value={recur}>
+    <option value="">None</option>
+    <option value="daily:1">Daily</option>
+    <option value="weekly:1">Weekly</option>
+    <option value="monthly:1">Monthly</option>
+    <option value="yearly:1">Yearly</option>
+  </select>
+
+  <label class="field-label" for="ac-deps">Dependencies</label>
+  <Autocomplete id="ac-deps" items={taskNames} placeholder="Add dependency…" onselect={(name) => { if (!deps.includes(name)) deps = [...deps, name]; }} />
+  {#if deps.length > 0}
+    <div class="chip-row">
+      {#each deps as dep}
+        <span class="chip"><Icon name="link" size="0.75rem" /> {dep} <button class="chip-remove" onclick={() => (deps = deps.filter(d => d !== dep))} aria-label="Remove {dep}">×</button></span>
+      {/each}
+    </div>
+  {/if}
+
+  <label class="field-label">Alerts</label>
+  {#if alerts.length > 0}
+    <div class="chip-row alert-chips">
+      {#each alerts as alert}
+        <span class="chip alert-chip"><Icon name="bell" size="1rem" /> {alert} <button class="chip-remove" onclick={() => (alerts = alerts.filter(a => a !== alert))} aria-label="Remove alert">×</button></span>
+      {/each}
+    </div>
+  {/if}
+  <div class="alert-input-row">
+    <input type="date" class="field alert-date" bind:value={newAlertDate} />
+    <input type="time" class="field alert-time" bind:value={newAlertTime} />
+    <button class="alert-add-btn" disabled={!newAlertDate || !newAlertTime}
+      onclick={() => {
+        const entry = `${newAlertDate} ${newAlertTime}`;
+        if (!alerts.includes(entry)) alerts = [...alerts, entry];
+        newAlertDate = '';
+        newAlertTime = '';
+      }}>+ Add</button>
+  </div>
+
+  <label class="field-label">Custom Attributes</label>
+  <div class="extra-attrs">
+    {#each Object.keys(extraAttrs) as key}
+      <div class="extra-attr-row">
+        <input type="text" class="field extra-key" value={key} placeholder="key"
+          oninput={(e) => { const v = (e.target as HTMLInputElement).value; const val = extraAttrs[key]; delete extraAttrs[key]; extraAttrs[v] = val; extraAttrs = { ...extraAttrs }; }}
+        />
+        <input type="text" class="field extra-val" value={extraAttrs[key]} placeholder="value"
+          oninput={(e) => { extraAttrs[key] = (e.target as HTMLInputElement).value; extraAttrs = { ...extraAttrs }; }}
+        />
+        <button class="extra-remove" onclick={() => { delete extraAttrs[key]; extraAttrs = { ...extraAttrs }; }} aria-label="Remove attribute"><Icon name="x" size="0.875rem" /></button>
+      </div>
+    {/each}
+    <button class="extra-add" onclick={() => { extraAttrs[`__new_${++extraAttrCounter}`] = ''; extraAttrs = { ...extraAttrs }; }}>+ Add attribute</button>
+  </div>
 
   <div class="meta-row"><span class="meta-label">Page</span><span class="meta-value">{task.page}</span></div>
   <div class="meta-row"><span class="meta-label">Position</span><span class="meta-value">{task.position}</span></div>
@@ -394,7 +386,6 @@
   .text-input, .field { width: 100%; padding: 0.625rem 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: var(--font-size-base); color: var(--color-text); font-family: inherit; outline: none; }
   .text-input:focus, .field:focus { border-color: var(--color-accent); }
   .text-input { resize: vertical; min-height: 120px; line-height: 1.6; }
-  .advanced-toggle { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0; font-size: var(--font-size-sm); color: var(--color-accent); font-weight: 500; }
   .chip-row { display: flex; flex-wrap: wrap; gap: 0.375rem; }
   .chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-bg-tertiary); font-size: var(--font-size-xs); color: var(--color-text); }
   .ac-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 350; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: 0 4px 12px var(--color-shadow); max-height: 14rem; overflow-y: auto; margin-top: 0.25rem; list-style: none; padding: 0.25rem; }

@@ -27,7 +27,7 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
     },
     LocalNotifications: {
-      smallIcon: 'ic_stat_silvermind',
+      smallIcon: 'ic_launcher',
       iconColor: '#488AFF',
       presentationOptions: ['badge', 'sound', 'banner', 'list'],
     },
