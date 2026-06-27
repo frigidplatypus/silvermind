@@ -20,6 +20,8 @@ export default defineConfig({
         '@capacitor/status-bar',
         '@capacitor/splash-screen',
         '@capacitor/preferences',
+        '@capacitor/local-notifications',
+        '@capacitor/browser',
       ],
     },
   },
@@ -30,6 +32,8 @@ export default defineConfig({
       '@capacitor/status-bar',
       '@capacitor/splash-screen',
       '@capacitor/preferences',
+      '@capacitor/local-notifications',
+      '@capacitor/browser',
     ],
   },
 });
