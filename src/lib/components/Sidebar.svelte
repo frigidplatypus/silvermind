@@ -216,6 +216,8 @@
     position: relative;
     z-index: var(--z-base);
     flex-shrink: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   .sidebar.collapsed {
     padding: 0;
