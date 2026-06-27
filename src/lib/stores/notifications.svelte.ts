@@ -1,6 +1,7 @@
 import { scheduleAlerts, cancelAlerts, requestPermission } from '$lib/native/notifications';
 import { scheduleAlertWeb, cancelAlertWeb, requestPermissionWeb } from '$lib/native/notifications-web';
 import type { Task } from '$lib/types/task';
+import { updateTask } from '$lib/api/tasks';
 
 let _initialized = false;
 
@@ -19,15 +20,26 @@ export function scheduleForTask(task: Task) {
   const taskId = `${task.page}:${task.position}`;
   const title = task.text.slice(0, 100);
 
+  const now = Date.now();
+  const validAlerts: string[] = [];
   const validDates: Date[] = [];
+
   for (const alert of task.alerts) {
     const at = parseAlertDate(alert);
-    if (!at || at.getTime() <= Date.now()) continue;
+    if (!at) continue;
+    if (at.getTime() <= now) continue;
+    validAlerts.push(alert);
     validDates.push(at);
     scheduleAlertWeb(taskId, title, at);
   }
+
   if (validDates.length > 0) {
     scheduleAlerts(taskId, title, validDates);
+  }
+
+  // If some alerts were stale (past), remove them from the task
+  if (validAlerts.length < task.alerts.length) {
+    cleanStaleAlerts(task, validAlerts);
   }
 }
 
@@ -44,6 +56,18 @@ export function rescheduleAll(tasks: Task[]) {
     } else {
       scheduleForTask(task);
     }
+  }
+}
+
+async function cleanStaleAlerts(task: Task, validAlerts: string[]) {
+  try {
+    await updateTask(task.page, task.position, {
+      alerts: validAlerts.length > 0 ? validAlerts : [],
+    });
+    // Update the task object in-place so subsequent code sees the cleaned alerts
+    task.alerts = validAlerts.length > 0 ? validAlerts : [];
+  } catch {
+    // Silently fail — best-effort cleanup
   }
 }
 
