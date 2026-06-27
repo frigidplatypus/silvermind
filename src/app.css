@@ -1,5 +1,5 @@
 :root {
-  /* Light theme (default) */
+  /* Light mode background/text */
   --color-bg: #ffffff;
   --color-bg-secondary: #f5f5f7;
   --color-bg-tertiary: #e8e8ed;
@@ -7,6 +7,8 @@
   --color-text: #1d1d1f;
   --color-text-secondary: #6e6e73;
   --color-text-tertiary: #8e8e93;
+
+  /* Accent — overridden by JS theme engine via style.setProperty */
   --color-accent: #007aff;
   --color-accent-light: #e8f2ff;
   --color-on-accent: #ffffff;

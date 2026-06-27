@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { getTheme, setTheme } from '$lib/stores/theme.svelte';
+  import { getTheme, setTheme, getAccent, setAccent } from '$lib/stores/theme.svelte';
   import { getDefaultView, setDefaultView, getShowToday, setShowToday } from '$lib/stores/landing.svelte';
   import { getSpacesList, loadSpaces, setActiveSpace } from '$lib/stores/space.svelte';
-  import type { Theme } from '$lib/stores/theme.svelte';
+  import type { Mode } from '$lib/stores/theme.svelte';
+  import type { AccentPreset } from '$lib/themes';
+  import { presets } from '$lib/themes';
   import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
   import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
@@ -13,7 +15,8 @@
   import { deployHelpers } from '$lib/api/queries';
 import { devLog } from '$lib/helpers/dev-log';
 
-  let currentTheme = $state<Theme>(getTheme());
+  let currentTheme = $state<Mode>(getTheme());
+  let currentAccent = $state<AccentPreset>(getAccent());
   let currentDefault = $state<string>(getDefaultView());
   let isDesktop = $state(false);
   let newName = $state('');
@@ -74,7 +77,8 @@ import { devLog } from '$lib/helpers/dev-log';
     isDesktop = isDesktopApp();
   });
 
-  function onThemeChange(t: Theme) { currentTheme = t; setTheme(t); }
+  function onThemeChange(t: Mode) { currentTheme = t; setTheme(t); }
+  function onAccentChange(a: AccentPreset) { currentAccent = a; setAccent(a); }
   function onDefaultChange(v: string) { currentDefault = v; setDefaultView(v); }
   function onShowTodayChange(show: boolean) {
     setShowToday(show);
@@ -189,9 +193,21 @@ import { devLog } from '$lib/helpers/dev-log';
 
 <div class="settings-page">
   <section class="section">
+    <h3 class="section-title">Color Theme</h3>
+    <div class="accent-picker">
+      {#each presets as p}
+        <button class="accent-btn" class:active={currentAccent === p.id} onclick={() => onAccentChange(p.id)} aria-label={p.label}>
+          <span class="accent-swatch" style="background: {p.color}"></span>
+          <span class="accent-label">{p.label}</span>
+        </button>
+      {/each}
+    </div>
+  </section>
+
+  <section class="section">
     <h3 class="section-title">Appearance</h3>
     <div class="theme-picker">
-      {#each (['system', 'light', 'dark'] as Theme[]) as t}
+      {#each (['system', 'light', 'dark'] as Mode[]) as t}
         <button class="theme-btn" class:active={currentTheme === t} onclick={() => onThemeChange(t)}>
           <Icon name={t === 'system' ? 'monitor' : t === 'light' ? 'sun' : 'moon'} size="1.5rem" />
           <span class="theme-label">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
@@ -342,6 +358,11 @@ import { devLog } from '$lib/helpers/dev-log';
   .section-title { font-size: var(--font-size-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-secondary); margin-bottom: 0.75rem; }
   .section-desc { font-size: var(--font-size-sm); color: var(--color-text-tertiary); margin-bottom: 0.75rem; }
   .error-msg { font-size: var(--font-size-sm); color: var(--color-danger); margin-bottom: 0.5rem; }
+  .accent-picker { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+  .accent-btn { display: flex; flex-direction: column; align-items: center; gap: 0.375rem; flex: 1; min-width: 3rem; padding: 0.625rem 0.25rem; border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-xs); color: var(--color-text-secondary); border: 2px solid transparent; cursor: pointer; }
+  .accent-btn.active { border-color: var(--color-accent); background: var(--color-accent-light); color: var(--color-accent); }
+  .accent-swatch { display: block; width: 1.5rem; height: 1.5rem; border-radius: 50%; box-shadow: 0 0 0 2px var(--color-bg); }
+  .accent-label { font-weight: 500; margin-top: 0.125rem; }
   .theme-picker { display: flex; gap: 0.5rem; }
   .theme-btn { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; flex: 1; padding: 0.75rem 0.25rem; border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-sm); color: var(--color-text-secondary); border: 2px solid transparent; }
   .theme-btn i { font-size: 1.5rem; }
