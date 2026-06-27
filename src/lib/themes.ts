@@ -13,7 +13,7 @@ export interface ThemePreset {
 export const presets: ThemePreset[] = [
   {
     id: 'ocean',
-    label: 'Ocean',
+    label: 'Blue',
     color: '#007aff',
     accent: '#007aff',
     accentLight: '#e8f2ff',
@@ -22,7 +22,7 @@ export const presets: ThemePreset[] = [
   },
   {
     id: 'forest',
-    label: 'Forest',
+    label: 'Green',
     color: '#22c55e',
     accent: '#16a34a',
     accentLight: '#dcfce7',
@@ -31,7 +31,7 @@ export const presets: ThemePreset[] = [
   },
   {
     id: 'sunset',
-    label: 'Sunset',
+    label: 'Amber',
     color: '#f59e0b',
     accent: '#d97706',
     accentLight: '#fef3c7',
@@ -40,7 +40,7 @@ export const presets: ThemePreset[] = [
   },
   {
     id: 'violet',
-    label: 'Violet',
+    label: 'Purple',
     color: '#8b5cf6',
     accent: '#7c3aed',
     accentLight: '#ede9fe',
@@ -49,7 +49,7 @@ export const presets: ThemePreset[] = [
   },
   {
     id: 'rose',
-    label: 'Rose',
+    label: 'Red',
     color: '#f43f5e',
     accent: '#e11d48',
     accentLight: '#ffe4e6',
@@ -58,7 +58,7 @@ export const presets: ThemePreset[] = [
   },
   {
     id: 'midnight',
-    label: 'Midnight',
+    label: 'Cyan',
     color: '#06b6d4',
     accent: '#0891b2',
     accentLight: '#cffafe',
