@@ -79,3 +79,9 @@ export interface VerifyResultDesktop {
 export async function verifySpaceDesktop(url: string, authToken?: string): Promise<VerifyResultDesktop> {
   return go().VerifySpace(url, authToken || '');
 }
+
+export function notifyAlertDesktop(title: string, body: string): void {
+  try {
+    go().NotifyAlert(title, body);
+  } catch { /* silently fail */ }
+}

@@ -215,3 +215,9 @@ func (a *App) OpenURL(url string) {
 	}
 }
 
+func (a *App) NotifyAlert(title, body string) {
+	if err := exec.Command("notify-send", title, body, "--app-name=Silvermind", "--icon=dialog-information").Start(); err != nil {
+		log.Printf("[silvermind] NotifyAlert failed: %v", err)
+	}
+}
+

@@ -1,5 +1,6 @@
 import { scheduleAlerts, cancelAlerts, requestPermission } from '$lib/native/notifications';
 import { scheduleAlertWeb, cancelAlertWeb, requestPermissionWeb } from '$lib/native/notifications-web';
+import { isDesktopApp, notifyAlertDesktop } from '$lib/desktop-bridge';
 import type { Task } from '$lib/types/task';
 import { updateTask } from '$lib/api/tasks';
 
@@ -23,6 +24,7 @@ export function scheduleForTask(task: Task) {
   const now = Date.now();
   const validAlerts: string[] = [];
   const validDates: Date[] = [];
+  const isDesktop = isDesktopApp();
 
   for (const alert of task.alerts) {
     const at = parseAlertDate(alert);
@@ -30,10 +32,14 @@ export function scheduleForTask(task: Task) {
     if (at.getTime() <= now) continue;
     validAlerts.push(alert);
     validDates.push(at);
-    scheduleAlertWeb(taskId, title, at);
+    if (isDesktop) {
+      scheduleAlertDesktop(taskId, title, at);
+    } else {
+      scheduleAlertWeb(taskId, title, at);
+    }
   }
 
-  if (validDates.length > 0) {
+  if (validDates.length > 0 && !isDesktop) {
     scheduleAlerts(taskId, title, validDates);
   }
 
@@ -47,6 +53,7 @@ export function cancelForTask(task: Task) {
   const taskId = `${task.page}:${task.position}`;
   cancelAlerts(taskId);
   cancelAlertWeb(taskId);
+  cancelAlertDesktop(taskId);
 }
 
 export function rescheduleAll(tasks: Task[]) {
@@ -56,6 +63,27 @@ export function rescheduleAll(tasks: Task[]) {
     } else {
       scheduleForTask(task);
     }
+  }
+}
+
+const desktopTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function scheduleAlertDesktop(taskId: string, title: string, at: Date): void {
+  const delay = at.getTime() - Date.now();
+  if (delay <= 0) return;
+  cancelAlertDesktop(taskId);
+  const timer = setTimeout(() => {
+    notifyAlertDesktop('Silvermind', title);
+    desktopTimers.delete(taskId);
+  }, delay);
+  desktopTimers.set(taskId, timer);
+}
+
+function cancelAlertDesktop(taskId: string): void {
+  const existing = desktopTimers.get(taskId);
+  if (existing) {
+    clearTimeout(existing);
+    desktopTimers.delete(taskId);
   }
 }
 
