@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    sbtask-src.url = "path:/home/justin/development/go/sbtask";
+    sbtask-src.url = "path:/home/justin/development/mobile_apps/silvermind_proj/sbtask";
     sbtask-src.flake = false;
   };
 
@@ -40,7 +40,7 @@
             version = "0.1.0";
             src = ./.;                                  # whole repo so backend/ is accessible
             modRoot = "desktop";                         # go.mod lives in desktop/
-            vendorHash = "sha256-UuCwmr8BYrSqyXQ1lNXXjj1uH0vogXyn0taCeCZg+z4=";
+            vendorHash = "sha256-LvX3awgBWkBN29/sta+J0VqiW4FIWBKmATSlhDrqbrw=";
             proxyVendor = true;
 
             nativeBuildInputs = with pkgs; [ go ]
@@ -53,7 +53,8 @@
               export HOME=$TMPDIR
               export CGO_ENABLED=1
               # Point go.mod replace to the flake's sbtask-src input
-              substituteInPlace desktop/go.mod --replace-fail \
+              # modRoot=desktop means the build runs inside desktop/, so go.mod is at .
+              substituteInPlace go.mod --replace-fail \
                 "/home/justin/development/go/sbtask" \
                 "${sbtask-src}"
             '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
@@ -61,11 +62,6 @@
             '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
               export CGO_CFLAGS="-Wno-error=incompatible-pointer-types $CGO_CFLAGS"
               export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -Wno-error=incompatible-pointer-types"
-            '' + ''
-              if [ ! -f frontend/dist/index.html ]; then
-                echo "ERROR: frontend/dist/ is empty. Run 'pnpm build:desktop' first."
-                exit 1
-              fi
             '';
 
             tags = [ "desktop" "production" ]
@@ -88,10 +84,40 @@
             };
           };
 
+          # ── Silvermind web Docker image ──────────────────────
+          # frontend/dist/ must be populated (pnpm build:web or CI artifact).
+          # 'nix build .#silvermind-web-docker' produces an OCI tarball.
+          # Load with:  docker load < result
+          silvermind-web-docker = let
+            frontendDist = ./frontend/dist;
+          in pkgs.dockerTools.buildLayeredImage {
+            name = "silvermind-web";
+            tag = "latest";
+
+            contents = [
+              sbtask
+              (pkgs.runCommand "silvermind-web-frontend" {} ''
+                mkdir -p $out/opt/silvermind/frontend/dist
+                cp -r ${frontendDist}/* $out/opt/silvermind/frontend/dist/
+              '')
+            ];
+
+            config = {
+              Cmd = [
+                "${sbtask}/bin/sbtask" "serve"
+                "--web-gui" "/opt/silvermind/frontend/dist"
+                "--host" "0.0.0.0"
+                "--port" "3001"
+              ];
+              ExposedPorts = { "3001/tcp" = {}; };
+              Volumes = { "/root/.config/sbtask" = {}; };
+            };
+          };
+
         in
         {
           packages = {
-            inherit sbtask silvermind-desktop;
+            inherit sbtask silvermind-desktop silvermind-web-docker;
             default = silvermind-desktop;
           };
 

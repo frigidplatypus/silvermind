@@ -3,6 +3,7 @@ import { getSpaces } from '$lib/api/spaces';
 import { formatError } from '$lib/helpers/format-error';
 import type { Task } from '$lib/types/task';
 import { devLog } from '$lib/helpers/dev-log';
+import { rescheduleAll } from './notifications.svelte';
 
 interface RawSpace { name: string; url: string; active: boolean; }
 
@@ -45,6 +46,7 @@ export async function loadGlobalView(): Promise<void> {
       return 0;
     });
     tasks = merged;
+    rescheduleAll(merged);
   } catch (e) {
     error = formatError(e);
     devLog('[global] loadGlobalView failed:', e);

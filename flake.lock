@@ -44,12 +44,12 @@
     "sbtask-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-nyB/g8ATDIM7dczrn/QEDCa/BInRAvYEt93ueW3MJMA=",
-        "path": "/home/justin/development/go/sbtask",
+        "narHash": "sha256-Fpe/8yIK7X+ikl8v1nA6S8TBPUbvANE0TIhU1HwwGlE=",
+        "path": "/home/justin/development/mobile_apps/silvermind_proj/sbtask",
         "type": "path"
       },
       "original": {
-        "path": "/home/justin/development/go/sbtask",
+        "path": "/home/justin/development/mobile_apps/silvermind_proj/sbtask",
         "type": "path"
       }
     },

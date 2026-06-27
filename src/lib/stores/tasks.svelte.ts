@@ -6,6 +6,7 @@ import { getActiveSpace } from '$lib/stores/space.svelte';
 import { loadGlobalView } from '$lib/stores/global.svelte';
 import { formatError } from '$lib/helpers/format-error';
 import { devLog } from '$lib/helpers/dev-log';
+import { rescheduleAll } from './notifications.svelte';
 
 let _tasks = $state<Task[]>([]);
 let _isLoading = $state(false);
@@ -27,6 +28,7 @@ export async function loadInbox(): Promise<Task[]> {
   _lastError = null;
   try {
     _tasks = await getInbox();
+    rescheduleAll(_tasks);
     ensurePolling();
   } catch (e) {
     _lastError = formatError(e, getActiveSpace()?.name);
@@ -45,6 +47,7 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
     _overdue = data.overdue;
     _dueToday = data.due_today;
     _deferredToday = data.deferred_today;
+    rescheduleAll([...data.overdue, ...data.due_today, ...data.deferred_today]);
     return data;
   } catch (e) {
     _lastError = formatError(e, getActiveSpace()?.name);
@@ -98,6 +101,7 @@ async function pollInbox(): Promise<void> {
     const fresh = await getInbox();
     if (!tasksEqual(_tasks, fresh)) {
       _tasks = fresh;
+      rescheduleAll(fresh);
     }
   } catch {
     /* silently ignore background poll errors */

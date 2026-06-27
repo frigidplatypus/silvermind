@@ -7,7 +7,8 @@
   import { showError, showUndo } from '$lib/stores/toast.svelte';
   import Icon from './Icon.svelte';
   import Autocomplete from './Autocomplete.svelte';
-import { devLog } from '$lib/helpers/dev-log';
+  import { devLog } from '$lib/helpers/dev-log';
+  import { scheduleForTask, cancelForTask } from '$lib/stores/notifications.svelte';
 
   let {
     task,
@@ -38,6 +39,9 @@ import { devLog } from '$lib/helpers/dev-log';
   let tagSelectedIndex = $state(0);
   let extraAttrs = $state<Record<string, string>>({ ...(task.extra_attrs || {}) });
   let extraAttrCounter = 0;
+  let alerts = $state<string[]>([...(task.alerts || [])]);
+  let newAlertDate = $state('');
+  let newAlertTime = $state('');
 
   const originalDue = $derived(task.due_parsed?.date || task.due || '');
   const originalScheduled = $derived(task.deferred_parsed?.date || task.deferred || '');
@@ -52,6 +56,7 @@ import { devLog } from '$lib/helpers/dev-log';
     if (deps.join(',') !== (task.depends_on || []).join(',')) return true;
     if (parent !== (task.parent || '')) return true;
     if (tags.join(',') !== (task.tags || []).join(',')) return true;
+    if (JSON.stringify(alerts) !== JSON.stringify(task.alerts || [])) return true;
     if (JSON.stringify(extraAttrs) !== JSON.stringify(task.extra_attrs || {})) return true;
     return false;
   });
@@ -138,10 +143,14 @@ import { devLog } from '$lib/helpers/dev-log';
       const oldExtra = JSON.stringify(task.extra_attrs || {});
       const newExtra = JSON.stringify(extraAttrs);
       if (newExtra !== oldExtra) fields.extra_attrs = { ...extraAttrs };
+      const oldAlerts = JSON.stringify(task.alerts || []);
+      const newAlerts = JSON.stringify(alerts);
+      if (newAlerts !== oldAlerts) fields.alerts = alerts.length > 0 ? [...alerts] : [];
 
       if (Object.keys(fields).length === 0) { onclose(); return; }
       const updated = await updateTask(task.page, task.position, fields);
       notifySuccess();
+      scheduleForTask(updated);
       onsaved?.(updated);
       onclose();
     } catch (e) {
@@ -156,6 +165,7 @@ import { devLog } from '$lib/helpers/dev-log';
         await undoTask(task.page, task.position);
       } else {
         await markTaskDone(task.page, task.position);
+        cancelForTask(task);
         showUndo(`${(task.text || '').slice(0, 40)}${(task.text || '').length > 40 ? '…' : ''} marked done`, async () => {
           try { await undoTask(task.page, task.position); } catch {}
           onsaved?.(task);
@@ -173,6 +183,7 @@ import { devLog } from '$lib/helpers/dev-log';
   async function handleDelete() {
     try {
       await deleteTask(task.page, task.position);
+      cancelForTask(task);
       notifySuccess();
       onsaved?.(task);
       onclose();
@@ -269,6 +280,26 @@ import { devLog } from '$lib/helpers/dev-log';
         {/each}
       </div>
     {/if}
+
+    <label class="field-label">Alerts</label>
+    {#if alerts.length > 0}
+      <div class="chip-row">
+        {#each alerts as alert}
+          <span class="chip"><Icon name="bell" size="0.75rem" /> {alert} <button class="chip-remove" onclick={() => (alerts = alerts.filter(a => a !== alert))} aria-label="Remove alert">×</button></span>
+        {/each}
+      </div>
+    {/if}
+    <div class="alert-input-row">
+      <input type="date" class="field alert-date" bind:value={newAlertDate} />
+      <input type="time" class="field alert-time" bind:value={newAlertTime} />
+      <button class="alert-add-btn" disabled={!newAlertDate || !newAlertTime}
+        onclick={() => {
+          const entry = `${newAlertDate} ${newAlertTime}`;
+          if (!alerts.includes(entry)) alerts = [...alerts, entry];
+          newAlertDate = '';
+          newAlertTime = '';
+        }}>+ Add</button>
+    </div>
 
     <label class="field-label">Custom Attributes</label>
     <div class="extra-attrs">
@@ -381,6 +412,11 @@ import { devLog } from '$lib/helpers/dev-log';
   .extra-val { flex: 1; padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }
   .extra-remove { padding: 0.25rem; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; }
   .extra-add { padding: 0.375rem 0.75rem; font-size: var(--font-size-xs); color: var(--color-accent); font-weight: 500; align-self: flex-start; }
+  .alert-input-row { display: flex; gap: 0.375rem; align-items: center; }
+  .alert-date { flex: 1; padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }
+  .alert-time { flex: 1; padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }
+  .alert-add-btn { padding: 0.375rem 0.75rem; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-size: var(--font-size-xs); font-weight: 600; white-space: nowrap; }
+  .alert-add-btn:disabled { opacity: 0.4; cursor: default; }
   .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-sm); }
   .meta-label { color: var(--color-text-secondary); }
   .meta-value { color: var(--color-text); }

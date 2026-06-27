@@ -12,6 +12,11 @@ const config: CapacitorConfig = {
     scheme: 'Silvermind',
     contentInset: 'automatic',
     prefersStatusBarHidden: false,
+    infoPlist: {
+      NSAppTransportSecurity: {
+        NSAllowsLocalNetworking: true,
+      },
+    },
   },
   android: {
     webContentsDebuggingEnabled: true,
@@ -20,6 +25,11 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 3000,
       launchAutoHide: true,
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_silvermind',
+      iconColor: '#488AFF',
+      presentationOptions: ['badge', 'sound', 'banner', 'list'],
     },
   },
 };

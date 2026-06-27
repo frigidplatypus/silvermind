@@ -9,6 +9,7 @@ import { startOnboarding } from '$lib/stores/onboarding.svelte';
 import { startSbtaskService } from '$lib/native/sbtask-bridge';
 import { initCrashReporting } from '$lib/helpers/crash-reporting';
 import { initPrivacy } from '$lib/stores/privacy.svelte';
+import { initNotifications } from '$lib/stores/notifications.svelte';
 import Layout from './routes/+layout.svelte';
 
 initPrivacy();
@@ -17,6 +18,7 @@ initCrashReporting();
 initServiceListener();
 loadSpaces().catch(() => {});
 startSbtaskService().catch(() => {});
+initNotifications();
 
 async function checkOnboarding() {
   if (isDesktopApp()) {
@@ -26,7 +28,7 @@ async function checkOnboarding() {
         if (status.sbtask_exists && status.space_count > 0) {
           startOnboarding('migration', status.spaces.map(s => ({ name: s.name, url: s.url })));
         } else {
-          startOnboarding('add-space');
+          startOnboarding('welcome');
         }
       }
     } catch { /* silently skip onboarding if bridge fails */ }
@@ -36,7 +38,7 @@ async function checkOnboarding() {
   await new Promise(r => setTimeout(r, 2000));
   await loadSpaces().catch(() => {});
   if (getSpacesList().length === 0) {
-    startOnboarding('add-space');
+    startOnboarding('welcome');
   }
 }
 

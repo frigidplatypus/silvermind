@@ -1,15 +1,21 @@
+export type OnboardingStep = 'migration' | 'welcome' | 'connect' | 'saving';
+
 let _showModal = $state(false);
-let _step = $state<'migration' | 'add-space' | 'saving'>('add-space');
-let _spaces = $state<{ name: string; url: string }[]>([]);
+let _step = $state<OnboardingStep>('welcome');
+let _migrationSpaces = $state<{ name: string; url: string }[]>([]);
 
 export function getShowOnboarding(): boolean { return _showModal; }
-export function getOnboardingStep() { return _step; }
-export function getSbtaskSpaces() { return _spaces; }
+export function getOnboardingStep(): OnboardingStep { return _step; }
+export function getMigrationSpaces() { return _migrationSpaces; }
 
-export function startOnboarding(step: 'migration' | 'add-space', spaces?: { name: string; url: string }[]) {
-  _step = step;
+export function startOnboarding(initialStep: OnboardingStep, spaces?: { name: string; url: string }[]) {
+  _step = initialStep;
   _showModal = true;
-  if (spaces) _spaces = spaces;
+  if (spaces) _migrationSpaces = spaces;
+}
+
+export function goToStep(step: OnboardingStep) {
+  _step = step;
 }
 
 export function closeOnboarding() {
