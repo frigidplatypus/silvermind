@@ -12,7 +12,7 @@
   import { triggerAddTask } from '$lib/stores/add-task.svelte';
   import Icon from './Icon.svelte';
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
-  import { getTasks, loadInbox, loadToday } from '$lib/stores/tasks.svelte';
+  import { getTasks, loadInbox, loadToday, updateTaskInList } from '$lib/stores/tasks.svelte';
   import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults, getErrorSLIQ, getQueryError, getQueryPagesList } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import { getQueryBlocks } from '$lib/api/queries';
@@ -132,11 +132,15 @@
     loadInbox();
   }
 
-  function handleTaskChanged() {
+  function handleTaskChanged(updated?: Task) {
     setSelectedTaskId(null);
-    loadInbox();
-    if (activeView === 'today') loadToday();
-    if (activeView === 'global') loadGlobalView();
+    if (updated) updateTaskInList(updated);
+    // Still refresh in background to catch up with any indexing delay
+    setTimeout(() => {
+      loadInbox();
+      if (activeView === 'today') loadToday();
+      if (activeView === 'global') loadGlobalView();
+    }, 1000);
   }
 
   function handleQueryDetailClose() {
@@ -189,13 +193,14 @@
     editing = true;
   }
 
-  function handleEditSaved() {
+  function handleEditSaved(updated?: Task) {
     editing = false;
     setSelectedTaskId(null);
     if (isQueryView) {
       handleQueryTaskChanged();
     } else {
-      loadInbox();
+      if (updated) updateTaskInList(updated);
+      setTimeout(() => loadInbox(), 1000);
     }
   }
 

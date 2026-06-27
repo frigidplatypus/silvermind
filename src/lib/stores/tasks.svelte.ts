@@ -23,6 +23,14 @@ export function getTodayOverdue(): Task[] { return _overdue; }
 export function getTodayDue(): Task[] { return _dueToday; }
 export function getTodayDeferred(): Task[] { return _deferredToday; }
 
+export function updateTaskInList(updated: Task) {
+  const idx = _tasks.findIndex(t => t.page === updated.page && t.position === updated.position);
+  if (idx >= 0) {
+    _tasks[idx] = updated;
+    _tasks = [..._tasks];
+  }
+}
+
 export async function loadInbox(): Promise<Task[]> {
   _isLoading = true;
   _lastError = null;
