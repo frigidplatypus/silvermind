@@ -1,10 +1,7 @@
-import { LocalNotifications } from '@capacitor/local-notifications';
-
-const plugin = LocalNotifications;
-
 export async function requestPermission(): Promise<boolean> {
   try {
-    const result = await plugin.requestPermissions();
+    const { LocalNotifications } = (await import('@capacitor/local-notifications')) as any;
+    const result = await LocalNotifications.requestPermissions();
     return result.display === 'granted';
   } catch {
     return false;
@@ -13,6 +10,7 @@ export async function requestPermission(): Promise<boolean> {
 
 export async function scheduleAlerts(taskId: string, title: string, dates: Date[]): Promise<void> {
   try {
+    const { LocalNotifications } = (await import('@capacitor/local-notifications')) as any;
     const id = hashTaskId(taskId);
     const notifications = dates.map((at, i) => ({
       id: id * 100 + i,
@@ -20,7 +18,7 @@ export async function scheduleAlerts(taskId: string, title: string, dates: Date[
       body: title,
       schedule: { at },
     }));
-    await plugin.schedule({ notifications });
+    await LocalNotifications.schedule({ notifications });
   } catch {
     // Silently fail — notifications are best-effort
   }
@@ -28,13 +26,13 @@ export async function scheduleAlerts(taskId: string, title: string, dates: Date[
 
 export async function cancelAlerts(taskId: string): Promise<void> {
   try {
+    const { LocalNotifications } = (await import('@capacitor/local-notifications')) as any;
     const baseID = hashTaskId(taskId);
-    // Cancel up to 20 alert slots (matching batched schedule)
     const ids = [];
     for (let i = 0; i < 20; i++) {
       ids.push({ id: baseID * 100 + i });
     }
-    await plugin.cancel({ notifications: ids });
+    await LocalNotifications.cancel({ notifications: ids });
   } catch {
     // Silently fail
   }
