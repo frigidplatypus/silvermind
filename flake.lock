@@ -44,13 +44,17 @@
     "sbtask-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-Fpe/8yIK7X+ikl8v1nA6S8TBPUbvANE0TIhU1HwwGlE=",
-        "path": "/home/justin/development/mobile_apps/silvermind_proj/sbtask",
-        "type": "path"
+        "lastModified": 1782571787,
+        "narHash": "sha256-8jY39/VlvLETizaq5b8iEkPDMq4CrV/Txu4hjJrlV3w=",
+        "ref": "refs/heads/main",
+        "rev": "efef8668d9de56109051bf4c05dfad53c8302267",
+        "revCount": 46,
+        "type": "git",
+        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       },
       "original": {
-        "path": "/home/justin/development/mobile_apps/silvermind_proj/sbtask",
-        "type": "path"
+        "type": "git",
+        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       }
     },
     "systems": {

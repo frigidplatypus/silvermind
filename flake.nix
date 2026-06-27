@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    sbtask-src.url = "path:/home/justin/development/mobile_apps/silvermind_proj/sbtask";
+    sbtask-src.url = "git+ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git";
     sbtask-src.flake = false;
   };
 
