@@ -44,11 +44,11 @@
     "sbtask-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1782571787,
-        "narHash": "sha256-8jY39/VlvLETizaq5b8iEkPDMq4CrV/Txu4hjJrlV3w=",
+        "lastModified": 1782592047,
+        "narHash": "sha256-dnaGr8qEQlNjeeInxxoA7Ds0azaZdanF7VoQHUesxrk=",
         "ref": "refs/heads/main",
-        "rev": "efef8668d9de56109051bf4c05dfad53c8302267",
-        "revCount": 46,
+        "rev": "ed0c6c4987f4eaee1637bec9c89502151609eb73",
+        "revCount": 52,
         "type": "git",
         "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
       },
