@@ -44,10 +44,10 @@
             proxyVendor = true;
 
             nativeBuildInputs = with pkgs; [ go ]
-              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkg-config wrapGAppsHook3 wails ];
+              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkg-config wrapGAppsHook3 wails makeWrapper ];
 
             buildInputs = with pkgs;
-              pkgs.lib.optionals pkgs.stdenv.isLinux [ webkitgtk_4_1 gtk3 ];
+              pkgs.lib.optionals pkgs.stdenv.isLinux [ webkitgtk_4_1 gtk3 libnotify ];
 
             preBuild = ''
               export HOME=$TMPDIR
@@ -73,6 +73,8 @@
             postFixup = pkgs.lib.optionalString pkgs.stdenv.isLinux ''
               rpath="${pkgs.lib.makeLibraryPath [ pkgs.webkitgtk_4_1 pkgs.gtk3 pkgs.glib pkgs.gst_all_1.gstreamer ]}"
               patchelf --add-rpath "$rpath" $out/bin/.silvermind-desktop-wrapped
+              wrapProgram $out/bin/.silvermind-desktop-wrapped \
+                --prefix PATH : ${pkgs.libnotify}/bin
             '';
 
             meta = with pkgs.lib; {
