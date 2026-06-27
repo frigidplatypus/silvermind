@@ -283,9 +283,9 @@
 
     <label class="field-label">Alerts</label>
     {#if alerts.length > 0}
-      <div class="chip-row">
+      <div class="chip-row alert-chips">
         {#each alerts as alert}
-          <span class="chip"><Icon name="bell" size="0.75rem" /> {alert} <button class="chip-remove" onclick={() => (alerts = alerts.filter(a => a !== alert))} aria-label="Remove alert">×</button></span>
+          <span class="chip alert-chip"><Icon name="bell" size="1rem" /> {alert} <button class="chip-remove" onclick={() => (alerts = alerts.filter(a => a !== alert))} aria-label="Remove alert">×</button></span>
         {/each}
       </div>
     {/if}
@@ -417,6 +417,8 @@
   .alert-time { flex: 1; padding: 0.375rem 0.5rem; font-size: var(--font-size-xs); }
   .alert-add-btn { padding: 0.375rem 0.75rem; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-size: var(--font-size-xs); font-weight: 600; white-space: nowrap; }
   .alert-add-btn:disabled { opacity: 0.4; cursor: default; }
+  .alert-chips { gap: 0.5rem; }
+  .alert-chip { padding: 0.5rem 0.625rem; font-size: var(--font-size-sm); gap: 0.5rem; border: 1px solid var(--color-accent-light); background: var(--color-accent-light); color: var(--color-accent); }
   .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-sm); }
   .meta-label { color: var(--color-text-secondary); }
   .meta-value { color: var(--color-text); }
