@@ -66,7 +66,15 @@
     {#if dueLabel}
       <span class="task-due" class:overdue={dueLabel.class === 'overdue'} class:today={dueLabel.class === 'today'}>{dueLabel.text}</span>
     {/if}
-    <span class="page-tag">{showSpace && (task as any)._spaceName ? (task as any)._spaceName : task.page}</span>
+    <span class="page-tag">{showSpace ? ((task as any)._spaceName ?? task.page) : task.page}</span>
+    {#if task.tags && task.tags.length > 0}
+      {#each task.tags.slice(0, 2) as tag}
+        <span class="tag-chip"><Icon name="tag" size="0.625rem" /> {tag}</span>
+      {/each}
+      {#if task.tags.length > 2}
+        <span class="tag-chip tag-overflow">+{task.tags.length - 2}</span>
+      {/if}
+    {/if}
     <div class="priority-dot" class:high={task.priority === 'high'} class:medium={task.priority === 'medium'} class:low={task.priority === 'low'}></div>
   </div>
 </button>
@@ -97,4 +105,6 @@
   .status-chip.status-waiting { background: var(--color-warning-light); color: var(--color-warning); }
   .status-chip.status-maybe { background: var(--color-accent-light); color: var(--color-accent); }
   .page-tag { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
+  .tag-chip { display: inline-flex; align-items: center; gap: 0.125rem; font-size: var(--font-size-2xs, 0.625rem); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--color-bg-tertiary); color: var(--color-text-secondary); white-space: nowrap; }
+  .tag-overflow { background: var(--color-accent-light); color: var(--color-accent); font-weight: 600; }
 </style>
