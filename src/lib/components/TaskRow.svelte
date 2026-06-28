@@ -7,6 +7,7 @@
   let { task, onclick, id, showSpace = false, onToggleDone }: { task: Task; onclick?: (id: string) => void; id: string; showSpace?: boolean; onToggleDone?: (task: Task) => void } = $props();
 
   let highlighted = $derived(getSelectedTaskId() === id);
+  let tagOverflowOpen = $state(false);
 
   const priorityLabel = $derived(
     task.priority === 'high' ? 'High priority' : task.priority === 'medium' ? 'Medium priority' : task.priority === 'low' ? 'Low priority' : 'No priority',
@@ -72,7 +73,16 @@
         <span class="tag-chip"><Icon name="tag" size="0.625rem" /> {tag}</span>
       {/each}
       {#if task.tags.length > 2}
-        <span class="tag-chip tag-overflow">+{task.tags.length - 2}</span>
+        <span class="tag-overflow-wrapper" onmouseenter={() => (tagOverflowOpen = true)} onmouseleave={() => (tagOverflowOpen = false)}>
+          <span class="tag-chip tag-overflow">+{task.tags.length - 2}</span>
+          {#if tagOverflowOpen}
+            <span class="tag-popover">
+              {#each task.tags.slice(2) as tag}
+                <span class="tag-popover-item"><Icon name="tag" size="0.625rem" /> {tag}</span>
+              {/each}
+            </span>
+          {/if}
+        </span>
       {/if}
     {/if}
     <div class="priority-dot" class:high={task.priority === 'high'} class:medium={task.priority === 'medium'} class:low={task.priority === 'low'}></div>
@@ -107,4 +117,7 @@
   .page-tag { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
   .tag-chip { display: inline-flex; align-items: center; gap: 0.125rem; font-size: var(--font-size-2xs, 0.625rem); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--color-bg-tertiary); color: var(--color-text-secondary); white-space: nowrap; }
   .tag-overflow { background: var(--color-accent-light); color: var(--color-accent); font-weight: 600; }
+  .tag-overflow-wrapper { position: relative; }
+  .tag-popover { position: absolute; top: 100%; right: 0; margin-top: 0.25rem; z-index: 50; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: 0 4px 12px var(--color-shadow); min-width: 120px; }
+  .tag-popover-item { display: flex; align-items: center; gap: 0.25rem; font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; padding: 0.125rem 0; }
 </style>
