@@ -68,6 +68,13 @@
               ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ "webkit2_41" ];
             ldflags = [ "-s" "-w" ];
 
+            postInstall = pkgs.lib.optionalString pkgs.stdenv.isLinux ''
+              mkdir -p $out/share/applications
+              cp ../packaging/ai.silvermind.app.desktop $out/share/applications/
+              install -Dm644 ../packaging/ai.silvermind.app.png \
+                $out/share/icons/hicolor/128x128/apps/ai.silvermind.app.png
+            '';
+
             # Linux: re-add runtime library paths that buildGoModule strips.
             # macOS: frameworks are linked at build time via CGO, no patchelf needed.
             postFixup = pkgs.lib.optionalString pkgs.stdenv.isLinux ''
