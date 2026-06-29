@@ -8,3 +8,4 @@ Terminal=false
 Categories=Office;ProjectManagement;
 Keywords=task;todo;silverbullet;sbtask;
 StartupNotify=true
+StartupWMClass=silvermind-desktop

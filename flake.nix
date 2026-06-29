@@ -73,6 +73,7 @@
               cp ../packaging/ai.silvermind.app.desktop $out/share/applications/
               install -Dm644 ../packaging/ai.silvermind.app.png \
                 $out/share/icons/hicolor/128x128/apps/ai.silvermind.app.png
+              gtk-update-icon-cache --force --ignore-theme-index $out/share/icons/hicolor
             '';
 
             # Linux: re-add runtime library paths that buildGoModule strips.
