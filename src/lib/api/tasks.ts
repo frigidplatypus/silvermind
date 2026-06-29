@@ -39,6 +39,15 @@ export async function searchTasks(query: string): Promise<TaskListResponse> {
   return api.get<TaskListResponse>(`/tasks?search=${encodeURIComponent(query)}&limit=50`);
 }
 
+export interface ArchiveResponse {
+  archived: number;
+  page: string;
+}
+
+export async function archiveTasks(page: string): Promise<ArchiveResponse> {
+  return api.post<ArchiveResponse>(`/tasks/archive?page=${encodeURIComponent(page)}`);
+}
+
 export async function getTasksForSpace(spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
   const qs = params ? '&' + new URLSearchParams(params).toString() : '';
   return api.get<TaskListResponse>(`/tasks?space_url=${encodeURIComponent(spaceUrl)}&limit=500${qs}`);
