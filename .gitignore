@@ -39,3 +39,10 @@ result
 desktop/silvermind-desktop
 sbtask-config.yaml
 sbtask
+
+# Flatpak build artifacts
+.build-*/
+build-dir/
+repo/
+silvermind.flatpak
+packaging/*.tar.gz

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>ai.silvermind.app</id>
+  <name>Silvermind</name>
+  <summary>Task management powered by sbtask</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>
+      Silvermind is a task management desktop app that connects to
+      SilverBullet knowledge management spaces. It provides an intuitive
+      interface for creating, organizing, and completing tasks with
+      features like due dates, recurring tasks, dependencies, tags,
+      alerts, and custom attributes.
+    </p>
+  </description>
+  <categories>
+    <category>Office</category>
+    <category>ProjectManagement</category>
+  </categories>
+  <url type="homepage">https://github.com/justin/silvermind</url>
+  <developer_name>justin</developer_name>
+</component>

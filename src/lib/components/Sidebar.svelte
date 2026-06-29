@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import LogoSvg from './LogoSvg.svelte';
   import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading, loadSpaces } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
@@ -75,7 +76,7 @@
 </script>
 
 <nav class="sidebar" class:collapsed={width === 0} style="width: {width}px" role="navigation" aria-label="Main navigation">
-  <div class="sidebar-brand"><Icon name="layers" size="1.25rem" /> Silvermind</div>
+  <div class="sidebar-brand"><LogoSvg size="1.25rem" /> Silvermind</div>
 
   <div class="sidebar-section-label">Space</div>
   <div class="space-selector">
@@ -230,7 +231,7 @@
     gap: 0.5rem;
     font-size: var(--font-size-lg);
     font-weight: 700;
-    color: var(--color-text);
+    color: var(--color-accent);
     padding: 0.5rem 0.75rem 0.75rem;
   }
   .sidebar-section-label {

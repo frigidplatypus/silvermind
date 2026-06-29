@@ -171,6 +171,28 @@
             '';
           };
 
+          devShells.flatpak = pkgs.mkShell {
+            packages = with pkgs; [
+              flatpak
+              flatpak-builder
+              go
+              nodejs-slim_22
+              pnpm
+              curl
+            ];
+
+            shellHook = ''
+              if ! flatpak info org.gnome.Platform//46 &>/dev/null; then
+                echo ""
+                echo "  [flatpak] org.gnome.Platform//46 runtime not found."
+                echo "  [flatpak] Install runtimes (one-time):"
+                echo "    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
+                echo "    flatpak install flathub org.gnome.Platform//46 org.gnome.Sdk//46"
+                echo ""
+              fi
+            '';
+          };
+
           apps = {
             default = {
               type = "app";

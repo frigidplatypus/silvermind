@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
+  import LogoSvg from './LogoSvg.svelte';
   import { getOnboardingStep, getMigrationSpaces, goToStep, closeOnboarding } from '$lib/stores/onboarding.svelte';
   import { isDesktopApp, setSharedConfigDesktop, migrateSbtaskConfigDesktop, verifySpaceDesktop, addSpaceDesktop } from '$lib/desktop-bridge';
   import { addSpace, verifySpace } from '$lib/api/spaces';
@@ -115,7 +116,7 @@
   <div class="wizard-card">
     <div class="wizard-header">
       <div class="wizard-brand">
-        <Icon name="layers" size="1.5rem" />
+        <LogoSvg size="1.5rem" />
         <h1>Silvermind</h1>
       </div>
       <p class="wizard-subtitle">Task management powered by SilverBullet</p>
@@ -194,7 +195,7 @@
             <span>Today's landscape view</span>
           </div>
           <div class="feature-card">
-            <Icon name="layers" size="1.25rem" />
+            <LogoSvg size="1.25rem" />
             <span>Multi-space support</span>
           </div>
           <div class="feature-card">

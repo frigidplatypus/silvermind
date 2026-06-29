@@ -1,0 +1,47 @@
+app-id: ai.silvermind.app
+runtime: org.gnome.Platform
+runtime-version: '46'
+sdk: org.gnome.Sdk
+command: silvermind-desktop
+appstream-compose: false
+
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --talk-name=org.freedesktop.Notifications
+  - --filesystem=xdg-config/silvermind:create
+  - --filesystem=xdg-config/sbtask:ro
+
+modules:
+  - name: go
+    buildsystem: simple
+    build-options:
+      env:
+        PATH: /app/bin:/usr/bin:/usr/sbin
+    build-commands:
+      - mkdir -p /app/bin
+      - tar -C /app -xzf go.tar.gz
+      - ln -s /app/go/bin/go /app/bin/go
+      - ln -s /app/go/bin/gofmt /app/bin/gofmt
+    sources:
+      - type: file
+        path: go.tar.gz
+
+  - name: silvermind
+    buildsystem: simple
+    build-options:
+      env:
+        GOFLAGS: "-mod=vendor"
+        CGO_ENABLED: "1"
+    build-commands:
+      - cd desktop && go build -tags "desktop production webkit2_41" -ldflags="-s -w" -o /app/bin/silvermind-desktop
+      - install -Dm644 packaging/ai.silvermind.app.desktop /app/share/applications/ai.silvermind.app.desktop
+      - install -Dm644 packaging/ai.silvermind.app.png /app/share/icons/hicolor/128x128/apps/ai.silvermind.app.png
+      - install -Dm644 packaging/ai.silvermind.app.metainfo.xml /app/share/metainfo/ai.silvermind.app.metainfo.xml
+    sources:
+      - type: dir
+        path: ..

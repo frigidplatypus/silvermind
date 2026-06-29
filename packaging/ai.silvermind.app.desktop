@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Silvermind
+Comment=Task management powered by sbtask
+Icon=ai.silvermind.app
+Exec=silvermind-desktop
+Terminal=false
+Categories=Office;ProjectManagement;
+Keywords=task;todo;silverbullet;sbtask;
+StartupNotify=true

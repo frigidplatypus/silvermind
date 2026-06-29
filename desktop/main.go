@@ -13,10 +13,14 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed frontend/dist
 var assets embed.FS
+
+//go:embed appicon.png
+var appIcon []byte
 
 func main() {
 	app := &App{}
@@ -29,6 +33,9 @@ func main() {
 		MinHeight: 600,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
+		},
+		Linux: &linux.Options{
+			Icon: appIcon,
 		},
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,
