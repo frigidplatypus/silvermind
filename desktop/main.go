@@ -36,7 +36,7 @@ func main() {
 		},
 		Linux: &linux.Options{
 			Icon:        appIcon,
-			ProgramName: "silvermind-desktop",
+			ProgramName: "Silvermind Desktop",
 		},
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,
