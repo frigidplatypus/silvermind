@@ -20,6 +20,10 @@
             };
           };
 
+          # Sentry DSN — set SILVERMIND_SENTRY_DSN env var when building (requires --impure).
+          # Without it, the binary has Sentry disabled (no-op at runtime).
+          sentryDsn = builtins.getEnv "SILVERMIND_SENTRY_DSN";
+
           # ── sbtask CLI + API server (web GUI backend) ──────────────
           sbtask = pkgs.buildGoModule {
             pname = "sbtask";
@@ -66,7 +70,8 @@
 
             tags = [ "desktop" "production" ]
               ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ "webkit2_41" ];
-            ldflags = [ "-s" "-w" ];
+            ldflags = [ "-s" "-w" ]
+              ++ pkgs.lib.optional (sentryDsn != "") "-X main.sentryDsn=${sentryDsn}";
 
             postInstall = pkgs.lib.optionalString pkgs.stdenv.isLinux ''
               mkdir -p $out/share/applications

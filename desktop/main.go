@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/justin/sbtask/pkg/client"
 	"github.com/justin/sbtask/pkg/config"
 	"github.com/wailsapp/wails/v2"
@@ -16,13 +17,48 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
+// Set at build time via ldflags: -X main.sentryDsn=https://xxx@xxx/123
+var sentryDsn = ""
+
 //go:embed frontend/dist
 var assets embed.FS
 
 //go:embed appicon.png
 var appIcon []byte
 
+func initDesktopSentry() {
+	if sentryDsn == "" {
+		log.Println("[silvermind] sentry disabled — set SILVERMIND_SENTRY_DSN env during build")
+		return
+	}
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              sentryDsn,
+		Release:          "silvermind-desktop@0.1.0",
+		Environment:      "production",
+		AttachStacktrace: true,
+	})
+	if err != nil {
+		log.Printf("[silvermind] sentry init failed: %v", err)
+		return
+	}
+	sentry.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetTag("platform", "desktop")
+		scope.SetTag("os", runtimeOS())
+	})
+	log.Println("[silvermind] sentry enabled")
+}
+
+func runtimeOS() string {
+	// rudimentary compile-time OS detection
+	if _, err := os.Stat("/etc/NIXOS"); err == nil {
+		return "nixos"
+	}
+	return "linux"
+}
+
 func main() {
+	initDesktopSentry()
+	defer sentry.Flush(2 * time.Second)
 	app := &App{}
 
 	err := wails.Run(&options.App{
