@@ -74,6 +74,18 @@
             };
           };
 
+          # ── Wrapper that builds frontend then runs desktop ──────
+          silvermind-run = pkgs.writeShellScriptBin "silvermind-run" ''
+            set -euo pipefail
+            PATH="${pkgs.lib.makeBinPath [ pkgs.pnpm pkgs.nodejs-slim_22 ]}:$PATH"
+            PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
+            cd "$PROJECT_ROOT"
+            echo "[silvermind] building frontend..."
+            pnpm build:desktop
+            echo "[silvermind] starting desktop..."
+            exec ${silvermind-desktop}/bin/silvermind-desktop "$@"
+          '';
+
         in
         {
           packages = {
@@ -156,12 +168,7 @@
           apps = {
             default = {
               type = "app";
-              program = let
-                binDir = "${silvermind-desktop}/bin";
-              in
-                if pkgs.stdenv.isLinux
-                then "${binDir}/.silvermind-desktop-wrapped"
-                else "${binDir}/silvermind-desktop";
+              program = "${silvermind-run}/bin/silvermind-run";
             };
           };
         }
