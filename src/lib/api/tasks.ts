@@ -6,7 +6,7 @@ import type { Task } from '$lib/types/task';
 export type TaskListResponse = Task[];
 
 export async function getTasks(params?: Record<string, string>): Promise<TaskListResponse> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const page = params?.page || 'Inbox';
   const { content } = await sbClient.readPage(page);
   const { parseTasksFromPage } = await import('$lib/backend/task-parser');
@@ -21,7 +21,7 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
 export async function createTaskFn(input: Record<string, unknown>): Promise<Task> {
   const active = await getActiveSpace();
   if (!active) throw new Error('No active space');
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   return createTask(input as any, active, sbClient) as Task;
 }
 
@@ -33,25 +33,25 @@ function taskURL(position: number, page: string, suffix?: string): string {
 }
 
 export async function updateTask(page: string, position: number, fields: Record<string, unknown>): Promise<Task> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const task = { page, position, ...fields } as any;
   return modifyTask(task, fields as any, sbClient) as Task;
 }
 
 export async function markTaskDone(page: string, position: number): Promise<Task> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const task = { page, position } as any;
   return toggleDone(task, sbClient) as Task;
 }
 
 export async function undoTask(page: string, position: number): Promise<Task> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const task = { page, position } as any;
   return toggleUndone(task, sbClient) as Task;
 }
 
 export async function deleteTaskFn(page: string, position: number): Promise<void> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const task = { page, position } as any;
   return deleteTask(task, sbClient);
 }
@@ -69,7 +69,7 @@ export interface ArchiveResponse {
 }
 
 export async function archiveTasksFn(page: string): Promise<ArchiveResponse> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const result = await archiveTasks(page, sbClient);
   return { archived: result.archived, page };
 }
@@ -77,7 +77,7 @@ export async function archiveTasksFn(page: string): Promise<ArchiveResponse> {
 export { archiveTasksFn as archiveTasks };
 
 export async function getTasksForSpace(spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const page = params?.page || 'Inbox';
   const { content } = await sbClient.readPage(page);
   const { parseTasksFromPage } = await import('$lib/backend/task-parser');

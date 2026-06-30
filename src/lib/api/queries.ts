@@ -24,7 +24,7 @@ export interface QueryExecuteResult {
 }
 
 export async function getQueryPagesFn(tag?: string, refresh = false): Promise<QueryPage[]> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const pages = await getQueryPages(sbClient);
   return pages.map(p => ({
     page: p.page,
@@ -35,14 +35,14 @@ export async function getQueryPagesFn(tag?: string, refresh = false): Promise<Qu
 export { getQueryPagesFn as getQueryPages };
 
 export async function getQueryBlocks(page: string): Promise<QueryBlockInfo[]> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const { content } = await sbClient.readPage(page);
   const blocks = extractQueryBlocks(content);
   return blocks.map(b => ({ title: b.title, number: b.number, sliq: b.sliq }));
 }
 
 export async function executeQueryFn(page: string, index?: number): Promise<QueryExecuteResult[]> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   if (index) {
     const tasks = await executeQueryBlock(page, index, sbClient);
     return [{ title: `Query ${index}`, tasks: tasks as Task[] }];
@@ -67,14 +67,14 @@ export interface SaveQueryRequest {
 }
 
 export async function saveQuery(req: SaveQueryRequest): Promise<{ page: string }> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const blockNumber = req.block_number || 0;
   await saveQueryBlock(req.page, blockNumber, req.title, req.sliq, sbClient);
   return { page: req.page };
 }
 
 export async function testQuery(sliq: string): Promise<QueryExecuteResult> {
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const tasks = await executeQuery(sliq, sbClient);
   return { title: 'Test Query', sliq, tasks: tasks as Task[] };
 }

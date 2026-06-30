@@ -5,6 +5,6 @@ import type { Task } from '$lib/types/task';
 export async function getInbox(): Promise<Task[]> {
   const active = await getActiveSpace();
   if (!active) return [];
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   return getInboxOps([active], active, sbClient) as Task[];
 }

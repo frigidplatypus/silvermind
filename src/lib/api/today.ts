@@ -14,7 +14,7 @@ export async function getToday(): Promise<TodayResponse> {
   if (!active) {
     return { overdue: [], due_today: [], deferred_today: [], all_clear: true };
   }
-  const sbClient = getSbClient();
+  const sbClient = await getSbClient();
   const page = active.default_page || 'Tasks';
   const result = await getTodayOps(page, sbClient);
   return {

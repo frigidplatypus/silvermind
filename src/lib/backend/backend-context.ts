@@ -5,6 +5,7 @@ import type { SpaceConfig } from './task-types';
 let _configManager: ConfigManager | null = null;
 let _sbClient: SbClient | null = null;
 let _activeSpaceName = '';
+let _initPromise: Promise<SpaceConfig | null> | null = null;
 
 export function getConfigManager(): ConfigManager {
   if (!_configManager) {
@@ -14,44 +15,40 @@ export function getConfigManager(): ConfigManager {
 }
 
 export async function initBackend(): Promise<SpaceConfig | null> {
-  const cm = getConfigManager();
-  await cm.load();
-  const active = await cm.getActiveSpace();
-  if (active) {
-    _activeSpaceName = active.name;
-    _sbClient = createSbClient({
-      spaceURL: active.url,
-      authToken: active.auth_token,
-    });
-  }
-  return active;
+  if (_initPromise) return _initPromise;
+  _initPromise = (async () => {
+    const cm = getConfigManager();
+    await cm.load();
+    const active = await cm.getActiveSpace();
+    if (active) {
+      _activeSpaceName = active.name;
+      _sbClient = createSbClient({
+        spaceURL: active.url,
+        authToken: active.auth_token,
+      });
+    }
+    return active;
+  })();
+  return _initPromise;
 }
 
-export function getSbClient(): SbClient {
+export async function getSbClient(): Promise<SbClient> {
+  if (_sbClient) return _sbClient;
+  await initBackend();
   if (!_sbClient) {
     throw new Error('No active SilverBullet space configured');
   }
   return _sbClient;
 }
 
-export function hasSbClient(): boolean {
-  return !!_sbClient;
-}
-
-export async function ensureSbClient(): Promise<SbClient> {
-  if (_sbClient) return _sbClient;
-  await initBackend();
-  if (!_sbClient) throw new Error('No active SilverBullet space configured');
-  return _sbClient;
+export function getActiveSpaceName(): string {
+  return _activeSpaceName;
 }
 
 export async function getActiveSpace(): Promise<SpaceConfig | null> {
   const cm = getConfigManager();
+  await cm.load();
   return cm.getActiveSpace();
-}
-
-export function getActiveSpaceName(): string {
-  return _activeSpaceName;
 }
 
 export async function setActiveSpace(name: string): Promise<SpaceConfig | null> {
@@ -93,6 +90,7 @@ export async function getConfigStatus(): Promise<{
 
 export async function invalidateClient(): Promise<void> {
   _sbClient = null;
+  _initPromise = null;
   const active = await getActiveSpace();
   if (active) {
     _sbClient = createSbClient({
