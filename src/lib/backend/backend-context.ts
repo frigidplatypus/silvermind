@@ -34,6 +34,17 @@ export function getSbClient(): SbClient {
   return _sbClient;
 }
 
+export function hasSbClient(): boolean {
+  return !!_sbClient;
+}
+
+export async function ensureSbClient(): Promise<SbClient> {
+  if (_sbClient) return _sbClient;
+  await initBackend();
+  if (!_sbClient) throw new Error('No active SilverBullet space configured');
+  return _sbClient;
+}
+
 export async function getActiveSpace(): Promise<SpaceConfig | null> {
   const cm = getConfigManager();
   return cm.getActiveSpace();

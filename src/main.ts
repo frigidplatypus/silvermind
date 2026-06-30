@@ -14,8 +14,9 @@ import Layout from './routes/+layout.svelte';
 initPrivacy();
 initCrashReporting();
 
-initBackend().catch(() => {});
-loadSpaces().catch(() => {});
+initBackend().then(() => loadSpaces()).catch(() => {
+  loadSpaces().catch(() => {});
+});
 initNotifications();
 
 async function checkOnboarding() {

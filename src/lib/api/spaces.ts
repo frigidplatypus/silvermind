@@ -3,12 +3,15 @@ import { getConfigManager } from '$lib/backend/backend-context';
 import type { SpacesResponse } from '$lib/types/space';
 
 export async function getSpaces(): Promise<SpacesResponse> {
+  const cm = getConfigManager();
+  await cm.load();
+  const active = await cm.getActiveSpace();
   const spaces = await listSpaces();
   return spaces.map(s => ({
     id: s.name,
     name: s.name,
     url: s.url,
-    active: false,
+    active: active?.name === s.name,
     is_default: s.name === 'main',
   }));
 }
