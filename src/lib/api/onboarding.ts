@@ -1,4 +1,4 @@
-import { api } from './client';
+import { verifySpace } from '$lib/backend/space-operations';
 
 export interface ConfigStatus {
   exists: boolean;
@@ -14,9 +14,11 @@ export interface VerifyResult {
 }
 
 export async function getConfigStatus(): Promise<ConfigStatus> {
-  return api.get<ConfigStatus>('/config/status');
+  const { getConfigStatus } = await import('$lib/backend/backend-context');
+  return getConfigStatus();
 }
 
-export async function verifySpace(url: string, authToken?: string): Promise<VerifyResult> {
-  return api.post<VerifyResult>('/spaces/verify', { url, auth_token: authToken ?? '' });
+export async function verifySpaceFn(url: string, authToken?: string): Promise<VerifyResult> {
+  return verifySpace(url, authToken);
 }
+export { verifySpaceFn as verifySpace };

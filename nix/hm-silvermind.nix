@@ -5,14 +5,7 @@ let
   inherit (lib) mkIf mkEnableOption mkOption types;
 in {
   options.services.silvermind-webui = {
-    enable = mkEnableOption "Silvermind web UI — sbtask API server with Svelte SPA frontend";
-
-    package = mkOption {
-      type = types.package;
-      default = pkgs.sbtask;
-      defaultText = lib.literalMD "`pkgs.sbtask` (from the Silvermind flake)";
-      description = "The sbtask binary package providing the `serve` subcommand.";
-    };
+    enable = mkEnableOption "Silvermind web UI — static Svelte SPA served via Node.js";
 
     frontendDist = mkOption {
       type = types.path;
@@ -36,35 +29,46 @@ in {
       default = 9876;
       description = "TCP port to listen on.";
     };
-
-    extraArgs = mkOption {
-      type = types.str;
-      default = "";
-      description = "Extra command-line arguments forwarded to `sbtask serve`.";
-    };
   };
 
   config = mkIf cfg.enable {
-    home.packages = [ cfg.package ];
+    home.packages = [ pkgs.nodejs-slim_22 ];
 
     systemd.user.services.silvermind-webui = {
       Unit = {
-        Description = "Silvermind Web UI — sbtask API server with web GUI";
+        Description = "Silvermind Web UI — Svelte SPA static server";
         Documentation = "https://github.com/justin/silvermind";
         After = [ "network.target" ];
       };
 
       Service = {
         ExecStart = ''
-          ${cfg.package}/bin/sbtask serve \
-            --host ${cfg.host} \
-            --port ${toString cfg.port} \
-            --web-gui ${cfg.frontendDist} \
-            ${cfg.extraArgs}
+          ${pkgs.nodejs-slim_22}/bin/node -e "
+            const http = require('http');
+            const fs = require('fs');
+            const path = require('path');
+            const dist = '${cfg.frontendDist}';
+            const mime = {
+              '.html': 'text/html', '.js': 'application/javascript',
+              '.css': 'text/css', '.svg': 'image/svg+xml',
+              '.png': 'image/png', '.ico': 'image/x-icon',
+            };
+            http.createServer((req, res) => {
+              let filePath = path.join(dist, req.url === '/' ? 'index.html' : req.url);
+              const ext = path.extname(filePath);
+              try {
+                const content = fs.readFileSync(filePath);
+                res.writeHead(200, { 'Content-Type': mime[ext] || 'application/octet-stream' });
+                res.end(content);
+              } catch {
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(fs.readFileSync(path.join(dist, 'index.html')));
+              }
+            }).listen(${toString cfg.port}, '${cfg.host}');
+          "
         '';
         Restart = "on-failure";
         RestartSec = "5s";
-        Environment = "PATH=${lib.makeBinPath [ pkgs.git ]}";
       };
 
       Install = {

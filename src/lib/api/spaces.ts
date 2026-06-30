@@ -1,8 +1,16 @@
-import { api } from './client';
+import { listSpaces, addSpace, removeSpace, setActive, verifySpace } from '$lib/backend/space-operations';
+import { getConfigManager } from '$lib/backend/backend-context';
 import type { SpacesResponse } from '$lib/types/space';
 
 export async function getSpaces(): Promise<SpacesResponse> {
-  return api.get<SpacesResponse>('/spaces');
+  const spaces = await listSpaces();
+  return spaces.map(s => ({
+    id: s.name,
+    name: s.name,
+    url: s.url,
+    active: false,
+    is_default: s.name === 'main',
+  }));
 }
 
 export interface AddSpaceRequest {
@@ -13,9 +21,11 @@ export interface AddSpaceRequest {
   auth_token?: string;
 }
 
-export async function addSpace(req: AddSpaceRequest): Promise<{ status: string; name: string }> {
-  return api.post<{ status: string; name: string }>('/spaces', req);
+export async function addSpaceFn(req: AddSpaceRequest): Promise<{ status: string; name: string }> {
+  await addSpace(req.name, req.url, req.default_page, req.inbox_page, req.auth_token);
+  return { status: 'ok', name: req.name };
 }
+export { addSpaceFn as addSpace };
 
 export interface UpdateSpaceRequest {
   name?: string;
@@ -26,15 +36,21 @@ export interface UpdateSpaceRequest {
 }
 
 export async function updateSpace(name: string, req: UpdateSpaceRequest): Promise<{ status: string; name: string }> {
-  return api.put<{ status: string; name: string }>(`/spaces/${encodeURIComponent(name)}`, req);
+  const cm = getConfigManager();
+  await cm.load();
+  await cm.updateSpace(name, req.name || name, req.url || '', req.default_page, req.inbox_page, req.auth_token);
+  return { status: 'ok', name: req.name || name };
 }
 
-export async function removeSpace(name: string): Promise<{ status: string; name: string }> {
-  return api.delete<{ status: string; name: string }>(`/spaces/${encodeURIComponent(name)}`);
+export async function removeSpaceFn(name: string): Promise<{ status: string; name: string }> {
+  await removeSpace(name);
+  return { status: 'ok', name };
 }
+export { removeSpaceFn as removeSpace };
 
 export async function setActiveSpaceApi(name: string): Promise<{ status: string; name: string }> {
-  return api.put<{ status: string; name: string }>('/spaces/active', { name });
+  await setActive(name);
+  return { status: 'ok', name };
 }
 
 export interface VerifySpaceRequest {
@@ -48,6 +64,7 @@ export interface VerifySpaceResponse {
   error?: string;
 }
 
-export async function verifySpace(req: VerifySpaceRequest): Promise<VerifySpaceResponse> {
-  return api.post<VerifySpaceResponse>('/spaces/verify', req);
+export async function verifySpaceFn(req: VerifySpaceRequest): Promise<VerifySpaceResponse> {
+  return verifySpace(req.url, req.auth_token);
 }
+export { verifySpaceFn as verifySpace };

@@ -1,14 +1,12 @@
 {
-  description = "Silvermind — task management powered by sbtask";
+  description = "Silvermind — cross-platform task management for SilverBullet";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    sbtask-src.url = "git+ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git";
-    sbtask-src.flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, sbtask-src, ... }:
+  outputs = { self, nixpkgs, flake-utils }:
     let
       eachSystem = flake-utils.lib.eachDefaultSystem (system:
         let
@@ -20,30 +18,14 @@
             };
           };
 
-          # Sentry DSN — set SILVERMIND_SENTRY_DSN env var when building (requires --impure).
-          # Without it, the binary has Sentry disabled (no-op at runtime).
           sentryDsn = builtins.getEnv "SILVERMIND_SENTRY_DSN";
 
-          # ── sbtask CLI + API server (web GUI backend) ──────────────
-          sbtask = pkgs.buildGoModule {
-            pname = "sbtask";
-            version = "0.1.0";
-            src = sbtask-src;
-            vendorHash = "sha256-8jBRZ5TOjjhXp/YZINvqkdMqOqLzAAQw7KLP16mVVN4=";
-            proxyVendor = true;
-            nativeBuildInputs = [ pkgs.go ];
-            meta.mainProgram = "sbtask";
-          };
-
           # ── Silvermind desktop app (Linux & macOS) ─────────────────
-          # Frontend assets must be pre-built:
-          #   pnpm build:desktop
-          # This writes to desktop/frontend/dist/ which Go embeds at compile time.
           silvermind-desktop = pkgs.buildGoModule {
             pname = "silvermind-desktop";
             version = "0.1.0";
-            src = ./.;                                  # whole repo so backend/ is accessible
-            modRoot = "desktop";                         # go.mod lives in desktop/
+            src = ./.;
+            modRoot = "desktop";
             vendorHash = "sha256-LvX3awgBWkBN29/sta+J0VqiW4FIWBKmATSlhDrqbrw=";
             proxyVendor = true;
 
@@ -56,11 +38,6 @@
             preBuild = ''
               export HOME=$TMPDIR
               export CGO_ENABLED=1
-              # Point go.mod replace to the flake's sbtask-src input
-              # modRoot=desktop means the build runs inside desktop/, so go.mod is at .
-              substituteInPlace go.mod --replace-fail \
-                "/home/justin/development/go/sbtask" \
-                "${sbtask-src}"
             '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
               export CGO_LDFLAGS="-framework UniformTypeIdentifiers $CGO_LDFLAGS"
             '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
@@ -81,8 +58,6 @@
               gtk-update-icon-cache --force --ignore-theme-index $out/share/icons/hicolor
             '';
 
-            # Linux: re-add runtime library paths that buildGoModule strips.
-            # macOS: frameworks are linked at build time via CGO, no patchelf needed.
             postFixup = pkgs.lib.optionalString pkgs.stdenv.isLinux ''
               rpath="${pkgs.lib.makeLibraryPath [ pkgs.webkitgtk_4_1 pkgs.gtk3 pkgs.glib pkgs.gst_all_1.gstreamer ]}"
               patchelf --add-rpath "$rpath" $out/bin/.silvermind-desktop-wrapped
@@ -91,7 +66,7 @@
             '';
 
             meta = with pkgs.lib; {
-              description = "Desktop task management powered by sbtask";
+              description = "Desktop task management for SilverBullet";
               homepage = "https://github.com/justin/silvermind";
               license = licenses.mit;
               mainProgram = "silvermind-desktop";
@@ -99,46 +74,16 @@
             };
           };
 
-          # ── Silvermind web Docker image ──────────────────────
-          # frontend/dist/ must be populated (pnpm build:web or CI artifact).
-          # 'nix build .#silvermind-web-docker' produces an OCI tarball.
-          # Load with:  docker load < result
-          silvermind-web-docker = let
-            frontendDist = ./frontend/dist;
-          in pkgs.dockerTools.buildLayeredImage {
-            name = "silvermind-web";
-            tag = "latest";
-
-            contents = [
-              sbtask
-              (pkgs.runCommand "silvermind-web-frontend" {} ''
-                mkdir -p $out/opt/silvermind/frontend/dist
-                cp -r ${frontendDist}/* $out/opt/silvermind/frontend/dist/
-              '')
-            ];
-
-            config = {
-              Cmd = [
-                "${sbtask}/bin/sbtask" "serve"
-                "--web-gui" "/opt/silvermind/frontend/dist"
-                "--host" "0.0.0.0"
-                "--port" "3001"
-              ];
-              ExposedPorts = { "3001/tcp" = {}; };
-              Volumes = { "/root/.config/sbtask" = {}; };
-            };
-          };
-
         in
         {
           packages = {
-            inherit sbtask silvermind-desktop silvermind-web-docker;
+            inherit silvermind-desktop;
             default = silvermind-desktop;
           };
 
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
-              go gopls delve
+              go gopls
               nodejs-slim_22 pnpm
               jdk
               android-tools
@@ -155,7 +100,7 @@
             sdk = compose.androidsdk;
           in pkgs.mkShell {
             packages = with pkgs; [
-              go gopls delve
+              go gopls
               nodejs-slim_22 pnpm
               jdk
               android-tools
@@ -188,7 +133,9 @@
             packages = with pkgs; [
               flatpak
               flatpak-builder
-              go
+              go gopls
+              wails pkg-config
+              webkitgtk_4_1 gtk3
               nodejs-slim_22
               pnpm
               curl
@@ -215,19 +162,6 @@
                 if pkgs.stdenv.isLinux
                 then "${binDir}/.silvermind-desktop-wrapped"
                 else "${binDir}/silvermind-desktop";
-            };
-            sbtask = {
-              type = "app";
-              program = "${sbtask}/bin/sbtask";
-            };
-            silvermind-web = let
-              webDist = ./frontend/dist;
-              runner = pkgs.writeShellScriptBin "silvermind-web" ''
-                exec ${sbtask}/bin/sbtask serve --web-gui ${webDist} "$@"
-              '';
-            in {
-              type = "app";
-              program = "${runner}/bin/silvermind-web";
             };
           };
         }

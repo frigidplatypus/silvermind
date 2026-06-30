@@ -9,15 +9,12 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/justin/sbtask/pkg/client"
-	"github.com/justin/sbtask/pkg/config"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
-// Set at build time via ldflags: -X main.sentryDsn=https://xxx@xxx/123
 var sentryDsn = ""
 
 //go:embed frontend/dist
@@ -49,7 +46,6 @@ func initDesktopSentry() {
 }
 
 func runtimeOS() string {
-	// rudimentary compile-time OS detection
 	if _, err := os.Stat("/etc/NIXOS"); err == nil {
 		return "nixos"
 	}
@@ -88,44 +84,17 @@ func main() {
 
 type App struct {
 	ctx    context.Context
-	server *SbtaskServer
 	config *ConfigManager
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.config = NewConfigManager()
-	a.startSbtask()
+	log.Println("[silvermind] desktop started (JS-native backend)")
 }
 
 func (a *App) shutdown(ctx context.Context) {
-	if a.server != nil {
-		a.server.Stop()
-	}
-}
-
-func (a *App) startSbtask() {
-	s, err := StartSbtaskServer(a.config.configPath())
-	if err != nil {
-		log.Printf("[silvermind] sbtask startup failed: %v", err)
-	}
-	a.server = s
-}
-
-// AppService methods (exposed to frontend)
-func (a *App) GetHealth() ServiceHealth {
-	if a.server != nil {
-		return a.server.GetHealth()
-	}
-	return ServiceHealth{State: "stopped"}
-}
-
-func (a *App) RestartSbtask() {
-	if a.server != nil {
-		a.server.Stop()
-	}
-	time.Sleep(200 * time.Millisecond)
-	a.startSbtask()
+	log.Println("[silvermind] desktop shutting down")
 }
 
 func (a *App) ListSpaces() []SpaceInfo {
@@ -136,121 +105,70 @@ func (a *App) ListSpaces() []SpaceInfo {
 }
 
 func (a *App) AddSpace(name, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.AddSpace(name, url, defaultPage, inboxPage, authToken)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
+	if a.config == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return a.config.AddSpace(name, url, defaultPage, inboxPage, authToken)
 }
 
 func (a *App) UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
+	if a.config == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken)
 }
 
 func (a *App) RemoveSpace(name string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.RemoveSpace(name)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
+	if a.config == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return a.config.RemoveSpace(name)
 }
 
 func (a *App) SetActiveSpace(name string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.SetActiveSpace(name)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
-	}
-	return nil, nil
-}
-
-func (a *App) SetSharedConfig(sbtaskPath string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.SetSharedConfig(sbtaskPath)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
-	}
-	return nil, nil
-}
-
-func (a *App) MigrateSbtaskConfig() ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.MigrateSbtaskConfig()
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
-	}
-	return nil, nil
-}
-
-type verifyResult struct {
-	OK        bool   `json:"ok"`
-	TaskCount int    `json:"task_count"`
-	Error     string `json:"error,omitempty"`
-}
-
-func (a *App) VerifySpace(url, authToken string) verifyResult {
-	c, err := client.NewClient(client.Config{SpaceURL: url, AuthToken: authToken})
-	if err != nil {
-		return verifyResult{OK: false, Error: err.Error()}
-	}
-	tasks, apiErr := c.QueryTasks(map[string]string{"limit": "1"})
-	if apiErr != nil {
-		return verifyResult{OK: false, Error: apiErr.Error()}
-	}
-	return verifyResult{OK: true, TaskCount: len(tasks)}
-}
-
-type configStatusResult struct {
-	Exists       bool        `json:"exists"`
-	SbtaskExists bool        `json:"sbtask_exists"`
-	SpaceCount   int         `json:"space_count"`
-	Spaces       []SpaceInfo `json:"spaces"`
-}
-
-func (a *App) GetConfigStatus() configStatusResult {
 	if a.config == nil {
-		return configStatusResult{}
+		return nil, nil
 	}
-	result := configStatusResult{Exists: true}
-	spaces := a.config.ListSpaces()
-	result.SpaceCount = len(spaces)
-	result.Spaces = spaces
+	return a.config.SetActiveSpace(name)
+}
 
-	sbtaskPath := config.DefaultConfigPath()
-	if _, err := os.Stat(sbtaskPath); err == nil && sbtaskPath != a.config.configPath() {
-		sbtaskCfg, err := config.LoadConfig(sbtaskPath)
-		if err == nil && sbtaskCfg != nil && len(sbtaskCfg.Spaces) > 0 {
-			result.SbtaskExists = true
-			if !result.Exists || result.SpaceCount == 0 {
-				result.Spaces = a.config.GetSbtaskSpaces()
-				result.SpaceCount = len(result.Spaces)
-			}
-		}
+func (a *App) ReadConfig() string {
+	if a.config == nil {
+		return ""
 	}
-	return result
+	return a.config.ReadConfig()
+}
+
+func (a *App) WriteConfig(raw string) error {
+	if a.config == nil {
+		return nil
+	}
+	return a.config.WriteConfig(raw)
 }
 
 func (a *App) GetConfigPath() string {
-	return a.config.configPath()
+	if a.config != nil {
+		return a.config.configPath()
+	}
+	return ""
+}
+
+func (a *App) GetConfigStatus() map[string]any {
+	if a.config == nil {
+		return map[string]any{
+			"exists":        false,
+			"sbtask_exists": false,
+			"space_count":   0,
+			"spaces":        []SpaceInfo{},
+		}
+	}
+	spaces := a.config.ListSpaces()
+	return map[string]any{
+		"exists":        len(spaces) > 0,
+		"sbtask_exists": false,
+		"space_count":   len(spaces),
+		"spaces":        spaces,
+	}
 }
 
 func (a *App) OpenURL(url string) {
@@ -264,4 +182,3 @@ func (a *App) NotifyAlert(title, body string) {
 		log.Printf("[silvermind] NotifyAlert failed: %v", err)
 	}
 }
-

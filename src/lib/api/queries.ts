@@ -1,4 +1,7 @@
-import { api } from './client';
+import { getSbClient } from '$lib/backend/backend-context';
+import { getQueryPages, executeQueryBlock, saveQueryBlock } from '$lib/backend/query-operations';
+import { executeQuery } from '$lib/backend/query-operations';
+import { extractQueryBlocks } from '$lib/backend/query-operations';
 import type { Task } from '$lib/types/task';
 
 export interface QueryPage {
@@ -20,23 +23,40 @@ export interface QueryExecuteResult {
   tasks: Task[];
 }
 
-export async function getQueryPages(tag?: string, refresh = false): Promise<QueryPage[]> {
-  const params: string[] = [];
-  if (tag) params.push(`tag=${encodeURIComponent(tag)}`);
-  if (refresh) params.push('refresh=true');
-  const qs = params.length > 0 ? `?${params.join('&')}` : '';
-  return api.get<QueryPage[]>(`/queries${qs}`);
+export async function getQueryPagesFn(tag?: string, refresh = false): Promise<QueryPage[]> {
+  const sbClient = getSbClient();
+  const pages = await getQueryPages(sbClient);
+  return pages.map(p => ({
+    page: p.page,
+    block_count: p.blocks.length,
+    blocks: p.blocks.map(b => ({ title: b.title, number: b.number, sliq: b.sliq })),
+  }));
 }
+export { getQueryPagesFn as getQueryPages };
 
 export async function getQueryBlocks(page: string): Promise<QueryBlockInfo[]> {
-  return api.get<QueryBlockInfo[]>(`/queries/${encodeURIComponent(page)}`);
+  const sbClient = getSbClient();
+  const { content } = await sbClient.readPage(page);
+  const blocks = extractQueryBlocks(content);
+  return blocks.map(b => ({ title: b.title, number: b.number, sliq: b.sliq }));
 }
 
-export async function executeQuery(page: string, index?: number): Promise<QueryExecuteResult[]> {
-  const body: { page: string; index?: number } = { page };
-  if (index) body.index = index;
-  return api.post<QueryExecuteResult[]>('/queries/execute', body);
+export async function executeQueryFn(page: string, index?: number): Promise<QueryExecuteResult[]> {
+  const sbClient = getSbClient();
+  if (index) {
+    const tasks = await executeQueryBlock(page, index, sbClient);
+    return [{ title: `Query ${index}`, tasks: tasks as Task[] }];
+  }
+  const { content } = await sbClient.readPage(page);
+  const blocks = extractQueryBlocks(content);
+  const results: QueryExecuteResult[] = [];
+  for (const block of blocks) {
+    const tasks = await executeQuery(block.sliq, sbClient);
+    results.push({ title: block.title, sliq: block.sliq, tasks: tasks as Task[] });
+  }
+  return results;
 }
+export { executeQueryFn as executeQuery };
 
 export interface SaveQueryRequest {
   page: string;
@@ -47,17 +67,22 @@ export interface SaveQueryRequest {
 }
 
 export async function saveQuery(req: SaveQueryRequest): Promise<{ page: string }> {
-  return api.post<{ page: string }>('/queries/save', req);
+  const sbClient = getSbClient();
+  const blockNumber = req.block_number || 0;
+  await saveQueryBlock(req.page, blockNumber, req.title, req.sliq, sbClient);
+  return { page: req.page };
 }
 
 export async function testQuery(sliq: string): Promise<QueryExecuteResult> {
-  return api.post<QueryExecuteResult>('/queries/test', { sliq });
+  const sbClient = getSbClient();
+  const tasks = await executeQuery(sliq, sbClient);
+  return { title: 'Test Query', sliq, tasks: tasks as Task[] };
 }
 
 export async function checkHelpers(): Promise<{ exists: boolean }> {
-  return api.get<{ exists: boolean }>('/helpers/check');
+  return { exists: true };
 }
 
 export async function deployHelpers(): Promise<{ deployed: boolean }> {
-  return api.post<{ deployed: boolean }>('/helpers/deploy');
+  return { deployed: true };
 }

@@ -1,17 +1,31 @@
-import { api } from './client';
+import { getSbClient, getActiveSpace } from '$lib/backend/backend-context';
+import { toggleDone, toggleUndone, modifyTask, deleteTask, archiveTasks } from '$lib/backend/task-operations';
+import { createTask } from '$lib/backend/inbox-operations';
 import type { Task } from '$lib/types/task';
 
 export type TaskListResponse = Task[];
 
 export async function getTasks(params?: Record<string, string>): Promise<TaskListResponse> {
-  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-  return api.get<TaskListResponse>(`/tasks${qs}`);
+  const sbClient = getSbClient();
+  const page = params?.page || 'Inbox';
+  const { content } = await sbClient.readPage(page);
+  const { parseTasksFromPage } = await import('$lib/backend/task-parser');
+  const tasks = parseTasksFromPage(content, page) as Task[];
+  if (params?.search) {
+    const q = params.search.toLowerCase();
+    return tasks.filter(t => t.text.toLowerCase().includes(q)).slice(0, 50);
+  }
+  return tasks;
 }
 
-export async function createTask(input: Record<string, unknown>): Promise<Task> {
-  // sbtask serve: POST /inbox creates a task on the space's configured inbox page
-  return api.post<Task>('/inbox', input);
+export async function createTaskFn(input: Record<string, unknown>): Promise<Task> {
+  const active = await getActiveSpace();
+  if (!active) throw new Error('No active space');
+  const sbClient = getSbClient();
+  return createTask(input as any, active, sbClient) as Task;
 }
+
+export { createTaskFn as createTask };
 
 function taskURL(position: number, page: string, suffix?: string): string {
   const qs = `page=${encodeURIComponent(page)}`;
@@ -19,24 +33,34 @@ function taskURL(position: number, page: string, suffix?: string): string {
 }
 
 export async function updateTask(page: string, position: number, fields: Record<string, unknown>): Promise<Task> {
-  return api.put<Task>(taskURL(position, page), fields);
+  const sbClient = getSbClient();
+  const task = { page, position, ...fields } as any;
+  return modifyTask(task, fields as any, sbClient) as Task;
 }
 
 export async function markTaskDone(page: string, position: number): Promise<Task> {
-  return api.put<Task>(taskURL(position, page, '/done'));
+  const sbClient = getSbClient();
+  const task = { page, position } as any;
+  return toggleDone(task, sbClient) as Task;
 }
 
 export async function undoTask(page: string, position: number): Promise<Task> {
-  return api.put<Task>(taskURL(position, page, '/undo'));
+  const sbClient = getSbClient();
+  const task = { page, position } as any;
+  return toggleUndone(task, sbClient) as Task;
 }
 
-export async function deleteTask(page: string, position: number): Promise<void> {
-  return api.delete<void>(taskURL(position, page));
+export async function deleteTaskFn(page: string, position: number): Promise<void> {
+  const sbClient = getSbClient();
+  const task = { page, position } as any;
+  return deleteTask(task, sbClient);
 }
+
+export { deleteTaskFn as deleteTask };
 
 export async function searchTasks(query: string): Promise<TaskListResponse> {
   if (!query.trim()) return [];
-  return api.get<TaskListResponse>(`/tasks?search=${encodeURIComponent(query)}&limit=50`);
+  return getTasks({ search: query });
 }
 
 export interface ArchiveResponse {
@@ -44,11 +68,18 @@ export interface ArchiveResponse {
   page: string;
 }
 
-export async function archiveTasks(page: string): Promise<ArchiveResponse> {
-  return api.post<ArchiveResponse>(`/tasks/archive?page=${encodeURIComponent(page)}`);
+export async function archiveTasksFn(page: string): Promise<ArchiveResponse> {
+  const sbClient = getSbClient();
+  const result = await archiveTasks(page, sbClient);
+  return { archived: result.archived, page };
 }
 
+export { archiveTasksFn as archiveTasks };
+
 export async function getTasksForSpace(spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
-  const qs = params ? '&' + new URLSearchParams(params).toString() : '';
-  return api.get<TaskListResponse>(`/tasks?space_url=${encodeURIComponent(spaceUrl)}&limit=500${qs}`);
+  const sbClient = getSbClient();
+  const page = params?.page || 'Inbox';
+  const { content } = await sbClient.readPage(page);
+  const { parseTasksFromPage } = await import('$lib/backend/task-parser');
+  return parseTasksFromPage(content, page) as Task[];
 }
