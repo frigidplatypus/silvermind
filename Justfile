@@ -97,7 +97,7 @@ sbtask-fetch-android:
 
 # Sync Capacitor iOS project
 cap-sync:
-    pnpm cap:sync
+    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm cap:sync
 
 # Sync Capacitor Android project
 cap-sync-android:
@@ -105,7 +105,7 @@ cap-sync-android:
 
 # Open iOS project in Xcode
 cap-open:
-    pnpm cap:open
+    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm cap:open
 
 # Open Android project in Android Studio
 cap-open-android:
