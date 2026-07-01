@@ -92,8 +92,19 @@ export function createConfigManager() {
     }
     try {
       const parsed = yaml.load(raw) as any;
+      const rawSpaces: Record<string, any> = parsed?.spaces || {};
+      const normalized: Record<string, SpaceConfig> = {};
+      for (const [name, sp] of Object.entries(rawSpaces)) {
+        normalized[name] = {
+          name,
+          url: (sp as any).space || (sp as any).url || '',
+          default_page: (sp as any).default_page || 'Tasks',
+          inbox_page: (sp as any).inbox_page || 'Inbox',
+          auth_token: (sp as any).auth_token || '',
+        };
+      }
       cache = {
-        spaces: parsed?.spaces || {},
+        spaces: normalized,
         active_space: parsed?.active_space || '',
       };
       return cache;
@@ -105,8 +116,17 @@ export function createConfigManager() {
 
   async function save(): Promise<void> {
     if (!cache) return;
+    const rawSpaces: Record<string, any> = {};
+    for (const [name, sp] of Object.entries(cache.spaces)) {
+      rawSpaces[name] = {
+        space: sp.url,
+        default_page: sp.default_page,
+        inbox_page: sp.inbox_page,
+        auth_token: sp.auth_token || '',
+      };
+    }
     const raw = yaml.dump({
-      spaces: cache.spaces,
+      spaces: rawSpaces,
       active_space: cache.active_space,
     });
     await store.write(raw);
