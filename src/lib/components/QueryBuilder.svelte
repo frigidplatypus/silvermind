@@ -4,8 +4,11 @@
   import { loadQueryPages } from '$lib/stores/queries.svelte';
   import { getBuilderEdit, clearBuilderEdit } from '$lib/stores/builder-edit.svelte';
   import { onMount } from 'svelte';
+  import { devLog } from '$lib/helpers/dev-log';
 
   let { onNavigate }: { onNavigate?: (view: string) => void } = $props();
+
+  devLog('[query-builder] script loaded, onNavigate=', typeof onNavigate, onNavigate ? 'defined' : 'undefined');
 
   let page = $state('');
   let title = $state('');
@@ -18,7 +21,9 @@
   let deployingHelpers = $state(false);
 
   onMount(() => {
+    devLog('[query-builder] onMount called');
     const edit = getBuilderEdit();
+    devLog('[query-builder] builder edit state:', JSON.stringify(edit));
     if (edit.page) {
       page = edit.page;
       title = edit.title;

@@ -29,6 +29,7 @@
   import GlobalPage from '../../routes/global/+page.svelte';
   import BuilderPage from '../../routes/builder/+page.svelte';
   import { getGlobalTasks, loadGlobalView } from '$lib/stores/global.svelte';
+  import { devLog } from '$lib/helpers/dev-log';
 
   let {
     activeView,
@@ -100,15 +101,19 @@
   }
 
   $effect(() => {
+    devLog('[desktop-shell] effect fired: activeView=', activeView, 'prevView=', prevView);
     if (activeView !== prevView) {
+      devLog('[desktop-shell] view changed:', prevView, '->', activeView);
       prevView = activeView;
       setSelectedTaskId(null);
       if (activeView.startsWith('queries:')) {
         const parts = activeView.split(':');
         const page = parts[1];
         const index = parts[2] ? parseInt(parts[2]) : undefined;
+        devLog('[desktop-shell] running query for page=', page, 'index=', index);
         runQuery(page, index);
       } else {
+        devLog('[desktop-shell] clearing query results');
         clearQueryResults();
       }
     }

@@ -8,6 +8,7 @@
   import { getQueryPagesList, getQueryPagesLoading, getQueryPagesError, loadQueryPages } from '$lib/stores/queries.svelte';
   import { getShowToday } from '$lib/stores/landing.svelte';
   import { isDesktopApp, setActiveSpaceDesktop } from '$lib/desktop-bridge';
+  import { devLog } from '$lib/helpers/dev-log';
 
   let {
     activeView,
@@ -18,6 +19,8 @@
     onNavigate: (view: string) => void;
     width?: number;
   } = $props();
+
+  devLog('[sidebar] component mounted, activeView=', activeView, 'onNavigate=', typeof onNavigate, onNavigate ? 'defined' : 'UNDEFINED');
 
   let spaceOpen = $state(false);
 
@@ -127,7 +130,7 @@
   <div class="sidebar-section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
     <span><Icon name="search" size="0.75rem" /> Queries</span>
     <div class="sidebar-actions">
-      <button class="add-btn" onclick={() => onNavigate('builder')} aria-label="New query">
+      <button class="add-btn" onclick={() => { devLog('[sidebar] plus button clicked, calling onNavigate("builder")'); devLog('[sidebar] onNavigate is', typeof onNavigate, onNavigate ? 'defined' : 'UNDEFINED'); onNavigate('builder'); }} aria-label="New query">
         <Icon name="plus" size="0.75rem" />
       </button>
       <button class="refresh-btn" onclick={handleRefreshQueries} aria-label="Refresh query pages" disabled={refreshingQueries}>

@@ -33,6 +33,7 @@
   import type { Task } from '$lib/types/task';
   import QueriesPage from './queries/+page.svelte';
   import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, getQueryError, runQuery, clearQueryResults, loadQueryPages } from '$lib/stores/queries.svelte';
+  import { devLog } from '$lib/helpers/dev-log';
 
   let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
@@ -157,8 +158,10 @@
   }
 
   function navigate(tab: string) {
+    devLog('[layout] navigate called: tab=', tab, 'currentTab was=', currentTab);
     if (currentTab !== 'settings' && currentTab !== 'builder' && !currentTab.startsWith('queries:')) prevTab = currentTab;
     currentTab = tab;
+    devLog('[layout] currentTab now=', currentTab);
   }
 
   function handleSearchTaskTap(task: Task) {
