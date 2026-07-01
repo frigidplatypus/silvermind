@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"embed"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -174,6 +177,48 @@ func (a *App) GetConfigStatus() map[string]any {
 func (a *App) OpenURL(url string) {
 	if err := exec.Command("xdg-open", url).Start(); err != nil {
 		log.Printf("[silvermind] OpenURL failed: %v", err)
+	}
+}
+
+func (a *App) ProxyFetch(url, method, headersJSON, body string) map[string]any {
+	client := &http.Client{Timeout: 30 * time.Second}
+	var reqBody io.Reader
+	if body != "" {
+		reqBody = strings.NewReader(body)
+	}
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return map[string]any{"status": 0, "ok": false, "error": err.Error()}
+	}
+
+	if headersJSON != "" {
+		pairs := strings.Split(headersJSON, "\n")
+		for _, pair := range pairs {
+			parts := strings.SplitN(pair, ":", 2)
+			if len(parts) == 2 {
+				req.Header.Set(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+			}
+		}
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("[silvermind] ProxyFetch %s %s failed: %v", method, url, err)
+		return map[string]any{"status": 0, "ok": false, "error": err.Error()}
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	respHeaders := make(map[string]string)
+	for k, v := range resp.Header {
+		respHeaders[k] = v[0]
+	}
+
+	return map[string]any{
+		"status":  resp.StatusCode,
+		"ok":      resp.StatusCode >= 200 && resp.StatusCode < 300,
+		"body":    string(respBody),
+		"headers": respHeaders,
 	}
 }
 

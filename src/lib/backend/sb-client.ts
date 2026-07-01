@@ -17,7 +17,33 @@ function detectTransport(): Transport {
 }
 
 async function windowFetchTransport(url: string, options: RequestInit): Promise<Response> {
-  return fetch(url, options);
+  try {
+    return await fetch(url, options);
+  } catch (directErr: any) {
+    const goApp = (window as any).go?.main?.App;
+    if (goApp?.ProxyFetch) {
+      logInfo(`Direct fetch failed, trying Go proxy: ${url}`);
+      const headersJSON = options.headers
+        ? Object.entries(options.headers as Record<string, string>)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join('\n')
+        : '';
+      const result = await goApp.ProxyFetch(
+        url,
+        options.method || 'GET',
+        headersJSON,
+        (options.body as string) || '',
+      );
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return new Response(result.body, {
+        status: result.status || 200,
+        headers: result.headers || {},
+      });
+    }
+    throw directErr;
+  }
 }
 
 async function capacitorTransport(url: string, options: RequestInit): Promise<Response> {
