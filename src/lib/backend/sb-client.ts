@@ -44,6 +44,7 @@ async function capacitorTransport(url: string, options: RequestInit): Promise<Re
 export function createSbClient(config: SbClientConfig) {
   const transport = detectTransport();
   const baseURL = config.spaceURL.replace(/\/+$/, '');
+  logInfo(`SbClient created for ${baseURL}`);
   const authToken = config.authToken;
 
   function authHeaders(): Record<string, string> {
@@ -53,19 +54,31 @@ export function createSbClient(config: SbClientConfig) {
 
   async function readPage(path: string): Promise<SilverBulletPage> {
     const url = `${baseURL}/.fs/${encodeURIComponent(path)}`;
-    logDebug(`SB GET ${url}`);
-    const res = await transport(url, {
-      method: 'GET',
-      headers: { ...authHeaders() },
-    });
-
-    if (res.status === 404) {
-      const urlMd = `${baseURL}/.fs/${encodeURIComponent(path)}.md`;
-      logDebug(`SB GET ${urlMd} (fallback .md)`);
-      const resMd = await transport(urlMd, {
+    logInfo(`SB GET ${url}`);
+    let res: Response;
+    try {
+      res = await transport(url, {
         method: 'GET',
         headers: { ...authHeaders() },
       });
+    } catch (e: any) {
+      logError(`SB fetch failed: ${url} — ${e.message || e}`);
+      throw new SbClientError(0, 'NETWORK_ERROR', `Cannot reach SilverBullet: ${e.message || e}`);
+    }
+
+    if (res.status === 404) {
+      const urlMd = `${baseURL}/.fs/${encodeURIComponent(path)}.md`;
+      logInfo(`SB GET ${urlMd} (fallback .md)`);
+      let resMd: Response;
+      try {
+        resMd = await transport(urlMd, {
+          method: 'GET',
+          headers: { ...authHeaders() },
+        });
+      } catch (e: any) {
+        logError(`SB fetch failed: ${urlMd} — ${e.message || e}`);
+        throw new SbClientError(0, 'NETWORK_ERROR', `Cannot reach SilverBullet: ${e.message || e}`);
+      }
       if (resMd.status === 404) {
         logWarn(`SB page not found: ${path}`);
         return { content: '', lastModified: 0 };
@@ -75,7 +88,7 @@ export function createSbClient(config: SbClientConfig) {
         throw new SbClientError(resMd.status, 'SB_READ_ERROR', `Failed to read page: HTTP ${resMd.status}`);
       }
       const content = await resMd.text();
-      logDebug(`SB read OK: ${path}.md (${content.length} bytes)`);
+      logInfo(`SB read OK: ${path}.md (${content.length} bytes)`);
       const lastModified = parseInt(resMd.headers.get('Last-Modified') || '0', 10) || Date.now();
       return { content, lastModified };
     }
@@ -86,7 +99,7 @@ export function createSbClient(config: SbClientConfig) {
     }
 
     const content = await res.text();
-    logDebug(`SB read OK: ${path} (${content.length} bytes)`);
+    logInfo(`SB read OK: ${path} (${content.length} bytes)`);
     const lastModified = parseInt(res.headers.get('Last-Modified') || '0', 10) || Date.now();
     return { content, lastModified };
   }
