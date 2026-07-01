@@ -105,9 +105,9 @@
   .status-icon-block { color: var(--color-danger); margin-top: 0.25rem; flex-shrink: 0; }
   .status-icon-recur { color: var(--color-accent); margin-top: 0.25rem; flex-shrink: 0; }
   .task-content { display: flex; flex-direction: column; min-width: 0; }
-  .task-title { font-size: var(--font-size-base); font-weight: 500; color: var(--color-text); line-height: 1.4; }
+  .task-title { font-size: var(--font-size-base); font-weight: 500; color: var(--color-text); line-height: 1.4; word-break: break-word; overflow-wrap: break-word; hyphens: auto; }
   .task-title.done { text-decoration: line-through; color: var(--color-text-tertiary); }
-  .task-row-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .task-row-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
   .task-due { font-size: var(--font-size-xs); font-weight: 500; padding: 0.125rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-bg-tertiary); color: var(--color-text-secondary); white-space: nowrap; }
   .task-due.overdue { background: var(--color-danger-light); color: var(--color-danger); }
   .task-due.today { background: var(--color-warning-light); color: var(--color-warning); }
@@ -120,4 +120,13 @@
   .tag-overflow-wrapper { position: relative; }
   .tag-popover { position: absolute; top: 100%; right: 0; margin-top: 0.25rem; z-index: 50; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: 0 4px 12px var(--color-shadow); min-width: 120px; }
   .tag-popover-item { display: flex; align-items: center; gap: 0.25rem; font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; padding: 0.125rem 0; }
+
+  @media (max-width: 500px) {
+    .task-row { padding: 0.75rem 0.75rem; gap: 0.5rem; }
+    .task-row-left { gap: 0.5rem; }
+    .task-title { font-size: 0.9375rem; }
+    .page-tag { display: none; }
+    .tag-chip { display: none; }
+    .tag-overflow-wrapper { display: none; }
+  }
 </style>
