@@ -705,6 +705,8 @@
     padding: 1.5rem;
     max-width: 640px;
     margin: 0 auto;
+    height: 100%;
+    overflow-y: auto;
   }
   .builder-title {
     font-size: var(--font-size-xl);

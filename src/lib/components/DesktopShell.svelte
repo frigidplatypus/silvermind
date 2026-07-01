@@ -384,9 +384,6 @@
       <h2 class="top-bar-title">{viewTitle}</h2>
     </div>
     <SearchBar />
-    {#if activeView === 'builder'}
-      <div style="background:red;color:white;padding:2rem;font-size:2rem;text-align:center;z-index:9999">DEBUG: BUILDER VIEW ACTIVE — activeView={activeView} selectedTask={selectedTask ? 'yes' : 'no'}</div>
-    {/if}
     {#if getIsActive()}
       <div class="search-results">
         {#if getQuery() && getResults().length === 0 && !getIsSearching()}
