@@ -1,6 +1,7 @@
 import { getSbClient, getActiveSpace } from '$lib/backend/backend-context';
 import { toggleDone, toggleUndone, modifyTask, deleteTask, archiveTasks } from '$lib/backend/task-operations';
 import { createTask } from '$lib/backend/inbox-operations';
+import { createSbClient } from '$lib/backend/sb-client';
 import type { Task } from '$lib/types/task';
 
 export type TaskListResponse = Task[];
@@ -94,10 +95,10 @@ export async function archiveTasksFn(page: string): Promise<ArchiveResponse> {
 
 export { archiveTasksFn as archiveTasks };
 
-export async function getTasksForSpace(_spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
-  const sbClient = await getSbClient();
+export async function getTasksForSpace(spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
+  const tempClient = createSbClient({ spaceURL: spaceUrl });
   const queryParams: Record<string, string> = { ...params };
-  const runtimeTasks = await sbClient.queryTasks(queryParams);
+  const runtimeTasks = await tempClient.queryTasks(queryParams);
   return runtimeTasks.map((rt: any) => ({
     page: rt.page || '',
     position: rt.pos || 0,

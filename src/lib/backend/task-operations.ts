@@ -44,12 +44,29 @@ export async function toggleUndone(task: Task, sbClient: SbClient): Promise<Task
   const updatedTask: Task = { ...task, status: '', done: false };
 
   await sbClient.readModifyWrite(task.page, async (content) => {
+    const lines = content.split('\n');
     const found = findNthTask(content, task.position);
     if (!found) return content;
 
     const undoneLine = toMarkdown(updatedTask);
-    const lines = content.split('\n');
     lines[found.lineIndex] = undoneLine;
+
+    if (task.recur) {
+      const tasks = parseTasksFromPage(content, task.page);
+      for (let i = tasks.length - 1; i >= 0; i--) {
+        const t = tasks[i];
+        if (t.recur === task.recur && !t.done) {
+          if (task.name && t.name !== task.name) continue;
+          if (!task.name && t.text !== task.text) continue;
+          const matchFound = findNthTask(content, t.position);
+          if (matchFound) {
+            lines.splice(matchFound.lineIndex, 1);
+          }
+          break;
+        }
+      }
+    }
+
     return lines.join('\n');
   });
 

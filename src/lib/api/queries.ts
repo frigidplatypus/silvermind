@@ -80,7 +80,13 @@ export async function testQuery(sliq: string): Promise<QueryExecuteResult> {
 }
 
 export async function checkHelpers(): Promise<{ exists: boolean }> {
-  return { exists: true };
+  try {
+    const sbClient = await getSbClient();
+    await sbClient.queryTasks({ limit: '1' });
+    return { exists: true };
+  } catch {
+    return { exists: false };
+  }
 }
 
 export async function deployHelpers(): Promise<{ deployed: boolean }> {
