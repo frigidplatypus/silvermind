@@ -429,28 +429,38 @@
       </SplitPane>
       {/key}
     {:else}
-      <SplitPane showRight={!!selectedTask}>
-        {#snippet left()}
-          {#key activeView}
-          {#if activeView === 'inbox'}
-            <InboxPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
-          {:else if activeView === 'today'}
-            <TodayPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
-          {:else if activeView === 'global'}
-            <GlobalPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
-          {:else if activeView === 'builder'}
-            <BuilderPage onNavigate={onNavigate} />
-          {:else}
-            <SettingsPage />
-          {/if}
-          {/key}
-        {/snippet}
-        {#snippet right()}
-          {#if selectedTask}
+      {#if selectedTask}
+        <SplitPane showRight={true}>
+          {#snippet left()}
+            {#if activeView === 'inbox'}
+              <InboxPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
+            {:else if activeView === 'today'}
+              <TodayPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
+            {:else if activeView === 'global'}
+              <GlobalPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
+            {:else if activeView === 'builder'}
+              <BuilderPage onNavigate={onNavigate} />
+            {:else}
+              <SettingsPage />
+            {/if}
+          {/snippet}
+          {#snippet right()}
             <TaskDetail task={selectedTask} variant="panel" onclose={handleDetailClose} ontaskchanged={handleTaskChanged} onedit={handleEdit} />
-          {/if}
-        {/snippet}
-      </SplitPane>
+          {/snippet}
+        </SplitPane>
+      {:else}
+        {#if activeView === 'inbox'}
+          <InboxPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
+        {:else if activeView === 'today'}
+          <TodayPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
+        {:else if activeView === 'global'}
+          <GlobalPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
+        {:else if activeView === 'builder'}
+          <BuilderPage onNavigate={onNavigate} />
+        {:else}
+          <SettingsPage />
+        {/if}
+      {/if}
     {/if}
   </div>
   <FloatingAddButton />
