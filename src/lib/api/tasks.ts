@@ -7,15 +7,33 @@ export type TaskListResponse = Task[];
 
 export async function getTasks(params?: Record<string, string>): Promise<TaskListResponse> {
   const sbClient = await getSbClient();
-  const page = params?.page || 'Inbox';
-  const { content } = await sbClient.readPage(page);
-  const { parseTasksFromPage } = await import('$lib/backend/task-parser');
-  const tasks = parseTasksFromPage(content, page) as Task[];
+  const queryParams: Record<string, string> = {};
+  if (params?.page) queryParams['page'] = params.page;
   if (params?.search) {
-    const q = params.search.toLowerCase();
-    return tasks.filter(t => t.text.toLowerCase().includes(q)).slice(0, 50);
+    queryParams['filter'] = params.search;
+    queryParams['limit'] = '50';
   }
-  return tasks;
+  const runtimeTasks = await sbClient.queryTasks(queryParams);
+  return runtimeTasks.map((rt: any) => ({
+    page: rt.page || '',
+    position: rt.pos || 0,
+    text: rt.text || '',
+    status: rt.status || '',
+    done: rt.done || false,
+    due: rt.due || '',
+    due_parsed: rt.due_parsed || null,
+    deferred: rt.deferred || '',
+    deferred_parsed: rt.deferred_parsed || null,
+    name: rt.name || '',
+    priority: rt.priority || '',
+    tags: rt.tags || [],
+    parent: rt.parent,
+    depends_on: rt.depends_on,
+    blocked: false,
+    recur: rt.recur,
+    alerts: rt.alerts,
+    extra_attrs: rt.extra_attrs,
+  })) as Task[];
 }
 
 export async function createTaskFn(input: Record<string, unknown>): Promise<Task> {
@@ -76,10 +94,28 @@ export async function archiveTasksFn(page: string): Promise<ArchiveResponse> {
 
 export { archiveTasksFn as archiveTasks };
 
-export async function getTasksForSpace(spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
+export async function getTasksForSpace(_spaceUrl: string, params?: Record<string, string>): Promise<TaskListResponse> {
   const sbClient = await getSbClient();
-  const page = params?.page || 'Inbox';
-  const { content } = await sbClient.readPage(page);
-  const { parseTasksFromPage } = await import('$lib/backend/task-parser');
-  return parseTasksFromPage(content, page) as Task[];
+  const queryParams: Record<string, string> = { ...params };
+  const runtimeTasks = await sbClient.queryTasks(queryParams);
+  return runtimeTasks.map((rt: any) => ({
+    page: rt.page || '',
+    position: rt.pos || 0,
+    text: rt.text || '',
+    status: rt.status || '',
+    done: rt.done || false,
+    due: rt.due || '',
+    due_parsed: rt.due_parsed || null,
+    deferred: rt.deferred || '',
+    deferred_parsed: rt.deferred_parsed || null,
+    name: rt.name || '',
+    priority: rt.priority || '',
+    tags: rt.tags || [],
+    parent: rt.parent,
+    depends_on: rt.depends_on,
+    blocked: false,
+    recur: rt.recur,
+    alerts: rt.alerts,
+    extra_attrs: rt.extra_attrs,
+  })) as Task[];
 }

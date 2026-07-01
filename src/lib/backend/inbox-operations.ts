@@ -1,21 +1,39 @@
 import type { SbClient } from './sb-client';
 import type { Task, SpaceConfig } from './task-types';
-import { parseTasksFromPage } from './task-parser';
 import { toMarkdown } from './task-serializer';
-import { logInfo, logWarn, logError } from '$lib/helpers/logger';
+import { logInfo, logError } from '$lib/helpers/logger';
 
-export async function getInbox(spaces: SpaceConfig[], activeSpace: SpaceConfig, sbClient: SbClient): Promise<Task[]> {
-  const inboxPage = activeSpace.inbox_page || 'Inbox';
-  logInfo(`Loading inbox from "${activeSpace.name}" → ${inboxPage}`);
+export async function getInbox(_spaces: SpaceConfig[], activeSpace: SpaceConfig, sbClient: SbClient): Promise<Task[]> {
+  logInfo(`Loading inbox from "${activeSpace.name}" via runtime API`);
 
   try {
-    const { content } = await sbClient.readPage(inboxPage);
-    const tasks = parseTasksFromPage(content, inboxPage);
+    const runtimeTasks = await sbClient.queryTasks({});
+    const tasks = runtimeTasks.map((rt: any) => ({
+      page: rt.page || '',
+      position: rt.pos || 0,
+      text: rt.text || '',
+      status: rt.status || '',
+      done: rt.done || false,
+      due: rt.due || '',
+      due_parsed: rt.due_parsed || null,
+      deferred: rt.deferred || '',
+      deferred_parsed: rt.deferred_parsed || null,
+      name: rt.name || '',
+      priority: rt.priority || '',
+      tags: rt.tags || [],
+      parent: rt.parent,
+      depends_on: rt.depends_on,
+      blocked: false,
+      recur: rt.recur,
+      alerts: rt.alerts,
+      extra_attrs: rt.extra_attrs,
+    }));
+
     const active = tasks.filter(t => !t.done);
-    logInfo(`Inbox: ${active.length} active / ${tasks.length} total tasks on ${inboxPage}`);
+    logInfo(`Inbox: ${active.length} active / ${tasks.length} total tasks`);
     return active;
   } catch (e: any) {
-    logError(`Inbox load failed: ${e.message || e}`, { page: inboxPage, space: activeSpace.name });
+    logError(`Inbox load failed: ${e.message || e}`, { space: activeSpace.name });
     return [];
   }
 }

@@ -152,20 +152,31 @@ export function createSbClient(config: SbClientConfig) {
   async function queryTasks(params: Record<string, string>): Promise<any[]> {
     const qs = new URLSearchParams(params).toString();
     const url = `${baseURL}/.runtime/objects/task${qs ? '?' + qs : ''}`;
-    const res = await transport(url, {
-      method: 'GET',
-      headers: { ...authHeaders() },
-    });
+    logInfo(`SB QUERY ${url}`);
+    let res: Response;
+    try {
+      res = await transport(url, {
+        method: 'GET',
+        headers: { ...authHeaders() },
+      });
+    } catch (e: any) {
+      logError(`SB query failed: ${url} — ${e.message || e}`);
+      throw new SbClientError(0, 'NETWORK_ERROR', `Cannot reach SilverBullet: ${e.message || e}`);
+    }
 
     if (res.status === 503) {
+      logError(`SB Runtime API unavailable (503)`);
       throw new SbClientError(503, 'RUNTIME_UNAVAILABLE', 'SilverBullet Runtime API is not available');
     }
 
     if (!res.ok) {
+      logError(`SB query error: HTTP ${res.status}`);
       throw new SbClientError(res.status, 'SB_QUERY_ERROR', `Failed to query tasks: HTTP ${res.status}`);
     }
 
-    return res.json();
+    const data = await res.json();
+    logInfo(`SB query OK: ${data.length} tasks`);
+    return data;
   }
 
   async function getTask(ref: string): Promise<any | null> {
