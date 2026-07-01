@@ -429,9 +429,9 @@
       </SplitPane>
       {/key}
     {:else}
-      {#key activeView}
       <SplitPane showRight={!!selectedTask}>
         {#snippet left()}
+          {#key activeView}
           {#if activeView === 'inbox'}
             <InboxPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
           {:else if activeView === 'today'}
@@ -443,6 +443,7 @@
           {:else}
             <SettingsPage />
           {/if}
+          {/key}
         {/snippet}
         {#snippet right()}
           {#if selectedTask}
@@ -450,7 +451,6 @@
           {/if}
         {/snippet}
       </SplitPane>
-      {/key}
     {/if}
   </div>
   <FloatingAddButton />
