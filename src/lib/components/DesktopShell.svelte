@@ -404,6 +404,7 @@
           <Icon name="edit-3" size="0.875rem" />
         </button>
       </div>
+      {#key activeView}
       <SplitPane showRight={!!selectedTask}>
         {#snippet left()}
           {#if queryLoading}
@@ -426,7 +427,9 @@
           {/if}
         {/snippet}
       </SplitPane>
+      {/key}
     {:else}
+      {#key activeView}
       <SplitPane showRight={!!selectedTask}>
         {#snippet left()}
           {#if activeView === 'inbox'}
@@ -447,6 +450,7 @@
           {/if}
         {/snippet}
       </SplitPane>
+      {/key}
     {/if}
   </div>
   <FloatingAddButton />
