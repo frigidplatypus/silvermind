@@ -78,8 +78,12 @@ export function createSbClient(config: SbClientConfig) {
     return { Authorization: `Bearer ${authToken}` };
   }
 
+  function encodePagePath(path: string): string {
+    return path.split('/').map(encodeURIComponent).join('/');
+  }
+
   async function readPage(path: string): Promise<SilverBulletPage> {
-    const url = `${baseURL}/.fs/${encodeURIComponent(path)}`;
+    const url = `${baseURL}/.fs/${encodePagePath(path)}`;
     logInfo(`SB GET ${url}`);
     let res: Response;
     try {
@@ -93,7 +97,7 @@ export function createSbClient(config: SbClientConfig) {
     }
 
     if (res.status === 404) {
-      const urlMd = `${baseURL}/.fs/${encodeURIComponent(path)}.md`;
+      const urlMd = `${baseURL}/.fs/${encodePagePath(path)}.md`;
       logInfo(`SB GET ${urlMd} (fallback .md)`);
       let resMd: Response;
       try {
@@ -131,7 +135,7 @@ export function createSbClient(config: SbClientConfig) {
   }
 
   async function writePage(path: string, content: string, lastModified?: number): Promise<void> {
-    const url = `${baseURL}/.fs/${encodeURIComponent(path)}`;
+    const url = `${baseURL}/.fs/${encodePagePath(path)}`;
     const headers: Record<string, string> = {
       'Content-Type': 'text/markdown',
       ...authHeaders(),
@@ -206,7 +210,7 @@ export function createSbClient(config: SbClientConfig) {
   }
 
   async function getTask(ref: string): Promise<any | null> {
-    const url = `${baseURL}/.runtime/objects/task/${encodeURIComponent(ref)}`;
+    const url = `${baseURL}/.runtime/objects/task/${encodePagePath(ref)}`;
     const res = await transport(url, {
       method: 'GET',
       headers: { ...authHeaders() },
