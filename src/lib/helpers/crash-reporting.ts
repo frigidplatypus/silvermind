@@ -1,4 +1,5 @@
 import { isCrashReportingEnabled } from '$lib/stores/privacy.svelte';
+import { logError } from './logger';
 
 const MAX_BUFFER = 100;
 
@@ -26,6 +27,10 @@ function capture(level: string, message: string, stack?: string) {
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
   };
   bufferError(entry);
+
+  if (level === 'error') {
+    logError(message, { stack });
+  }
 
   if (isCrashReportingEnabled()) {
     console.debug('[silvermind] crash report:', entry.message);

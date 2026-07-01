@@ -1,5 +1,6 @@
 import { SbClientError, PreconditionFailedError } from './task-types';
 import type { SilverBulletPage } from './task-types';
+import { logDebug, logInfo, logWarn, logError } from '$lib/helpers/logger';
 
 export interface SbClientConfig {
   spaceURL: string;
@@ -52,6 +53,7 @@ export function createSbClient(config: SbClientConfig) {
 
   async function readPage(path: string): Promise<SilverBulletPage> {
     const url = `${baseURL}/.fs/${encodeURIComponent(path)}`;
+    logDebug(`SB GET ${url}`);
     const res = await transport(url, {
       method: 'GET',
       headers: { ...authHeaders() },
@@ -59,26 +61,32 @@ export function createSbClient(config: SbClientConfig) {
 
     if (res.status === 404) {
       const urlMd = `${baseURL}/.fs/${encodeURIComponent(path)}.md`;
+      logDebug(`SB GET ${urlMd} (fallback .md)`);
       const resMd = await transport(urlMd, {
         method: 'GET',
         headers: { ...authHeaders() },
       });
       if (resMd.status === 404) {
+        logWarn(`SB page not found: ${path}`);
         return { content: '', lastModified: 0 };
       }
       if (!resMd.ok) {
+        logError(`SB read error: ${path}.md HTTP ${resMd.status}`);
         throw new SbClientError(resMd.status, 'SB_READ_ERROR', `Failed to read page: HTTP ${resMd.status}`);
       }
       const content = await resMd.text();
+      logDebug(`SB read OK: ${path}.md (${content.length} bytes)`);
       const lastModified = parseInt(resMd.headers.get('Last-Modified') || '0', 10) || Date.now();
       return { content, lastModified };
     }
 
     if (!res.ok) {
+      logError(`SB read error: ${path} HTTP ${res.status}`);
       throw new SbClientError(res.status, 'SB_READ_ERROR', `Failed to read page: HTTP ${res.status}`);
     }
 
     const content = await res.text();
+    logDebug(`SB read OK: ${path} (${content.length} bytes)`);
     const lastModified = parseInt(res.headers.get('Last-Modified') || '0', 10) || Date.now();
     return { content, lastModified };
   }

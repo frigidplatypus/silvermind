@@ -5,7 +5,7 @@ import { createTask } from '$lib/api/tasks';
 import { getActiveSpace } from '$lib/stores/space.svelte';
 import { loadGlobalView } from '$lib/stores/global.svelte';
 import { formatError } from '$lib/helpers/format-error';
-import { devLog } from '$lib/helpers/dev-log';
+import { logWarn } from '$lib/helpers/logger';
 import { rescheduleAll } from './notifications.svelte';
 
 let _tasks = $state<Task[]>([]);
@@ -40,7 +40,7 @@ export async function loadInbox(): Promise<Task[]> {
     ensurePolling();
   } catch (e) {
     _lastError = formatError(e, getActiveSpace()?.name);
-    devLog('[tasks] loadInbox failed:', e);
+    logWarn('[tasks] loadInbox failed:', e);
   } finally {
     _isLoading = false;
   }
@@ -59,7 +59,7 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
     return data;
   } catch (e) {
     _lastError = formatError(e, getActiveSpace()?.name);
-    devLog('[tasks] loadToday failed:', e);
+    logWarn('[tasks] loadToday failed:', e);
     return { overdue: [], due_today: [], deferred_today: [] };
   } finally {
     _isLoading = false;
@@ -75,7 +75,7 @@ export async function addTask(text: string): Promise<Task | null> {
     return task;
   } catch (e) {
     _lastError = formatError(e, getActiveSpace()?.name);
-    devLog('[tasks] addTask failed:', e);
+    logWarn('[tasks] addTask failed:', e);
     return null;
   }
 }

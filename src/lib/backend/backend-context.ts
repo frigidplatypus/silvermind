@@ -1,6 +1,7 @@
 import { createSbClient, type SbClient, type SbClientConfig } from './sb-client';
 import { createConfigManager, type ConfigManager } from './config-manager';
 import type { SpaceConfig } from './task-types';
+import { logInfo, logWarn, logError } from '$lib/helpers/logger';
 
 let _configManager: ConfigManager | null = null;
 let _sbClient: SbClient | null = null;
@@ -18,14 +19,18 @@ export async function initBackend(): Promise<SpaceConfig | null> {
   if (_initPromise) return _initPromise;
   _initPromise = (async () => {
     const cm = getConfigManager();
+    logInfo('Loading config...');
     await cm.load();
     const active = await cm.getActiveSpace();
     if (active) {
+      logInfo(`Active space: ${active.name} → ${active.url}`);
       _activeSpaceName = active.name;
       _sbClient = createSbClient({
         spaceURL: active.url,
         authToken: active.auth_token,
       });
+    } else {
+      logWarn('No active space configured');
     }
     return active;
   })();

@@ -2,23 +2,22 @@ import type { SbClient } from './sb-client';
 import type { Task, SpaceConfig } from './task-types';
 import { parseTasksFromPage } from './task-parser';
 import { toMarkdown } from './task-serializer';
+import { logInfo, logWarn, logError } from '$lib/helpers/logger';
 
 export async function getInbox(spaces: SpaceConfig[], activeSpace: SpaceConfig, sbClient: SbClient): Promise<Task[]> {
   const inboxPage = activeSpace.inbox_page || 'Inbox';
-  const pages = [inboxPage];
+  logInfo(`Loading inbox from "${activeSpace.name}" → ${inboxPage}`);
 
-  const allTasks: Task[] = [];
-  for (const page of pages) {
-    try {
-      const { content } = await sbClient.readPage(page);
-      const tasks = parseTasksFromPage(content, page);
-      allTasks.push(...tasks);
-    } catch {
-      // empty page or 404 — skip
-    }
+  try {
+    const { content } = await sbClient.readPage(inboxPage);
+    const tasks = parseTasksFromPage(content, inboxPage);
+    const active = tasks.filter(t => !t.done);
+    logInfo(`Inbox: ${active.length} active / ${tasks.length} total tasks on ${inboxPage}`);
+    return active;
+  } catch (e: any) {
+    logError(`Inbox load failed: ${e.message || e}`, { page: inboxPage, space: activeSpace.name });
+    return [];
   }
-
-  return allTasks.filter(t => !t.done);
 }
 
 export async function createTask(

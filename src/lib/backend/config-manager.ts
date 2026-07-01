@@ -1,5 +1,6 @@
 import * as yaml from 'js-yaml';
 import type { SilvermindConfig, SpaceConfig } from './task-types';
+import { logInfo, logWarn } from '$lib/helpers/logger';
 
 export interface ConfigStore {
   read(): Promise<string | null>;
