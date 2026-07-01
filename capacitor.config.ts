@@ -5,8 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Silvermind',
   webDir: 'dist',
   server: {
-    allowNavigation: ['*'],
+    url: 'http://127.0.0.1:7433',
     cleartext: true,
+    allowNavigation: ['*'],
   },
   ios: {
     scheme: 'Silvermind',
