@@ -7,7 +7,7 @@
   import Icon from '$lib/components/Icon.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
 
-  let { onTaskTap: externalOnTaskTap, onToggleDone }: { onTaskTap?: (t: Task) => void; onToggleDone?: (t: Task) => void } = $props();
+  let { onTaskTap: externalOnTaskTap, onToggleDone }: { onTaskTap?: (t: Task) => void; onToggleDone?: (t: Task) => void | boolean | Promise<void | boolean> } = $props();
 
   let selectedTask = $state<Task | null>(null);
   let tasks = $derived(getGlobalTasks());
@@ -26,7 +26,9 @@
   function handleDetailClose() { selectedTask = null; }
   function handleTaskChanged(_t: Task) { selectedTask = null; loadGlobalView(); }
 
-  function tid(t: Task) { return `${t.page}/${t.position}`; }
+  function tid(t: Task) {
+    return `${t._spaceUrl ?? t._spaceName ?? 'active'}/${t.page}/${t.position}`;
+  }
 </script>
 
 <div class="global-view">

@@ -13,7 +13,7 @@ export async function loadTaskNames(): Promise<void> {
     const names = new Set<string>();
     for (const t of tasks) {
       if (t.name) names.add(t.name);
-      const textName = t.text.replace(/\*\*/g, '').trim().slice(0, 60);
+      const textName = (t.text ?? '').replace(/\*\*/g, '').trim().slice(0, 60);
       if (textName) names.add(textName);
     }
     taskNames = Array.from(names).sort();

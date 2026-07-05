@@ -17,6 +17,7 @@
   import OnboardingModal from '$lib/components/OnboardingModal.svelte';
   import { getShowOnboarding } from '$lib/stores/onboarding.svelte';
   import Icon from '$lib/components/Icon.svelte';
+  import { logInfo, logDebug } from '$lib/helpers/logger';
   import InboxPage from './inbox/+page.svelte';
   import TodayPage from './today/+page.svelte';
   import GlobalPage from './global/+page.svelte';
@@ -82,6 +83,7 @@
   $effect(() => {
     function check() { setDesktopMode(window.innerWidth >= 800); }
     check();
+    logInfo(`[layout] initial isDesktop check: width=${window.innerWidth} desktop=${getIsDesktop()}`);
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   });
@@ -147,6 +149,7 @@
   });
 
   onMount(() => {
+    logInfo(`[layout] onMount — isDesktop=${getIsDesktop()} tab=${currentTab}`);
     // Show privacy consent after splash fades, before onboarding
     setTimeout(() => consentRef?.show(), 2000);
   });
@@ -171,7 +174,7 @@
   }
 
   function handleQueryToggle(task: Task) {
-    toggleTaskDone(task, () => {
+    return toggleTaskDone(task, () => {
       if (currentTab.startsWith('queries:')) {
         const parts = currentTab.split(':');
         runQuery(parts[1], parts[2] ? parseInt(parts[2]) : undefined);

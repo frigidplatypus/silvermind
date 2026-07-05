@@ -1,22 +1,34 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import LogoSvg from './LogoSvg.svelte';
-  import { getSpacesList, getActiveId, setActiveSpace, getSpacesLoading, loadSpaces } from '$lib/stores/space.svelte';
+  import {
+    getSpacesList,
+    getActiveId,
+    setActiveSpace,
+    getSpacesLoading,
+  } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
   import { loadTagNames } from '$lib/stores/tagnames.svelte';
-  import { getQueryPagesList, getQueryPagesLoading, getQueryPagesError, loadQueryPages } from '$lib/stores/queries.svelte';
+  import {
+    getQueryPagesList,
+    getQueryPagesLoading,
+    getQueryPagesError,
+    loadQueryPages,
+  } from '$lib/stores/queries.svelte';
   import { getShowToday } from '$lib/stores/landing.svelte';
-  import { isDesktopApp, setActiveSpaceDesktop } from '$lib/desktop-bridge';
+  import { logInfo } from '$lib/helpers/logger';
 
   let {
     activeView,
     onNavigate,
     width = 220,
+    onToggleCollapse,
   }: {
     activeView: string;
     onNavigate: (view: string) => void;
     width?: number;
+    onToggleCollapse?: () => void;
   } = $props();
 
   let spaceOpen = $state(false);
@@ -24,17 +36,26 @@
   const activeSpaceId = $derived(getActiveId());
 
   $effect(() => {
+    logInfo('[sidebar] mount: loading query pages');
     loadQueryPages();
   });
 
   // Reload query pages when space changes
   $effect(() => {
     if (activeSpaceId) {
+      logInfo(`[sidebar] space changed to "${activeSpaceId}": reloading query pages`);
       loadQueryPages();
     }
   });
 
   let refreshingQueries = $state(false);
+  let refreshingInbox = $state(false);
+
+  async function handleRefreshInbox() {
+    refreshingInbox = true;
+    await loadInbox();
+    refreshingInbox = false;
+  }
 
   async function handleRefreshQueries() {
     refreshingQueries = true;
@@ -58,25 +79,23 @@
 
   async function selectSpace(spaceId: string) {
     spaceOpen = false;
-    const space = getSpacesList().find((s) => s.id === spaceId);
-    if (!space) return;
-    if (isDesktopApp()) {
-      try {
-        await setActiveSpaceDesktop(space.name);
-        setActiveSpace(spaceId);
-        await loadSpaces();
-      } catch { /* handled by loadSpaces fallback */ }
-    } else {
-      setActiveSpace(spaceId);
-    }
+    await setActiveSpace(spaceId);
     loadInbox();
     loadTaskNames();
     loadTagNames();
   }
 </script>
 
-<nav class="sidebar" class:collapsed={width === 0} style="width: {width}px" role="navigation" aria-label="Main navigation">
-  <div class="sidebar-brand"><LogoSvg size="1.25rem" /> Silvermind</div>
+<nav
+  class="sidebar"
+  class:collapsed={width <= 0}
+  style="width: {width}px"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <div class="sidebar-brand">
+    <LogoSvg size="1.25rem" /> <span>Silvermind</span>
+  </div>
 
   <div class="sidebar-section-label">Space</div>
   <div class="space-selector">
@@ -87,7 +106,9 @@
       aria-expanded={spaceOpen}
     >
       <span class="space-trigger-label">{activeSpace?.name ?? 'No space'}</span>
-      <span class="space-chevron" aria-hidden="true"><Icon name={spaceOpen ? 'chevron-up' : 'chevron-down'} size="0.75rem" /></span>
+      <span class="space-chevron" aria-hidden="true"
+        ><Icon name={spaceOpen ? 'chevron-up' : 'chevron-down'} size="0.75rem" /></span
+      >
     </button>
     {#if spaceOpen}
       <div class="space-dropdown" role="listbox" aria-label="Select space">
@@ -102,7 +123,9 @@
               aria-selected={space.id === getActiveId()}
               onclick={() => selectSpace(space.id)}
             >
-              <span class="space-check">{#if space.id === getActiveId()}<Icon name="check" size="0.875rem" />{/if}</span>
+              <span class="space-check"
+                >{#if space.id === getActiveId()}<Icon name="check" size="0.875rem" />{/if}</span
+              >
               <span>{space.name}</span>
             </button>
           {/each}
@@ -111,7 +134,20 @@
     {/if}
   </div>
 
-  <div class="sidebar-section-label" style="margin-top: 0.75rem">Views</div>
+  <div
+    class="sidebar-section-label"
+    style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem"
+  >
+    <span>Views</span>
+    <button
+      class="refresh-btn"
+      onclick={handleRefreshInbox}
+      aria-label="Refresh task list"
+      disabled={refreshingInbox}
+    >
+      <Icon name="rotate-cw" size="0.75rem" />
+    </button>
+  </div>
   {#each items as item}
     <button
       class="sidebar-item"
@@ -124,13 +160,21 @@
     </button>
   {/each}
 
-  <div class="sidebar-section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
+  <div
+    class="sidebar-section-label"
+    style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem"
+  >
     <span><Icon name="search" size="0.75rem" /> Queries</span>
     <div class="sidebar-actions">
       <button class="add-btn" onclick={() => onNavigate('builder')} aria-label="New query">
         <Icon name="plus" size="0.75rem" />
       </button>
-      <button class="refresh-btn" onclick={handleRefreshQueries} aria-label="Refresh query pages" disabled={refreshingQueries}>
+      <button
+        class="refresh-btn"
+        onclick={handleRefreshQueries}
+        aria-label="Refresh query pages"
+        disabled={refreshingQueries}
+      >
         <Icon name="rotate-cw" size="0.75rem" />
       </button>
     </div>
@@ -153,7 +197,9 @@
               {qp.page.split('/').pop()}
             </span>
           {:else}
-            <span class="query-page-name">{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span>
+            <span class="query-page-name"
+              >{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span
+            >
           {/if}
           {#if qp.errors && qp.errors.length > 0}
             <Icon name="alert-triangle" size="0.75rem" />
@@ -172,7 +218,9 @@
                 {qp.page.split('/').pop()}
               </span>
             {:else}
-              <span class="query-page-name">{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span>
+              <span class="query-page-name"
+                >{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span
+              >
             {/if}
             {#if qp.errors && qp.errors.length > 0}
               <Icon name="alert-triangle" size="0.75rem" />
@@ -193,6 +241,17 @@
     {/each}
   {/if}
 
+  {#if onToggleCollapse}
+    <button
+      class="sidebar-item collapse-item"
+      onclick={onToggleCollapse}
+      aria-label="Collapse sidebar"
+    >
+      <Icon name="chevron-left" size="1rem" />
+      <span>Collapse</span>
+    </button>
+  {/if}
+
   <div class="sidebar-spacer"></div>
 
   <button
@@ -205,6 +264,7 @@
     <span>Settings</span>
   </button>
 </nav>
+
 <style>
   .sidebar {
     background: var(--color-bg-secondary);
@@ -375,7 +435,8 @@
     display: flex;
     gap: 0.125rem;
   }
-  .add-btn, .refresh-btn {
+  .add-btn,
+  .refresh-btn {
     padding: 0.125rem;
     border-radius: var(--radius-sm);
     color: var(--color-text-tertiary);
@@ -383,7 +444,14 @@
     align-items: center;
     justify-content: center;
   }
-  .add-btn:hover, .refresh-btn:hover { color: var(--color-accent); }
-  .refresh-btn:disabled { opacity: 0.4; }
-  .sidebar-spacer { flex: 1; }
+  .add-btn:hover,
+  .refresh-btn:hover {
+    color: var(--color-accent);
+  }
+  .refresh-btn:disabled {
+    opacity: 0.4;
+  }
+  .sidebar-spacer {
+    flex: 1;
+  }
 </style>

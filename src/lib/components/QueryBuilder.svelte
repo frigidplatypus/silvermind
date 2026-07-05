@@ -243,6 +243,7 @@
 
   let testing = $state(false);
   let testResult = $state<{ count: number; preview: string[] } | null>(null);
+  let activePresetLabel = $state<string | null>(null);
 
   const availableStatuses = [
     { value: 'done', label: 'Done' },
@@ -404,7 +405,7 @@
       const result = await testQuery(sliqPreview);
       testResult = {
         count: result.tasks.length,
-        preview: result.tasks.slice(0, 5).map(t => t.text.replace(/\s*\[.*?\]/g, '').trim()),
+        preview: result.tasks.slice(0, 5).map(t => (t.text ?? '').replace(/\s*\[.*?\]/g, '').trim()),
       };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to test query';

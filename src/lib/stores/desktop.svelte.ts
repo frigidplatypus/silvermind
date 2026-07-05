@@ -1,6 +1,6 @@
 let selectedTaskId = $state<string | null>(null);
 let splitRatio = $state(0.66);
-let isDesktop = $state(false);
+let isDesktop = $state(true);
 
 export function getSelectedTaskId(): string | null { return selectedTaskId; }
 export function getSplitRatio(): number { return splitRatio; }

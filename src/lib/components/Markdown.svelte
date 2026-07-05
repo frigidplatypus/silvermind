@@ -2,7 +2,21 @@
   import { marked, Renderer } from 'marked';
   import DOMPurify from 'dompurify';
 
-  let { text, inline = false }: { text: string; inline?: boolean } = $props();
+  let {
+    text,
+    inline = false,
+    spaceURL = '',
+  }: { text: string; inline?: boolean; spaceURL?: string } = $props();
+
+  const WIKI_LINK_RE = /\[\[([^\]]+)\]\]/g;
+
+  function preprocessWikiLinks(t: string): string {
+    if (!spaceURL) return t;
+    return t.replace(WIKI_LINK_RE, (_, name: string) => {
+      const encoded = encodeURIComponent(name);
+      return `<a href="${spaceURL}/${encoded}">${name}</a>`;
+    });
+  }
 
   const renderer = new Renderer();
   renderer.link = ({ href, title, text: linkText }) => {
@@ -14,9 +28,15 @@
     return `<a href="${href}" target="_blank" rel="noopener noreferrer"${titleAttr}>${linkText}</a>`;
   };
 
-  const html = $derived(DOMPurify.sanitize(
-    (inline ? marked.parseInline(text, { renderer }) : marked.parse(text, { renderer })) as string
-  ));
+  const processed = $derived(preprocessWikiLinks(text));
+
+  const html = $derived(
+    DOMPurify.sanitize(
+      (inline
+        ? marked.parseInline(processed, { renderer })
+        : marked.parse(processed, { renderer })) as string,
+    ),
+  );
 </script>
 
 {#if inline}

@@ -17,7 +17,7 @@
     isLoading?: boolean;
     error?: string | null;
     onTaskTap?: (task: Task) => void;
-    onToggleDone?: (task: Task) => void;
+    onToggleDone?: (task: Task) => void | boolean | Promise<void | boolean>;
     onRefresh?: () => Promise<void>;
     emptyMessage?: string;
     showSpace?: boolean;
@@ -53,7 +53,9 @@
     pullDistance = 0;
   }
 
-  function tid(t: Task) { return `${t.page}/${t.position}`; }
+  function tid(t: Task) {
+    return `${t._spaceUrl ?? t._spaceName ?? 'active'}/${t.page}/${t.position}`;
+  }
 </script>
 
 <div

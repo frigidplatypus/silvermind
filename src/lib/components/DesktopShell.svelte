@@ -13,7 +13,16 @@
   import Icon from './Icon.svelte';
   import { getSelectedTaskId, setSelectedTaskId } from '$lib/stores/desktop.svelte';
   import { getTasks, loadInbox, loadToday, updateTaskInList } from '$lib/stores/tasks.svelte';
-  import { getCurrentQueryTasks, getCurrentQueryTitle, getQueryLoading, runQuery, clearQueryResults, getErrorSLIQ, getQueryError, getQueryPagesList } from '$lib/stores/queries.svelte';
+  import {
+    getCurrentQueryTasks,
+    getCurrentQueryTitle,
+    getQueryLoading,
+    runQuery,
+    clearQueryResults,
+    getErrorSLIQ,
+    getQueryError,
+    getQueryPagesList,
+  } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
   import { getQueryBlocks } from '$lib/api/queries';
   import type { Task } from '$lib/types/task';
@@ -24,7 +33,15 @@
   import PrivacyConsent from './PrivacyConsent.svelte';
   import { showError, showSuccess } from '$lib/stores/toast.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
-  import { getResults, getQuery, getIsActive, getIsSearching, activateSearch, deactivateSearch } from '$lib/stores/search.svelte';
+  import { logInfo } from '$lib/helpers/logger';
+  import {
+    getResults,
+    getQuery,
+    getIsActive,
+    getIsSearching,
+    activateSearch,
+    deactivateSearch,
+  } from '$lib/stores/search.svelte';
   import { setBuilderEdit } from '$lib/stores/builder-edit.svelte';
   import GlobalPage from '../../routes/global/+page.svelte';
   import BuilderPage from '../../routes/builder/+page.svelte';
@@ -44,9 +61,23 @@
   let consentRef: { show(): void } | undefined = $state();
 
   let sidebarWidth = $state(loadSidebarWidth());
+  let sidebarCollapsed = $state(sidebarWidth === 0);
+  let lastSidebarWidth = loadSidebarWidth() || 220;
   let sidebarDragging = $state(false);
   let sidebarDragStartX = 0;
   let sidebarDragStartWidth = 0;
+
+  function toggleSidebar() {
+    if (sidebarCollapsed) {
+      sidebarWidth = lastSidebarWidth || 220;
+      sidebarCollapsed = false;
+      saveSidebarWidth(sidebarWidth);
+    } else {
+      lastSidebarWidth = sidebarWidth > 0 ? sidebarWidth : lastSidebarWidth;
+      sidebarWidth = 0;
+      sidebarCollapsed = true;
+    }
+  }
 
   function loadSidebarWidth(): number {
     if (typeof localStorage !== 'undefined') {
@@ -67,6 +98,10 @@
 
   function maxSidebarWidth(): number {
     return Math.floor(window.innerWidth * 0.4);
+  }
+
+  function taskId(task: Task): string {
+    return `${task._spaceUrl ?? task._spaceName ?? 'active'}/${task.page}/${task.position}`;
   }
 
   function onSidebarDown(e: PointerEvent) {
@@ -115,11 +150,11 @@
   });
 
   function handleTaskTap(task: any) {
-    setSelectedTaskId(`${task.page}/${task.position}`);
+    setSelectedTaskId(taskId(task));
   }
 
   function handleToggleDone(task: Task) {
-    toggleTaskDone(task, () => {
+    return toggleTaskDone(task, () => {
       loadInbox();
       if (activeView === 'today') loadToday();
       if (isQueryView) handleQueryTaskChanged();
@@ -132,7 +167,7 @@
     loadInbox();
   }
 
-  function handleTaskChanged(updated?: Task) {
+  function handleTaskChanged(updated: Task | undefined) {
     setSelectedTaskId(null);
     if (updated) updateTaskInList(updated);
     // Still refresh in background to catch up with any indexing delay
@@ -159,7 +194,7 @@
   }
 
   function handleQueryTaskTap(task: any) {
-    setSelectedTaskId(`${task.page}/${task.position}`);
+    setSelectedTaskId(taskId(task));
   }
 
   async function handleEditQuery() {
@@ -172,16 +207,18 @@
     if (blockNumber > 0) {
       try {
         const blocks = await getQueryBlocks(page);
-        const block = blocks.find(b => b.number === blockNumber);
+        const block = blocks.find((b) => b.number === blockNumber);
         sliq = block?.sliq;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
     if (!sliq) {
       sliq = getErrorSLIQ() ?? undefined;
     }
     if (!sliq) {
-      const qp = getQueryPagesList().find(p => p.page === page);
-      const block = qp?.blocks.find(b => b.number === (blockNumber || 1));
+      const qp = getQueryPagesList().find((p) => p.page === page);
+      const block = qp?.blocks.find((b) => b.number === (blockNumber || 1));
       sliq = block?.sliq;
     }
 
@@ -193,7 +230,7 @@
     editing = true;
   }
 
-  function handleEditSaved(updated?: Task) {
+  function handleEditSaved(updated: Task | undefined) {
     editing = false;
     setSelectedTaskId(null);
     if (isQueryView) {
@@ -214,23 +251,38 @@
     if (!selectedId) return null;
     // When in a query view, prefer the query results (fresher data)
     if (isQueryView) {
-      const found = queryTasksList.find((t: any) => `${t.page}/${t.position}` === selectedId);
+      const found = queryTasksList.find((t: any) => taskId(t) === selectedId);
       if (found) return found;
     }
-    return allTasks.find((t: any) => `${t.page}/${t.position}` === selectedId) ?? null;
+    if (getIsActive()) {
+      const found = getResults().find((t: any) => taskId(t) === selectedId);
+      if (found) return found;
+    }
+    if (activeView === 'global') {
+      const found = getGlobalTasks().find((t: any) => taskId(t) === selectedId);
+      if (found) return found;
+    }
+    return allTasks.find((t: any) => taskId(t) === selectedId) ?? null;
   });
   const queryLoading = $derived(getQueryLoading());
   const queryError = $derived(getQueryError());
 
   const viewTitle = $derived(
-    getIsActive() ? 'Search'
-    : activeView === 'inbox' ? 'Task List'
-    : activeView === 'today' ? 'Today'
-    : activeView === 'global' ? 'All Tasks'
-    : activeView === 'builder' ? 'New Query'
-    : activeView === 'settings' ? 'Settings'
-    : isQueryView ? (queryTitle ?? 'Query')
-    : ''
+    getIsActive()
+      ? 'Search'
+      : activeView === 'inbox'
+        ? 'Task List'
+        : activeView === 'today'
+          ? 'Today'
+          : activeView === 'global'
+            ? 'All Tasks'
+            : activeView === 'builder'
+              ? 'New Query'
+              : activeView === 'settings'
+                ? 'Settings'
+                : isQueryView
+                  ? (queryTitle ?? 'Query')
+                  : '',
   );
 
   function isEditing(): boolean {
@@ -252,15 +304,16 @@
   }
 
   function handleSearchResultTap(t: Task) {
-    setSelectedTaskId(`${t.page}/${t.position}`);
+    setSelectedTaskId(taskId(t));
   }
 
   function scrollToTask(task: Task): void {
-    const id = `task-${task.page}/${task.position}`;
+    const id = `task-${taskId(task)}`;
     document.getElementById(id)?.scrollIntoView({ block: 'nearest' });
   }
 
   onMount(() => {
+    logInfo(`[desktop-shell] onMount — activeView=${activeView} width=${sidebarWidth}`);
     function handleKeydown(e: KeyboardEvent) {
       if (isEditing()) return;
 
@@ -282,10 +335,10 @@
           const tasks = getCurrentTasks();
           if (tasks.length === 0) return;
           const curId = getSelectedTaskId();
-          const curIdx = curId ? tasks.findIndex((t) => `${t.page}/${t.position}` === curId) : -1;
+          const curIdx = curId ? tasks.findIndex((t) => taskId(t) === curId) : -1;
           const nextIdx = Math.min(curIdx + 1, tasks.length - 1);
           if (nextIdx >= 0) {
-            setSelectedTaskId(`${tasks[nextIdx].page}/${tasks[nextIdx].position}`);
+            setSelectedTaskId(taskId(tasks[nextIdx]));
             scrollToTask(tasks[nextIdx]);
           }
           break;
@@ -296,10 +349,10 @@
           const tasks = getCurrentTasks();
           if (tasks.length === 0) return;
           const curId = getSelectedTaskId();
-          const curIdx = curId ? tasks.findIndex((t) => `${t.page}/${t.position}` === curId) : 0;
+          const curIdx = curId ? tasks.findIndex((t) => taskId(t) === curId) : 0;
           const prevIdx = Math.max(curIdx - 1, 0);
           if (prevIdx >= 0) {
-            setSelectedTaskId(`${tasks[prevIdx].page}/${tasks[prevIdx].position}`);
+            setSelectedTaskId(taskId(tasks[prevIdx]));
             scrollToTask(tasks[prevIdx]);
           }
           break;
@@ -312,31 +365,25 @@
           break;
         }
         case 'd': {
-          const id = getSelectedTaskId();
-          if (!id) return;
+          if (!selectedTask) return;
           e.preventDefault();
-          const lastSlash = id.lastIndexOf('/');
-          const page = id.slice(0, lastSlash);
-          const pos = parseInt(id.slice(lastSlash + 1));
-          if (isNaN(pos)) return;
-          markTaskDone(page, pos).then(() => {
-            loadInbox();
-            if (isQueryView) handleQueryTaskChanged();
-          }).catch((e2) => showError(`Done failed: ${e2.message}`));
+          markTaskDone(selectedTask)
+            .then(() => {
+              loadInbox();
+              if (isQueryView) handleQueryTaskChanged();
+            })
+            .catch((e2) => showError(`Done failed: ${e2.message}`));
           break;
         }
         case 'u': {
-          const id = getSelectedTaskId();
-          if (!id) return;
+          if (!selectedTask) return;
           e.preventDefault();
-          const lastSlash = id.lastIndexOf('/');
-          const page = id.slice(0, lastSlash);
-          const pos = parseInt(id.slice(lastSlash + 1));
-          if (isNaN(pos)) return;
-          undoTask(page, pos).then(() => {
-            loadInbox();
-            if (isQueryView) handleQueryTaskChanged();
-          }).catch((e2) => showError(`Undo failed: ${e2.message}`));
+          undoTask(selectedTask)
+            .then(() => {
+              loadInbox();
+              if (isQueryView) handleQueryTaskChanged();
+            })
+            .catch((e2) => showError(`Undo failed: ${e2.message}`));
           break;
         }
         case 'Escape': {
@@ -359,7 +406,7 @@
 </script>
 
 <div class="desktop-shell" class:dragging-sidebar={sidebarDragging}>
-  <Sidebar {activeView} {onNavigate} width={sidebarWidth} />
+  <Sidebar {activeView} {onNavigate} width={sidebarWidth} onToggleCollapse={toggleSidebar} />
   <div
     class="sidebar-divider"
     role="separator"
@@ -376,6 +423,11 @@
   <div class="desktop-main">
     <ServiceErrorBanner />
     <div class="desktop-top-bar">
+      {#if sidebarCollapsed}
+        <button class="hamburger-btn" onclick={toggleSidebar} aria-label="Open sidebar">
+          <Icon name="menu" size="1.25rem" />
+        </button>
+      {/if}
       <h2 class="top-bar-title">{viewTitle}</h2>
     </div>
     <SearchBar />
@@ -386,7 +438,13 @@
         {:else if getQuery() && getIsSearching()}
           <div class="search-status">Searching&hellip;</div>
         {:else if getResults().length > 0}
-          <TaskList tasks={getResults()} onTaskTap={handleSearchResultTap} onToggleDone={handleToggleDone} emptyMessage="No results" showSpace />
+          <TaskList
+            tasks={getResults()}
+            onTaskTap={handleSearchResultTap}
+            onToggleDone={handleToggleDone}
+            emptyMessage="No results"
+            showSpace
+          />
         {:else}
           <div class="search-empty">Type to search tasks</div>
         {/if}
@@ -412,12 +470,24 @@
               </button>
             </div>
           {:else}
-            <TaskList tasks={queryTasks} onTaskTap={handleQueryTaskTap} onToggleDone={handleToggleDone} emptyMessage="No tasks found" showSpace />
+            <TaskList
+              tasks={queryTasks}
+              onTaskTap={handleQueryTaskTap}
+              onToggleDone={handleToggleDone}
+              emptyMessage="No tasks found"
+              showSpace
+            />
           {/if}
         {/snippet}
         {#snippet right()}
           {#if selectedTask}
-            <TaskDetail task={selectedTask} variant="panel" onclose={handleQueryDetailClose} ontaskchanged={handleQueryTaskChanged} onedit={handleEdit} />
+            <TaskDetail
+              task={selectedTask}
+              variant="panel"
+              onclose={handleQueryDetailClose}
+              ontaskchanged={handleQueryTaskChanged}
+              onedit={handleEdit}
+            />
           {/if}
         {/snippet}
       </SplitPane>
@@ -431,14 +501,20 @@
           {:else if activeView === 'global'}
             <GlobalPage onTaskTap={handleTaskTap} onToggleDone={handleToggleDone} />
           {:else if activeView === 'builder'}
-            <BuilderPage onNavigate={onNavigate} />
+            <BuilderPage {onNavigate} />
           {:else}
             <SettingsPage />
           {/if}
         {/snippet}
         {#snippet right()}
           {#if selectedTask}
-            <TaskDetail task={selectedTask} variant="panel" onclose={handleDetailClose} ontaskchanged={handleTaskChanged} onedit={handleEdit} />
+            <TaskDetail
+              task={selectedTask}
+              variant="panel"
+              onclose={handleDetailClose}
+              ontaskchanged={handleTaskChanged}
+              onedit={handleEdit}
+            />
           {/if}
         {/snippet}
       </SplitPane>
@@ -456,7 +532,12 @@
 <PrivacyConsent bind:this={consentRef} />
 
 {#if editing && selectedTask}
-  <TaskEditor task={selectedTask} mode="modal" onclose={() => (editing = false)} onsaved={handleEditSaved} />
+  <TaskEditor
+    task={selectedTask}
+    mode="modal"
+    onclose={() => (editing = false)}
+    onsaved={handleEditSaved}
+  />
 {/if}
 
 <style>
@@ -496,6 +577,22 @@
   .top-bar-title {
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+  }
+  .hamburger-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+  }
+  .hamburger-btn:hover {
+    background: var(--color-bg-secondary);
     color: var(--color-text);
   }
   .query-header {
@@ -574,7 +671,8 @@
     flex: 1;
     overflow-y: auto;
   }
-  .search-empty, .search-status {
+  .search-empty,
+  .search-status {
     display: flex;
     align-items: center;
     justify-content: center;

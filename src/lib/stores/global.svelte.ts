@@ -1,11 +1,18 @@
 import { getTasksForSpace } from '$lib/api/tasks';
-import { getSpaces } from '$lib/api/spaces';
+import { getConfigManager } from '$lib/backend/backend-context';
 import { formatError } from '$lib/helpers/format-error';
 import type { Task } from '$lib/types/task';
 import { devLog } from '$lib/helpers/dev-log';
 import { rescheduleAll } from './notifications.svelte';
 
-interface RawSpace { name: string; url: string; active: boolean; }
+interface RawSpace {
+  name: string;
+  url: string;
+  active: boolean;
+  default_page: string;
+  inbox_page: string;
+  auth_token?: string;
+}
 
 export interface TaskWithSpace extends Task {
   _spaceName: string;
@@ -25,13 +32,28 @@ export async function loadGlobalView(): Promise<void> {
   isLoading = true;
   error = null;
   try {
-    const allSpaces: RawSpace[] = await getSpaces() as any;
-    spaces = Array.isArray(allSpaces) ? allSpaces : [];
+    const cm = getConfigManager();
+    await cm.load();
+    const active = await cm.getActiveSpace();
+    const allSpaces = await cm.getSpaces();
+    spaces = allSpaces.map((s) => ({
+      name: s.name,
+      url: s.url,
+      active: active?.name === s.name,
+      default_page: s.default_page,
+      inbox_page: s.inbox_page,
+      auth_token: s.auth_token,
+    }));
 
     const results = await Promise.allSettled(
       spaces.map(async (s) => {
-        const spaceTasks = await getTasksForSpace(s.url);
-        return spaceTasks.map((t: Task) => ({ ...t, _spaceName: s.name }));
+        const spaceTasks = await getTasksForSpace(s);
+        return spaceTasks.map((t: Task) => ({
+          ...t,
+          _spaceName: s.name,
+          _spaceUrl: s.url,
+          _spaceAuthToken: s.auth_token,
+        }));
       }),
     );
 

@@ -161,12 +161,12 @@
   async function handleToggleDone() {
     try {
       if (task.done) {
-        await undoTask(task.page, task.position);
+        await undoTask(task);
       } else {
-        await markTaskDone(task.page, task.position);
+        await markTaskDone(task);
         cancelForTask(task);
         showUndo(`${(task.text || '').slice(0, 40)}${(task.text || '').length > 40 ? '…' : ''} marked done`, async () => {
-          try { await undoTask(task.page, task.position); } catch {}
+          try { await undoTask(task); } catch {}
           onsaved?.(task);
         });
       }
@@ -181,7 +181,7 @@
 
   async function handleDelete() {
     try {
-      await deleteTask(task.page, task.position);
+      await deleteTask(task);
       cancelForTask(task);
       notifySuccess();
       onsaved?.(task);
