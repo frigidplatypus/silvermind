@@ -10,10 +10,20 @@
     <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%236c5ce7'/><text x='50' y='65' text-anchor='middle' font-size='50' fill='white'>S</text></svg>" />
     <title>Silvermind</title>
-    <script type="module" crossorigin src="/assets/index-C46ZRd6x.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BeIOeAmw.css">
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        var b = document.getElementById('inline-beacon');
+        if (b) { b.textContent = 'ERR: ' + (err?.message || msg); b.style.color = '#f44'; b.style.maxWidth = '98vw'; b.style.wordBreak = 'break-all'; }
+        return false;
+      };
+      window.addEventListener('error', function(e) { if (e.target && e.target.tagName === 'SCRIPT') { var b = document.getElementById('inline-beacon'); if (b) { b.textContent = 'LOAD: ' + (e.target.src || 'unknown'); b.style.color = '#f44'; } } }, true);
+      window.addEventListener('unhandledrejection', function(e) { var b = document.getElementById('inline-beacon'); if (b) { b.textContent = 'REJ: ' + (e.reason?.message || e.reason); b.style.color = '#f44'; } });
+    </script>
+    <script type="module" crossorigin src="/assets/index-Bat9uWeP.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DEd0zD1a.css">
   </head>
   <body>
     <div id="app"></div>
+    <div id="inline-beacon" style="position:fixed;top:4px;left:4px;padding:4px 8px;background:#1a1a2e;color:#0f0;font:12px monospace;z-index:9999;border-radius:4px">JS OK</div>
   </body>
 </html>
