@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseTaskLine, parseTasksFromPage, extractTags, stripAttributes } from '../task-parser';
+import {
+  parseTaskLine,
+  parseTasksFromPage,
+  extractTags,
+  stripAttributes,
+  findTaskByContent,
+} from '../task-parser';
 
 describe('parseTaskLine', () => {
   it('parses a basic active task', () => {
@@ -163,5 +169,53 @@ describe('parseTasksFromPage', () => {
     expect(tasks[0].position).toBe(1);
     expect(tasks[1].position).toBe(2);
     expect(tasks[2].position).toBe(3);
+  });
+});
+
+describe('findTaskByContent', () => {
+  it('finds runtime tasks by source offset before ordinal position', () => {
+    const prefix = `${'x'.repeat(139)}\n`;
+    const content = `${prefix}- [ ] Check Task List\n- [ ] Other task\n`;
+    const found = findTaskByContent(content, {
+      page: 'Journal/2026-05-08',
+      position: 140,
+      text: 'Check Task List',
+      status: '',
+      done: false,
+      due: '',
+      due_parsed: null,
+      deferred: '',
+      deferred_parsed: null,
+      name: '',
+      priority: '',
+      tags: [],
+      blocked: false,
+    });
+
+    expect(found).not.toBeNull();
+    expect(found!.lineIndex).toBe(1);
+    expect(found!.task.text).toBe('Check Task List');
+  });
+
+  it('falls back to ordinal position for parsed page tasks', () => {
+    const content = '- [ ] Duplicate task\n- [ ] Duplicate task\n';
+    const found = findTaskByContent(content, {
+      page: 'Tasks',
+      position: 2,
+      text: 'Duplicate task',
+      status: '',
+      done: false,
+      due: '',
+      due_parsed: null,
+      deferred: '',
+      deferred_parsed: null,
+      name: '',
+      priority: '',
+      tags: [],
+      blocked: false,
+    });
+
+    expect(found).not.toBeNull();
+    expect(found!.lineIndex).toBe(1);
   });
 });

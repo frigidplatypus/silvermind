@@ -63,6 +63,7 @@ export async function setActiveSpace(name: string): Promise<SpaceConfig | null> 
   const active = spaces.find(s => s.name === name) || null;
   if (active) {
     _activeSpaceName = active.name;
+    _initPromise = Promise.resolve(active);
     _sbClient = createSbClient({
       spaceURL: active.url,
       authToken: active.auth_token,

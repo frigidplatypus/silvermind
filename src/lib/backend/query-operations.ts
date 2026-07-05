@@ -1,68 +1,144 @@
 import type { SbClient } from './sb-client';
-import type { Task, QueryBlock, QueryBlockPage } from './task-types';
-import { translateSLIQ, computeBlocked, applyHardExclusions, sortTasks, normalizePositions } from './query-engine';
-import { parseTasksFromPage } from './task-parser';
+import type { Task, QueryBlock, QueryBlockPage, TaskFilter } from './task-types';
+import {
+  translateSLIQ,
+  computeBlocked,
+  applyHardExclusions,
+  sortTasks,
+  normalizePositions,
+  filterByTags,
+  filterExcludeTags,
+} from './query-engine';
+import { parseTasksFromPage, mapRuntimeTask } from './task-parser';
+import { logInfo, logWarn, logError } from '$lib/helpers/logger';
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(id);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(id);
+        reject(error);
+      },
+    );
+  });
+}
 
 export function extractQueryBlocks(content: string): QueryBlock[] {
-  const blocks: QueryBlock[] = [];
-  const fenceRe = /```sliq\s*\n([\s\S]*?)```/g;
-  let match: RegExpExecArray | null;
-  let blockNum = 0;
+  const queryBlockRe = /\$\{query\[\[([\s\S]*?)\]\]\}/g;
+  const fencedSLIQRe = /```sliq\n?([\s\S]*?)\n?```/g;
+  const lines = content.split('\n');
 
-  while ((match = fenceRe.exec(content)) !== null) {
-    blockNum++;
-    const sliq = match[1].trim();
-    const lines = sliq.split('\n');
-    let title = '';
-    const queryLines: string[] = [];
+  interface Match {
+    raw: string;
+    sliq: string;
+    offset: number;
+  }
+  const matches: Match[] = [];
 
-    for (const line of lines) {
-      if (line.startsWith('#') && !title) {
-        title = line.replace(/^#+\s*/, '').trim();
-      } else {
-        queryLines.push(line);
+  let m: RegExpExecArray | null;
+  queryBlockRe.lastIndex = 0;
+  while ((m = queryBlockRe.exec(content)) !== null) {
+    matches.push({ raw: m[0], sliq: m[1].trim(), offset: m.index });
+  }
+  fencedSLIQRe.lastIndex = 0;
+  while ((m = fencedSLIQRe.exec(content)) !== null) {
+    matches.push({ raw: m[0], sliq: m[1].trim(), offset: m.index });
+  }
+
+  matches.sort((a, b) => a.offset - b.offset);
+
+  function findMatchLine(raw: string): number {
+    const idx = content.indexOf(raw);
+    if (idx < 0) return 0;
+    let count = 0;
+    for (let i = 0; i < lines.length; i++) {
+      count += lines[i].length + 1;
+      if (count > idx) return i;
+    }
+    return 0;
+  }
+
+  function findNearestHeading(matchLine: number): string {
+    for (let i = matchLine - 1; i >= 0; i--) {
+      const l = lines[i].trim();
+      if (l.startsWith('#')) {
+        return l.replace(/^#+\s*/, '').trim();
       }
     }
+    return '';
+  }
 
-    blocks.push({
-      page: '',
-      number: blockNum,
-      title: title || `Query ${blockNum}`,
-      sliq: queryLines.join('\n').trim(),
-    });
+  const blocks: QueryBlock[] = [];
+  let blockNum = 0;
+  for (const m of matches) {
+    if (!m.sliq) continue;
+    blockNum++;
+    const title = findNearestHeading(findMatchLine(m.raw)) || `Query ${blockNum}`;
+    blocks.push({ page: '', number: blockNum, title, sliq: m.sliq, raw: m.raw, heading: title });
   }
 
   return blocks;
 }
 
-export function replaceQueryBlock(content: string, blockNumber: number, newTitle: string, newSLIQ: string): string {
-  let idx = 0;
-  return content.replace(/```sliq\s*\n[\s\S]*?```/g, (match) => {
-    idx++;
-    if (idx === blockNumber) {
-      const titleLine = newTitle ? `# ${newTitle}\n` : '';
-      return '```sliq\n' + titleLine + newSLIQ + '\n```';
-    }
-    return match;
-  });
+export function replaceQueryBlock(
+  content: string,
+  blockNumber: number,
+  newTitle: string,
+  newSLIQ: string,
+): string {
+  const blocks = extractQueryBlocks(content);
+  if (blockNumber < 1 || blockNumber > blocks.length) return content;
+
+  const target = blocks[blockNumber - 1];
+  const newBlock = newTitle
+    ? `\n## ${newTitle}\n\${query[[\n${newSLIQ}\n]]}\n`
+    : `\${query[[\n${newSLIQ}\n]]}\n`;
+
+  if (target.raw) {
+    return content.replace(target.raw, newBlock);
+  }
+
+  return content + '\n' + newBlock;
 }
 
 export async function getQueryPages(sbClient: SbClient): Promise<QueryBlockPage[]> {
-  const pages = await sbClient.findPagesByTag('query');
+  logInfo('[queries] getQueryPages — calling findPagesByTag(silvermind/queries)');
+  let pages: string[];
+  try {
+    pages = await withTimeout(
+      sbClient.findPagesByTag('silvermind/queries'),
+      6000,
+      'Runtime query page lookup',
+    );
+  } catch (e) {
+    logError('[queries] findPagesByTag failed:', e);
+    return [];
+  }
+  logInfo(`[queries] getQueryPages — found ${pages.length} pages: ${JSON.stringify(pages)}`);
   const result: QueryBlockPage[] = [];
 
   for (const page of pages) {
     try {
       const { content } = await sbClient.readPage(page);
-      const blocks = extractQueryBlocks(content).map(b => ({ ...b, page }));
+      logInfo(`[queries] getQueryPages — read page "${page}": ${content.length} bytes`);
+      const blocks = extractQueryBlocks(content).map((b) => ({ ...b, page }));
+      logInfo(`[queries] getQueryPages — page "${page}" has ${blocks.length} query blocks`);
       if (blocks.length > 0) {
         result.push({ page, blocks });
+      } else {
+        logWarn(`[queries] getQueryPages — page "${page}" has NO query blocks`);
       }
-    } catch {
-      // skip inaccessible pages
+    } catch (e) {
+      logWarn(`[queries] getQueryPages — failed to read page "${page}":`, e);
     }
   }
 
+  logInfo(`[queries] getQueryPages — returning ${result.length} pages with blocks`);
   return result;
 }
 
@@ -73,46 +149,91 @@ export async function executeQueryBlock(
 ): Promise<Task[]> {
   const { content } = await sbClient.readPage(page);
   const blocks = extractQueryBlocks(content);
-  const block = blocks.find(b => b.number === blockNumber);
+  const block = blocks.find((b) => b.number === blockNumber);
   if (!block) throw new Error(`Query block ${blockNumber} not found on page ${page}`);
 
   return executeQuery(block.sliq, sbClient);
 }
 
+function filterToQueryParams(filter: TaskFilter): Record<string, string> {
+  const params: Record<string, string> = {};
+
+  if (filter.status && filter.status.length === 1) {
+    params['where[state]'] = filter.status[0];
+  }
+
+  if (filter.page) {
+    params['where[page]'] = filter.page;
+  }
+
+  if (filter.name) {
+    params['where[name]'] = filter.name;
+  }
+
+  if (filter.priority) {
+    params['where[priority]'] = filter.priority;
+  }
+
+  if (filter.textSearch) {
+    params['where[name][contains]'] = filter.textSearch;
+  }
+
+  if (filter.dueAfter) {
+    params['where[due][gte]'] = filter.dueAfter;
+  }
+  if (filter.dueBefore) {
+    params['where[due][lte]'] = filter.dueBefore;
+  }
+  if (filter.deferredAfter) {
+    params['where[deferred][gte]'] = filter.deferredAfter;
+  }
+  if (filter.deferredBefore) {
+    params['where[deferred][lte]'] = filter.deferredBefore;
+  }
+
+  if (filter.sortBy) {
+    let order = filter.sortBy;
+    if (filter.sortOrder === 'desc') order += ':desc';
+    params['order'] = order;
+  }
+
+  if (filter.limit && filter.limit > 0) {
+    params['limit'] = String(filter.limit);
+  } else {
+    params['limit'] = '100';
+  }
+
+  if (filter.tags && filter.tags.length > 0) {
+    const limit = parseInt(params['limit'] || '0', 10);
+    if (limit < 500) params['limit'] = '500';
+  }
+
+  return params;
+}
+
 export async function executeQuery(sliq: string, sbClient: SbClient): Promise<Task[]> {
   const { filter, postFilter } = translateSLIQ(sliq);
-  const params: Record<string, string> = {};
-  if (filter.page) params['page'] = filter.page;
-  if (filter.limit) params['limit'] = String(filter.limit);
-  if (filter.status && filter.status.length > 0) {
-    params['status'] = filter.status.join(',');
-  }
+  const params = filterToQueryParams(filter);
 
   let tasks: Task[];
   try {
-    const runtimeTasks = await sbClient.queryTasks(params);
-    tasks = runtimeTasks.map((rt: any) => ({
-      page: rt.page || '',
-      position: rt.pos || 0,
-      text: rt.text || '',
-      status: rt.status || '',
-      done: rt.done || false,
-      due: rt.due || '',
-      due_parsed: rt.due_parsed || null,
-      deferred: rt.deferred || '',
-      deferred_parsed: rt.deferred_parsed || null,
-      name: rt.name || '',
-      priority: rt.priority || '',
-      tags: rt.tags || [],
-      parent: rt.parent,
-      depends_on: rt.depends_on,
-      blocked: false,
-      recur: rt.recur,
-      alerts: rt.alerts,
-      extra_attrs: rt.extra_attrs,
-    }));
-  } catch {
+    const runtimeTasks = await withTimeout(
+      sbClient.queryTasks(params),
+      6000,
+      'Runtime query execution',
+    );
+    tasks = runtimeTasks.map(mapRuntimeTask);
+  } catch (e) {
+    logError('[queries] executeQuery runtime task query failed:', e);
     tasks = [];
+  }
+
+  // Apply server-side tag filter if tags were specified
+  if (filter.tags && filter.tags.length > 0) {
+    tasks = filterByTags(tasks, filter.tags);
+  }
+  if (filter.excludeTags && filter.excludeTags.length > 0) {
+    tasks = filterExcludeTags(tasks, filter.excludeTags);
   }
 
   computeBlocked(tasks);
@@ -135,10 +256,12 @@ export async function saveQueryBlock(
 ): Promise<void> {
   await sbClient.readModifyWrite(page, async (content) => {
     const blocks = extractQueryBlocks(content);
-    if (blockNumber > 0 && blocks.some(b => b.number === blockNumber)) {
+    if (blockNumber > 0 && blocks.some((b) => b.number === blockNumber)) {
       return replaceQueryBlock(content, blockNumber, title, sliq);
     }
-    const newBlock = '```sliq\n' + (title ? '# ' + title + '\n' : '') + sliq + '\n```\n';
-    return content.trimEnd() + '\n\n' + newBlock;
+    const newBlock = title
+      ? `\n## ${title}\n\${query[[\n${sliq}\n]]}\n`
+      : `\${query[[\n${sliq}\n]]}\n`;
+    return content.trimEnd() + '\n' + newBlock;
   });
 }

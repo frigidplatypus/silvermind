@@ -71,7 +71,18 @@ export function advanceDue(
   const parsed = parseRecurrence(recur);
   if (!parsed) return currentDue;
 
-  const refDate = fromDate || new Date();
+  let refDate: Date;
+  if (fromDate) {
+    refDate = fromDate;
+  } else {
+    const parsedDue = currentDue
+      ? new Date(currentDue + 'T00:00:00')
+      : null;
+    refDate = parsedDue && !isNaN(parsedDue.getTime())
+      ? parsedDue
+      : new Date();
+  }
+
   const { interval, count } = parsed;
 
   switch (interval) {

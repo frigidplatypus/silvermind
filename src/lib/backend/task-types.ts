@@ -1,6 +1,9 @@
 export interface Task {
   page: string;
   position: number;
+  _spaceName?: string;
+  _spaceUrl?: string;
+  _spaceAuthToken?: string;
   text: string;
   status: string;
   done: boolean;
@@ -59,6 +62,7 @@ export interface QueryBlock {
   number: number;
   title: string;
   sliq: string;
+  raw?: string;
   heading?: string;
   result_count?: number;
 }

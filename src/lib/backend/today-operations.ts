@@ -1,6 +1,8 @@
 import type { SbClient } from './sb-client';
-import type { Task } from './task-types';
+import type { Task, SpaceConfig } from './task-types';
 import { isBeforeToday, isToday } from './task-date';
+import { applyHardExclusions } from './query-engine';
+import { loadTasks } from './inbox-operations';
 
 function extractDateFromDue(due: string): string | null {
   if (!due) return null;
@@ -12,7 +14,7 @@ function extractDateFromDue(due: string): string | null {
 }
 
 export async function getToday(
-  _activePage: string,
+  activeSpace: SpaceConfig,
   sbClient: SbClient,
 ): Promise<{
   overdue: Task[];
@@ -20,29 +22,9 @@ export async function getToday(
   deferredToday: Task[];
   allClear: boolean;
 }> {
-  const runtimeTasks = await sbClient.queryTasks({});
-  const tasks: Task[] = runtimeTasks.map((rt: any) => ({
-    page: rt.page || '',
-    position: rt.pos || 0,
-    text: rt.text || '',
-    status: rt.status || '',
-    done: rt.done || false,
-    due: rt.due || '',
-    due_parsed: rt.due_parsed || null,
-    deferred: rt.deferred || '',
-    deferred_parsed: rt.deferred_parsed || null,
-    name: rt.name || '',
-    priority: rt.priority || '',
-    tags: rt.tags || [],
-    parent: rt.parent,
-    depends_on: rt.depends_on,
-    blocked: false,
-    recur: rt.recur,
-    alerts: rt.alerts,
-    extra_attrs: rt.extra_attrs,
-  }));
+  const tasks: Task[] = await loadTasks(activeSpace, sbClient);
 
-  const active = tasks.filter(t => !t.done && t.status !== 'waiting');
+  const active = applyHardExclusions(tasks).filter((t) => !t.done && t.status !== 'waiting');
 
   const overdue: Task[] = [];
   const dueToday: Task[] = [];
