@@ -193,7 +193,9 @@ func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage, 
 	if inboxPage != "" {
 		sp.InboxPage = inboxPage
 	}
-	sp.AuthToken = authToken
+	if authToken != "" {
+		sp.AuthToken = authToken
+	}
 	if newName == "" {
 		newName = name
 	}

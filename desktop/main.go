@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
@@ -66,8 +68,49 @@ func main() {
 		Height:    800,
 		MinWidth:  800,
 		MinHeight: 600,
+		LogLevel:  logger.TRACE,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets: func() fs.FS {
+				subFS, err := fs.Sub(assets, "frontend/dist")
+				if err != nil {
+					log.Fatal(err)
+				}
+				return subFS
+			}(),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Debug logging
+				log.Printf("[asset-handler] %s %s", r.Method, r.URL.Path)
+				
+				// Serve the file directly
+				path := r.URL.Path
+				if path == "/" {
+					path = "/index.html"
+				}
+				
+				// Remove leading slash for fs.Open
+				if strings.HasPrefix(path, "/") {
+					path = path[1:]
+				}
+				
+				file, err := assets.Open("frontend/dist/" + path)
+				if err != nil {
+					log.Printf("[asset-handler] failed to open %s: %v", path, err)
+					http.NotFound(w, r)
+					return
+				}
+				defer file.Close()
+				
+				// Set content type based on extension
+				if strings.HasSuffix(path, ".js") {
+					w.Header().Set("Content-Type", "application/javascript")
+				} else if strings.HasSuffix(path, ".css") {
+					w.Header().Set("Content-Type", "text/css")
+				} else if strings.HasSuffix(path, ".html") {
+					w.Header().Set("Content-Type", "text/html")
+				}
+				
+				io.Copy(w, file)
+			}),
 		},
 		Linux: &linux.Options{
 			Icon:        appIcon,
