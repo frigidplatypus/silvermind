@@ -64,8 +64,8 @@ importers:
         specifier: ^6.1.0
         version: 6.2.1(@capacitor/core@6.2.1)
       '@sveltejs/vite-plugin-svelte':
-        specifier: ^4.0.0
-        version: 4.0.4(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))
+        specifier: ^5.0.0
+        version: 5.1.1(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.21
@@ -763,20 +763,20 @@ packages:
     resolution: {integrity: sha512-BXXm+VOH/9X4N7Dd1iZ2MqA1h7M+9i2noI8QYuLDY8QcN2WHYn7D/VK/+IJNfcAmRw7ACNJ538UT9GXIhnBTiA==}
     engines: {node: '>= 18.0.0'}
 
-  '@sveltejs/vite-plugin-svelte-inspector@3.0.1':
-    resolution: {integrity: sha512-2CKypmj1sM4GE7HjllT7UKmo4Q6L5xFRd7VMGEWhYnZ+wc6AUVU01IBd7yUi6WnFndEwWoMNOd6e8UjoN0nbvQ==}
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1':
+    resolution: {integrity: sha512-J/Nmb2Q2y7mck2hyCX4ckVHcR5tu2J+MtBEQqpDrrgELZ2uvraQcK/ioCV61AqkdXFgriksOKIceDcQmqnGhVw==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22}
     peerDependencies:
-      '@sveltejs/vite-plugin-svelte': ^4.0.0-next.0||^4.0.0
-      svelte: ^5.0.0-next.96 || ^5.0.0
-      vite: ^5.0.0
+      '@sveltejs/vite-plugin-svelte': ^5.0.0
+      svelte: ^5.0.0
+      vite: ^6.0.0
 
-  '@sveltejs/vite-plugin-svelte@4.0.4':
-    resolution: {integrity: sha512-0ba1RQ/PHen5FGpdSrW7Y3fAMQjrXantECALeOiOdBdzR5+5vPP6HVZRLmZaQL+W8m++o+haIAKq5qT+MiZ7VA==}
+  '@sveltejs/vite-plugin-svelte@5.1.1':
+    resolution: {integrity: sha512-Y1Cs7hhTc+a5E9Va/xwKlAJoariQyHY+5zBgCZg4PFWNYQ1nMN9sjK1zhw1gK69DuqVP++sht/1GZg1aRwmAXQ==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22}
     peerDependencies:
-      svelte: ^5.0.0-next.96 || ^5.0.0
-      vite: ^5.0.0
+      svelte: ^5.0.0
+      vite: ^6.0.0
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -2609,18 +2609,18 @@ snapshots:
 
   '@sveltejs/load-config@0.1.1': {}
 
-  '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4)))(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))':
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4)))(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))
+      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))
       debug: 4.4.3
       svelte: 5.56.3(@typescript-eslint/types@8.61.1)
       vite: 6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4)
     transitivePeerDependencies:
       - supports-color
 
-  '@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))':
+  '@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte-inspector': 3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4)))(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))
+      '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4)))(svelte@5.56.3(@typescript-eslint/types@8.61.1))(vite@6.4.3(@types/node@22.19.21)(jiti@1.21.7)(tsx@4.22.4))
       debug: 4.4.3
       deepmerge: 4.3.1
       kleur: 4.1.5

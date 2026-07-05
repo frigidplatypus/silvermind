@@ -3,7 +3,17 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import path from 'node:path';
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [
+    svelte(),
+    {
+      name: 'desktop-html',
+      transformIndexHtml(html) {
+        return html
+          .replace(/ crossorigin/g, '')
+          .replace(/type="module"/g, 'defer');
+      },
+    },
+  ],
   resolve: {
     alias: {
       $lib: path.resolve('./src/lib'),
@@ -11,9 +21,14 @@ export default defineConfig({
     conditions: ['browser', 'module', 'import'],
   },
   build: {
+    target: 'es2015',
     outDir: 'desktop/frontend/dist',
     emptyOutDir: true,
     rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        format: 'iife',
+      },
       external: [
         '@capacitor/core',
         '@capacitor/haptics',
@@ -22,18 +37,9 @@ export default defineConfig({
         '@capacitor/preferences',
         '@capacitor/local-notifications',
         '@capacitor/browser',
+        '@capacitor/http',
+        '@capacitor/filesystem',
       ],
     },
-  },
-  optimizeDeps: {
-    exclude: [
-      '@capacitor/core',
-      '@capacitor/haptics',
-      '@capacitor/status-bar',
-      '@capacitor/splash-screen',
-      '@capacitor/preferences',
-      '@capacitor/local-notifications',
-      '@capacitor/browser',
-    ],
   },
 });
