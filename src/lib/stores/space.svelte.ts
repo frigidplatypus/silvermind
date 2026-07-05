@@ -1,6 +1,8 @@
 import type { Space } from '$lib/types/space';
 import { getSpaces } from '$lib/api/spaces';
 import { setApiSpace } from '$lib/api/client';
+import { isDesktopApp, listSpacesDesktop, setActiveSpaceDesktop } from '$lib/desktop-bridge';
+import { logError, logInfo, logWarn } from '$lib/helpers/logger';
 
 const ACTIVE_SPACE_KEY = 'active_space_id';
 
@@ -31,39 +33,76 @@ export async function loadSpaces(): Promise<void> {
   isLoadingVal = true;
   errorVal = null;
   try {
-    const res = await getSpaces();
+    const res = isDesktopApp() ? await listSpacesDesktop() : await getSpaces();
     const raw = Array.isArray(res) ? res : [];
-    spacesVal = raw.map((s: any) => ({
+    const nextSpaces = raw.map((s: any) => ({
         id: s.name || s.url,
         name: s.name || s.url,
-        url: s.url,
+        url: s.url || s.space,
         active: s.active ?? false,
         is_default: s.is_default ?? false,
       }));
-    const value = restore(ACTIVE_SPACE_KEY);
-    if (value && spacesVal.some((s) => s.id === value)) {
-      activeIdVal = value;
-    } else {
-      activeIdVal = spacesVal.find((s) => s.active)?.id ?? spacesVal[0]?.id ?? null;
+    if (nextSpaces.length === 0 && spacesVal.length > 0) {
+      logWarn('[spaces] load returned no spaces; preserving previous list');
+      errorVal = 'No spaces returned from config';
+      return;
     }
-    if (activeIdVal) setApiSpace(activeIdVal);
+    spacesVal = nextSpaces;
+    const configuredActive = spacesVal.find((s) => s.active)?.id ?? null;
+    const restoredActive = restore(ACTIVE_SPACE_KEY);
+    if (configuredActive) {
+      activeIdVal = configuredActive;
+    } else if (restoredActive && spacesVal.some((s) => s.id === restoredActive)) {
+      activeIdVal = restoredActive;
+    } else {
+      activeIdVal = spacesVal[0]?.id ?? null;
+    }
+    if (activeIdVal) {
+      persist(ACTIVE_SPACE_KEY, activeIdVal);
+      await setApiSpace(activeIdVal);
+    }
+    logInfo(`[spaces] loaded ${spacesVal.length} spaces; active="${activeIdVal ?? ''}"`);
   } catch (e) {
-
     errorVal = e instanceof Error ? e.message : 'Failed to load spaces';
+    logError(`[spaces] load failed: ${errorVal}`);
   } finally {
     isLoadingVal = false;
   }
 }
 
 export async function setActiveSpace(spaceId: string): Promise<void> {
-  if (spacesVal.some((s) => s.id === spaceId)) {
-    activeIdVal = spaceId;
-    persist(ACTIVE_SPACE_KEY, spaceId);
-    setApiSpace(spaceId);
-    // Reload task lists with the new active space
-    const { loadInbox, loadToday } = await import('./tasks.svelte');
-    const { loadGlobalView } = await import('./global.svelte');
-    Promise.all([loadInbox(), loadToday()]).catch(() => {});
-    loadGlobalView();
+  const target = spacesVal.find((s) => s.id === spaceId || s.name === spaceId);
+  if (!target) {
+    logWarn(`[spaces] ignored active-space switch for unknown space "${spaceId}"`);
+    return;
   }
+
+  errorVal = null;
+  logInfo(`[spaces] switching active space to "${target.name}" (${target.url})`);
+  if (isDesktopApp()) {
+    const updated = await setActiveSpaceDesktop(target.name);
+    const nextSpaces = Array.isArray(updated)
+      ? updated.map((s: any) => ({
+          id: s.name || s.url,
+          name: s.name || s.url,
+          url: s.url || s.space,
+          active: s.active ?? false,
+          is_default: s.is_default ?? false,
+        }))
+      : [];
+    if (nextSpaces.length > 0) spacesVal = nextSpaces;
+  }
+
+  await setApiSpace(target.name);
+  activeIdVal = target.id;
+  persist(ACTIVE_SPACE_KEY, target.id);
+
+  const refreshedActive = spacesVal.find((s) => s.id === target.id);
+  spacesVal = spacesVal.map((s) => ({ ...s, active: s.id === target.id }));
+  if (!refreshedActive) await loadSpaces();
+
+  const { loadInbox, loadToday } = await import('./tasks.svelte');
+  const { loadGlobalView } = await import('./global.svelte');
+  await Promise.allSettled([loadInbox(), loadToday(), loadGlobalView()]);
+  logInfo(`[spaces] active space switched to "${target.name}"`);
 }

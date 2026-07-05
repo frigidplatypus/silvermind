@@ -41,6 +41,7 @@ sbtask-config.yaml
 sbtask
 
 # Flatpak build artifacts
+.flatpak-builder/
 .build-*/
 build-dir/
 repo/

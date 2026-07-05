@@ -3,21 +3,23 @@ package main
 import (
 	"context"
 	"embed"
+	"io"
+	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/justin/sbtask/pkg/client"
-	"github.com/justin/sbtask/pkg/config"
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
-// Set at build time via ldflags: -X main.sentryDsn=https://xxx@xxx/123
 var sentryDsn = ""
 
 //go:embed frontend/dist
@@ -49,7 +51,6 @@ func initDesktopSentry() {
 }
 
 func runtimeOS() string {
-	// rudimentary compile-time OS detection
 	if _, err := os.Stat("/etc/NIXOS"); err == nil {
 		return "nixos"
 	}
@@ -67,8 +68,49 @@ func main() {
 		Height:    800,
 		MinWidth:  800,
 		MinHeight: 600,
+		LogLevel:  logger.TRACE,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets: func() fs.FS {
+				subFS, err := fs.Sub(assets, "frontend/dist")
+				if err != nil {
+					log.Fatal(err)
+				}
+				return subFS
+			}(),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Debug logging
+				log.Printf("[asset-handler] %s %s", r.Method, r.URL.Path)
+				
+				// Serve the file directly
+				path := r.URL.Path
+				if path == "/" {
+					path = "/index.html"
+				}
+				
+				// Remove leading slash for fs.Open
+				if strings.HasPrefix(path, "/") {
+					path = path[1:]
+				}
+				
+				file, err := assets.Open("frontend/dist/" + path)
+				if err != nil {
+					log.Printf("[asset-handler] failed to open %s: %v", path, err)
+					http.NotFound(w, r)
+					return
+				}
+				defer file.Close()
+				
+				// Set content type based on extension
+				if strings.HasSuffix(path, ".js") {
+					w.Header().Set("Content-Type", "application/javascript")
+				} else if strings.HasSuffix(path, ".css") {
+					w.Header().Set("Content-Type", "text/css")
+				} else if strings.HasSuffix(path, ".html") {
+					w.Header().Set("Content-Type", "text/html")
+				}
+				
+				io.Copy(w, file)
+			}),
 		},
 		Linux: &linux.Options{
 			Icon:        appIcon,
@@ -88,44 +130,17 @@ func main() {
 
 type App struct {
 	ctx    context.Context
-	server *SbtaskServer
 	config *ConfigManager
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.config = NewConfigManager()
-	a.startSbtask()
+	log.Println("[silvermind] desktop started (JS-native backend)")
 }
 
 func (a *App) shutdown(ctx context.Context) {
-	if a.server != nil {
-		a.server.Stop()
-	}
-}
-
-func (a *App) startSbtask() {
-	s, err := StartSbtaskServer(a.config.configPath())
-	if err != nil {
-		log.Printf("[silvermind] sbtask startup failed: %v", err)
-	}
-	a.server = s
-}
-
-// AppService methods (exposed to frontend)
-func (a *App) GetHealth() ServiceHealth {
-	if a.server != nil {
-		return a.server.GetHealth()
-	}
-	return ServiceHealth{State: "stopped"}
-}
-
-func (a *App) RestartSbtask() {
-	if a.server != nil {
-		a.server.Stop()
-	}
-	time.Sleep(200 * time.Millisecond)
-	a.startSbtask()
+	log.Println("[silvermind] desktop shutting down")
 }
 
 func (a *App) ListSpaces() []SpaceInfo {
@@ -136,121 +151,70 @@ func (a *App) ListSpaces() []SpaceInfo {
 }
 
 func (a *App) AddSpace(name, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.AddSpace(name, url, defaultPage, inboxPage, authToken)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
+	if a.config == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return a.config.AddSpace(name, url, defaultPage, inboxPage, authToken)
 }
 
 func (a *App) UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
+	if a.config == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return a.config.UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken)
 }
 
 func (a *App) RemoveSpace(name string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.RemoveSpace(name)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
+	if a.config == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return a.config.RemoveSpace(name)
 }
 
 func (a *App) SetActiveSpace(name string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.SetActiveSpace(name)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
-	}
-	return nil, nil
-}
-
-func (a *App) SetSharedConfig(sbtaskPath string) ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.SetSharedConfig(sbtaskPath)
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
-	}
-	return nil, nil
-}
-
-func (a *App) MigrateSbtaskConfig() ([]SpaceInfo, error) {
-	if a.config != nil {
-		spaces, err := a.config.MigrateSbtaskConfig()
-		if err == nil {
-			a.RestartSbtask()
-		}
-		return spaces, err
-	}
-	return nil, nil
-}
-
-type verifyResult struct {
-	OK        bool   `json:"ok"`
-	TaskCount int    `json:"task_count"`
-	Error     string `json:"error,omitempty"`
-}
-
-func (a *App) VerifySpace(url, authToken string) verifyResult {
-	c, err := client.NewClient(client.Config{SpaceURL: url, AuthToken: authToken})
-	if err != nil {
-		return verifyResult{OK: false, Error: err.Error()}
-	}
-	tasks, apiErr := c.QueryTasks(map[string]string{"limit": "1"})
-	if apiErr != nil {
-		return verifyResult{OK: false, Error: apiErr.Error()}
-	}
-	return verifyResult{OK: true, TaskCount: len(tasks)}
-}
-
-type configStatusResult struct {
-	Exists       bool        `json:"exists"`
-	SbtaskExists bool        `json:"sbtask_exists"`
-	SpaceCount   int         `json:"space_count"`
-	Spaces       []SpaceInfo `json:"spaces"`
-}
-
-func (a *App) GetConfigStatus() configStatusResult {
 	if a.config == nil {
-		return configStatusResult{}
+		return nil, nil
 	}
-	result := configStatusResult{Exists: true}
-	spaces := a.config.ListSpaces()
-	result.SpaceCount = len(spaces)
-	result.Spaces = spaces
+	return a.config.SetActiveSpace(name)
+}
 
-	sbtaskPath := config.DefaultConfigPath()
-	if _, err := os.Stat(sbtaskPath); err == nil && sbtaskPath != a.config.configPath() {
-		sbtaskCfg, err := config.LoadConfig(sbtaskPath)
-		if err == nil && sbtaskCfg != nil && len(sbtaskCfg.Spaces) > 0 {
-			result.SbtaskExists = true
-			if !result.Exists || result.SpaceCount == 0 {
-				result.Spaces = a.config.GetSbtaskSpaces()
-				result.SpaceCount = len(result.Spaces)
-			}
-		}
+func (a *App) ReadConfig() string {
+	if a.config == nil {
+		return ""
 	}
-	return result
+	return a.config.ReadConfig()
+}
+
+func (a *App) WriteConfig(raw string) error {
+	if a.config == nil {
+		return nil
+	}
+	return a.config.WriteConfig(raw)
 }
 
 func (a *App) GetConfigPath() string {
-	return a.config.configPath()
+	if a.config != nil {
+		return a.config.configPath()
+	}
+	return ""
+}
+
+func (a *App) GetConfigStatus() map[string]any {
+	if a.config == nil {
+		return map[string]any{
+			"exists":        false,
+			"sbtask_exists": false,
+			"space_count":   0,
+			"spaces":        []SpaceInfo{},
+		}
+	}
+	spaces := a.config.ListSpaces()
+	return map[string]any{
+		"exists":        len(spaces) > 0,
+		"sbtask_exists": false,
+		"space_count":   len(spaces),
+		"spaces":        spaces,
+	}
 }
 
 func (a *App) OpenURL(url string) {
@@ -259,9 +223,50 @@ func (a *App) OpenURL(url string) {
 	}
 }
 
+func (a *App) ProxyFetch(url, method, headersJSON, body string) map[string]any {
+	client := &http.Client{Timeout: 30 * time.Second}
+	var reqBody io.Reader
+	if body != "" {
+		reqBody = strings.NewReader(body)
+	}
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return map[string]any{"status": 0, "ok": false, "error": err.Error()}
+	}
+
+	if headersJSON != "" {
+		pairs := strings.Split(headersJSON, "\n")
+		for _, pair := range pairs {
+			parts := strings.SplitN(pair, ":", 2)
+			if len(parts) == 2 {
+				req.Header.Set(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+			}
+		}
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("[silvermind] ProxyFetch %s %s failed: %v", method, url, err)
+		return map[string]any{"status": 0, "ok": false, "error": err.Error()}
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	respHeaders := make(map[string]string)
+	for k, v := range resp.Header {
+		respHeaders[k] = v[0]
+	}
+
+	return map[string]any{
+		"status":  resp.StatusCode,
+		"ok":      resp.StatusCode >= 200 && resp.StatusCode < 300,
+		"body":    string(respBody),
+		"headers": respHeaders,
+	}
+}
+
 func (a *App) NotifyAlert(title, body string) {
 	if err := exec.Command("notify-send", title, body, "--app-name=Silvermind", "--icon=dialog-information").Start(); err != nil {
 		log.Printf("[silvermind] NotifyAlert failed: %v", err)
 	}
 }
-

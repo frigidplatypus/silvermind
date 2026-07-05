@@ -4,11 +4,9 @@ go 1.26.3
 
 require (
 	github.com/getsentry/sentry-go v0.47.0
-	github.com/justin/sbtask v0.0.0-20250625000000-000000000000
 	github.com/wailsapp/wails/v2 v2.9.0
+	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/justin/sbtask => /home/justin/development/go/sbtask
 
 require (
 	github.com/AlekSi/pointer v1.0.0 // indirect

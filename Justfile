@@ -28,6 +28,11 @@ build: dist check-dist
 run: build
     ./{{binary_path}}
 
+# Build frontend dist outside Nix, build the Nix package, then run it
+run-nix: dist check-dist
+    nix build --impure --expr 'let flake = builtins.getFlake (toString ./.); system = builtins.currentSystem; src = builtins.path { path = ./.; name = "silvermind-working-tree"; }; in flake.outputs.packages.${system}.silvermind-desktop.overrideAttrs (_: { inherit src; })'
+    ./result/bin/{{binary_name}}
+
 # Build just the Go binary (skip frontend — assumes dist is up-to-date)
 build-go:
     cd desktop && \
@@ -40,23 +45,23 @@ build-go:
 
 # Install JS dependencies
 install:
-    pnpm install
+    nix develop --command pnpm install
 
 # Build the Svelte frontend for desktop (outputs to desktop/frontend/dist/)
 dist:
-    pnpm build:desktop
+    nix develop --command pnpm build:desktop
 
 # Start Vite dev server (mobile/web — proxied to :7433)
 dev-web:
-    pnpm dev
+    nix develop --command pnpm dev
 
 # Start Vite dev server (desktop config — outputs to desktop/frontend/dist/)
 dev-dist:
-    pnpm build:desktop --watch
+    nix develop --command pnpm build:desktop --watch
 
 # Build mobile/web frontend
 dist-mobile:
-    pnpm build
+    nix develop --command pnpm build
 
 # ── Verification ─────────────────────────────────────────────────────────────
 
@@ -83,33 +88,33 @@ build-sbtask:
 # Run sbtask serve with web GUI enabled
 serve-web: build-web build-sbtask
     @echo "Starting sbtask serve with web GUI at http://localhost:9876"
-    ./sbtask serve --web-gui {{web_dist_dir}}
+    nix develop --command ./sbtask serve --web-gui {{web_dist_dir}}
 
 # ── iOS / Capacitor ──────────────────────────────────────────────────────────
 
 # Cross-compile sbtask for iOS arm64
 sbtask-fetch:
-    pnpm sbtask:fetch
+    nix develop --command pnpm sbtask:fetch
 
 # Cross-compile sbtask for Android arm64
 sbtask-fetch-android:
-    bash scripts/fetch-sbtask.sh android
+    nix develop --command bash scripts/fetch-sbtask.sh android
 
 # Sync Capacitor iOS project
 cap-sync:
-    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm cap:sync
+    nix develop --command pnpm cap:sync
 
 # Sync Capacitor Android project
 cap-sync-android:
-    pnpm cap:sync:android
+    nix develop --command pnpm cap:sync:android
 
 # Open iOS project in Xcode
 cap-open:
-    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm cap:open
+    nix develop --command pnpm cap:open
 
 # Open Android project in Android Studio
 cap-open-android:
-    pnpm cap:open:android
+    nix develop --command pnpm cap:open:android
 
 # Full iOS build (dist + fetch + sync)
 build-ios: dist-mobile sbtask-fetch cap-sync
@@ -174,5 +179,5 @@ info:
     @echo "cflags:  {{cgo_cflags}}"
     @echo "tags:    {{go_tags}}"
     @echo "ldflags: {{go_ldflags}}"
-    @pnpm --version
-    @go version
+    nix develop --command pnpm --version
+    nix develop --command go version

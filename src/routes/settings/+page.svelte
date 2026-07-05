@@ -7,7 +7,7 @@
   import { presets } from '$lib/themes';
   import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
-  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, setActiveSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
+  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
   import { addSpace, updateSpace, removeSpace, setActiveSpaceApi, verifySpace } from '$lib/api/spaces';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
   import { isCrashReportingEnabled, setCrashReporting } from '$lib/stores/privacy.svelte';
@@ -172,21 +172,20 @@ import { devLog } from '$lib/helpers/dev-log';
   }
 
   async function handleSetActive(name: string) {
-    if (isDesktop) {
-      try {
-        await setActiveSpaceDesktop(name);
-        setActiveSpace(name);
-        await loadSpaces();
-      } catch (e: any) {
-        const msg = e?.error || e?.message || String(e);
-        devLog('[silvermind] SetActiveSpace failed:', msg, e);
-        error = msg;
-      }
-    } else {
-      try {
+    saving = true;
+    error = null;
+    try {
+      if (!isDesktop) {
         await setActiveSpaceApi(name);
-      } catch {}
+      }
       await setActiveSpace(name);
+      await loadSpaces();
+    } catch (e: any) {
+      const msg = e?.error || e?.message || String(e);
+      devLog('[silvermind] SetActiveSpace failed:', msg, e);
+      error = msg;
+    } finally {
+      saving = false;
     }
   }
 </script>

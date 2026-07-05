@@ -8,8 +8,20 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/justin/sbtask/pkg/config"
+	"gopkg.in/yaml.v3"
 )
+
+type SpaceConfig struct {
+	Space       string `yaml:"space,omitempty" json:"space"`
+	AuthToken   string `yaml:"auth_token,omitempty" json:"auth_token,omitempty"`
+	DefaultPage string `yaml:"default_page,omitempty" json:"default_page,omitempty"`
+	InboxPage   string `yaml:"inbox_page,omitempty" json:"inbox_page,omitempty"`
+}
+
+type ConfigFile struct {
+	Spaces      map[string]SpaceConfig `yaml:"spaces" json:"spaces"`
+	ActiveSpace string                 `yaml:"active_space,omitempty" json:"active_space,omitempty"`
+}
 
 type SpaceInfo struct {
 	Name        string `json:"name"`
@@ -36,129 +48,77 @@ func silvermindConfigPath() string {
 }
 
 func NewConfigManager() *ConfigManager {
-	cm := &ConfigManager{
-		path: silvermindConfigPath(),
-	}
-	cm.migrate()
-	return cm
-}
-
-// migrate imports sbtask config on first run if Silvermind config doesn't exist
-func (c *ConfigManager) migrate() {
-	if c.path == "" {
-		return
-	}
-	// If our config already exists, nothing to migrate
-	if _, err := os.Stat(c.path); err == nil {
-		return
-	}
-	// Try to load from sbtask config path
-	sbtaskCfg, err := config.LoadConfig(config.DefaultConfigPath())
-	if err != nil || sbtaskCfg == nil {
-		return
-	}
-	// Only migrate if it has at least one space and isn't the default
-	if len(sbtaskCfg.Spaces) == 0 {
-		return
-	}
-	// Check if it's the bare default (single "main" space at localhost)
-	if len(sbtaskCfg.Spaces) == 1 {
-		if sp, ok := sbtaskCfg.Spaces["main"]; ok && sp.Space == "http://localhost:3000" {
-			return // skip default-only config
-		}
-	}
-	// Save to our path
-	if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
-		log.Printf("[silvermind] config dir creation failed: %v", err)
-		return
-	}
-	if err := config.SaveConfig(c.path, sbtaskCfg); err != nil {
-		log.Printf("[silvermind] config migration failed: %v", err)
-		return
-	}
-	log.Printf("[silvermind] migrated config from %s", config.DefaultConfigPath())
+	return &ConfigManager{path: silvermindConfigPath()}
 }
 
 func (c *ConfigManager) configPath() string {
 	return c.path
 }
 
-func (c *ConfigManager) load() (*config.ConfigFile, error) {
-	cfg, err := config.LoadConfig(c.path)
+func (c *ConfigManager) ensureDir() error {
+	if c.path == "" {
+		return fmt.Errorf("no config path")
+	}
+	return os.MkdirAll(filepath.Dir(c.path), 0755)
+}
+
+func (c *ConfigManager) load() (*ConfigFile, error) {
+	data, err := os.ReadFile(c.path)
 	if err != nil {
-		return nil, err
-	}
-	if cfg != nil && cfg.SharedConfig && cfg.SbtaskPath != "" {
-		return config.LoadConfig(cfg.SbtaskPath)
-	}
-	return cfg, nil
-}
-
-func (c *ConfigManager) save(cfg *config.ConfigFile) error {
-	targetPath := c.path
-	if cfg.SharedConfig && cfg.SbtaskPath != "" {
-		targetPath = cfg.SbtaskPath
-	} else {
-		if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
-			return fmt.Errorf("create config dir: %w", err)
+		if os.IsNotExist(err) {
+			return &ConfigFile{Spaces: make(map[string]SpaceConfig)}, nil
 		}
+		return nil, fmt.Errorf("read config: %w", err)
 	}
-	return config.SaveConfig(targetPath, cfg)
+	var cfg ConfigFile
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+	if cfg.Spaces == nil {
+		cfg.Spaces = make(map[string]SpaceConfig)
+	}
+	return &cfg, nil
 }
 
-func (c *ConfigManager) resolveSavePath(cfg *config.ConfigFile) string {
-	if cfg.SharedConfig && cfg.SbtaskPath != "" {
-		return cfg.SbtaskPath
+func (c *ConfigManager) save(cfg *ConfigFile) error {
+	if err := c.ensureDir(); err != nil {
+		return err
 	}
-	return c.path
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	return os.WriteFile(c.path, data, 0644)
 }
 
-func (c *ConfigManager) SetSharedConfig(sbtaskPath string) ([]SpaceInfo, error) {
-	if sbtaskPath == "" {
-		sbtaskPath = config.DefaultConfigPath()
-	}
-	sbtaskCfg, err := config.LoadConfig(sbtaskPath)
-	if err != nil || sbtaskCfg == nil {
-		return nil, fmt.Errorf("failed to load sbtask config: %w", err)
-	}
-	if len(sbtaskCfg.Spaces) == 0 {
-		return nil, fmt.Errorf("sbtask config has no spaces")
-	}
-	sbtaskCfg.SharedConfig = true
-	sbtaskCfg.SbtaskPath = sbtaskPath
-	if err := c.save(sbtaskCfg); err != nil {
-		return nil, err
-	}
-	log.Printf("[silvermind] using shared config at %s", sbtaskPath)
-	return toSpaces(sbtaskCfg), nil
-}
-
-func (c *ConfigManager) HasSharedConfig() bool {
-	cfg, err := config.LoadConfig(c.path)
-	if err != nil || cfg == nil {
-		return false
-	}
-	return cfg.SharedConfig && cfg.SbtaskPath != ""
-}
-
-func (c *ConfigManager) MigrateSbtaskConfig() ([]SpaceInfo, error) {
-	c.migrate()
+func (c *ConfigManager) ReadConfig() string {
 	cfg, err := c.load()
-	if err != nil || cfg == nil {
-		return nil, fmt.Errorf("migration produced no config")
+	if err != nil {
+		log.Printf("[silvermind] ReadConfig error: %v", err)
+		return ""
 	}
-	return toSpaces(cfg), nil
+	data, err := yaml.Marshal(map[string]any{
+		"spaces":       cfg.Spaces,
+		"active_space": cfg.ActiveSpace,
+	})
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
-func (c *ConfigManager) GetSbtaskSpaces() []SpaceInfo {
-	sbtaskCfg, err := config.LoadConfig(config.DefaultConfigPath())
-	if err != nil || sbtaskCfg == nil || len(sbtaskCfg.Spaces) == 0 {
-		return nil
+func (c *ConfigManager) WriteConfig(raw string) error {
+	var cfg ConfigFile
+	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
+		return fmt.Errorf("parse config: %w", err)
 	}
-	return toSpaces(sbtaskCfg)
+	if cfg.Spaces == nil {
+		cfg.Spaces = make(map[string]SpaceConfig)
+	}
+	return c.save(&cfg)
 }
 
-func toSpaces(cfg *config.ConfigFile) []SpaceInfo {
+func toSpaces(cfg *ConfigFile) []SpaceInfo {
 	var spaces []SpaceInfo
 	for name, sp := range cfg.Spaces {
 		spaces = append(spaces, SpaceInfo{
@@ -176,6 +136,7 @@ func toSpaces(cfg *config.ConfigFile) []SpaceInfo {
 func (c *ConfigManager) ListSpaces() []SpaceInfo {
 	cfg, err := c.load()
 	if err != nil {
+		log.Printf("[silvermind] ListSpaces error: %v", err)
 		return nil
 	}
 	return toSpaces(cfg)
@@ -184,16 +145,12 @@ func (c *ConfigManager) ListSpaces() []SpaceInfo {
 func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
-		log.Printf("[silvermind] AddSpace load error: %v", err)
 		return nil, err
 	}
-	// Case-insensitive duplicate check
 	nameLower := strings.ToLower(name)
 	for existingName := range cfg.Spaces {
 		if strings.ToLower(existingName) == nameLower {
-			err := fmt.Errorf("space %q already exists (as %q)", name, existingName)
-			log.Printf("[silvermind] AddSpace: %v", err)
-			return nil, err
+			return nil, fmt.Errorf("space %q already exists (as %q)", name, existingName)
 		}
 	}
 	if defaultPage == "" {
@@ -202,7 +159,7 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken st
 	if inboxPage == "" {
 		inboxPage = "Inbox"
 	}
-	cfg.Spaces[name] = config.SpaceConfig{
+	cfg.Spaces[name] = SpaceConfig{
 		Space:       url,
 		AuthToken:   authToken,
 		DefaultPage: defaultPage,
@@ -212,7 +169,6 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken st
 		cfg.ActiveSpace = name
 	}
 	if err := c.save(cfg); err != nil {
-		log.Printf("[silvermind] AddSpace save error: %v", err)
 		return nil, err
 	}
 	log.Printf("[silvermind] Added space %q -> %s", name, url)
@@ -237,12 +193,12 @@ func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage, 
 	if inboxPage != "" {
 		sp.InboxPage = inboxPage
 	}
-	// authToken is always set on update (empty string clears it)
-	sp.AuthToken = authToken
+	if authToken != "" {
+		sp.AuthToken = authToken
+	}
 	if newName == "" {
 		newName = name
 	}
-	// Check for rename collision (case-insensitive)
 	if strings.ToLower(newName) != strings.ToLower(name) {
 		for existingName := range cfg.Spaces {
 			if strings.ToLower(existingName) == strings.ToLower(newName) {

@@ -10,7 +10,7 @@
     try { await loadQueryPages(true); } finally { refreshing = false; }
   }
 
-  function handleQueryClick(page: string, blockNumber?: number) {
+  function handleQueryClick(page: string, blockNumber: number | undefined) {
     if (blockNumber) {
       onNavigate(`queries:${page}:${blockNumber}`);
     } else {

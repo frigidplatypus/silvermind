@@ -37,24 +37,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "sbtask-src": "sbtask-src"
-      }
-    },
-    "sbtask-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1782592357,
-        "narHash": "sha256-gGKxlYZCKoaZkloi423erN28v6XN4ywvWctzcFa1Buc=",
-        "ref": "refs/heads/main",
-        "rev": "c8307c61f016e337b5fa0a0a1b1f22bf960d61f5",
-        "revCount": 53,
-        "type": "git",
-        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://forgejo@git.fluffy-rooster.ts.net/FRGD/sbtask.git"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {

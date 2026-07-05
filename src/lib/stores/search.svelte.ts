@@ -1,5 +1,5 @@
 import { searchTasks, getTasksForSpace } from '$lib/api/tasks';
-import { getSpaces } from '$lib/api/spaces';
+import { getConfigManager } from '$lib/backend/backend-context';
 import type { Task } from '$lib/types/task';
 
 type SearchScope = 'active' | 'global';
@@ -32,10 +32,19 @@ export function deactivateSearch(): void {
 
 async function doSearch(value: string): Promise<void> {
   if (scope === 'global') {
-    const allSpaces: { name: string; url: string }[] = await getSpaces() as any;
+    const cm = getConfigManager();
+    await cm.load();
+    const allSpaces = await cm.getSpaces();
     const settled = await Promise.allSettled(
       (Array.isArray(allSpaces) ? allSpaces : []).map(s =>
-        getTasksForSpace(s.url, { search: value }),
+        getTasksForSpace(s, { search: value }).then((spaceTasks) =>
+          spaceTasks.map((t) => ({
+            ...t,
+            _spaceName: s.name,
+            _spaceUrl: s.url,
+            _spaceAuthToken: s.auth_token,
+          })),
+        ),
       ),
     );
     const merged: Task[] = [];
