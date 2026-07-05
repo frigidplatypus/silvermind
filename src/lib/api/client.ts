@@ -5,7 +5,7 @@ const API_BASE = typeof window !== 'undefined' && (!(window as any).go?.main?.Ap
   : '';
 
 export function setApiSpace(name: string) {
-  setActiveSpace(name).catch(() => {});
+  return setActiveSpace(name);
 }
 
 export { API_BASE, getActiveSpaceName as getActiveSpace };

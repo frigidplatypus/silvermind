@@ -6,5 +6,5 @@ export async function getInbox(): Promise<Task[]> {
   const active = await getActiveSpace();
   if (!active) return [];
   const sbClient = await getSbClient();
-  return getInboxOps([active], active, sbClient) as Task[];
+  return (await getInboxOps([active], active, sbClient)) as Task[];
 }

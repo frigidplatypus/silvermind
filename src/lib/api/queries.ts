@@ -3,6 +3,7 @@ import { getQueryPages, executeQueryBlock, saveQueryBlock } from '$lib/backend/q
 import { executeQuery } from '$lib/backend/query-operations';
 import { extractQueryBlocks } from '$lib/backend/query-operations';
 import type { Task } from '$lib/types/task';
+import { logInfo, logError } from '$lib/helpers/logger';
 
 export interface QueryPage {
   page: string;
@@ -24,12 +25,21 @@ export interface QueryExecuteResult {
 }
 
 export async function getQueryPagesFn(tag?: string, refresh = false): Promise<QueryPage[]> {
-  const sbClient = await getSbClient();
+  logInfo(`[queries-api] getQueryPagesFn called (tag=${tag}, refresh=${refresh})`);
+  let sbClient;
+  try {
+    sbClient = await getSbClient();
+    logInfo(`[queries-api] got SB client (baseURL=${sbClient.getBaseURL()})`);
+  } catch (e) {
+    logError('[queries-api] failed to get SB client:', e);
+    throw e;
+  }
   const pages = await getQueryPages(sbClient);
-  return pages.map(p => ({
+  logInfo(`[queries-api] got ${pages.length} pages from getQueryPages`);
+  return pages.map((p) => ({
     page: p.page,
     block_count: p.blocks.length,
-    blocks: p.blocks.map(b => ({ title: b.title, number: b.number, sliq: b.sliq })),
+    blocks: p.blocks.map((b) => ({ title: b.title, number: b.number, sliq: b.sliq })),
   }));
 }
 export { getQueryPagesFn as getQueryPages };
@@ -38,7 +48,7 @@ export async function getQueryBlocks(page: string): Promise<QueryBlockInfo[]> {
   const sbClient = await getSbClient();
   const { content } = await sbClient.readPage(page);
   const blocks = extractQueryBlocks(content);
-  return blocks.map(b => ({ title: b.title, number: b.number, sliq: b.sliq }));
+  return blocks.map((b) => ({ title: b.title, number: b.number, sliq: b.sliq }));
 }
 
 export async function executeQueryFn(page: string, index?: number): Promise<QueryExecuteResult[]> {
