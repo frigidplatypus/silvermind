@@ -35,23 +35,66 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 }
 
 describe('translateSLIQ', () => {
+  it('excludes completed tasks by default', () => {
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nselect templates.taskItem(t)');
+    const done = makeTask({ done: true, status: 'x' });
+    const active = makeTask({ done: false });
+
+    const result = postFilter([done, active]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].done).toBe(false);
+  });
+
   it('parses status filter', () => {
-    const { filter } = translateSLIQ('status == "x"');
-    expect(filter.status).toEqual(['x']);
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere t.state == "waiting"\nselect templates.taskItem(t)');
+    const waiting = makeTask({ status: 'waiting' });
+    const active = makeTask({ done: false });
+
+    const result = postFilter([waiting, active]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].status).toBe('waiting');
+  });
+
+  it('parses explicit done inclusion', () => {
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere t.done\nselect templates.taskItem(t)');
+    const done = makeTask({ done: true, status: 'x' });
+    const active = makeTask({ done: false });
+
+    const result = postFilter([done, active]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].done).toBe(true);
+  });
+
+  it('supports grouped status filters from SilverBullet queries', () => {
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere (t.done or t.state == "waiting") and t.state != "someday"\nselect templates.taskItem(t)',
+    );
+    const done = makeTask({ done: true, status: 'x' });
+    const waiting = makeTask({ status: 'waiting' });
+    const someday = makeTask({ status: 'someday' });
+    const active = makeTask({ status: '' });
+
+    const result = postFilter([done, waiting, someday, active]);
+
+    expect(result).toHaveLength(2);
+    expect(result.map((t) => t.status)).toEqual(['x', 'waiting']);
   });
 
   it('parses due before filter', () => {
-    const { filter } = translateSLIQ('due < "2026-01-01"');
+    const { filter } = translateSLIQ('from t = index.objects("task")\nwhere t.due < "2026-01-01"\nselect templates.taskItem(t)');
     expect(filter.dueBefore).toBe('2026-01-01');
   });
 
   it('parses has tag filter', () => {
-    const { filter } = translateSLIQ('has #work');
+    const { filter } = translateSLIQ('from t = index.objects("task")\nwhere table.includes(t.itags, "work")\nselect templates.taskItem(t)');
     expect(filter.tags).toContain('work');
   });
 
   it('parses overdue filter', () => {
-    const { postFilter } = translateSLIQ('overdue');
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere overdue\nselect templates.taskItem(t)');
     const overdue = makeTask({ due: '2020-01-01', done: false });
     const notOverdue = makeTask({ due: '2099-01-01', done: false });
     const result = postFilter([overdue, notOverdue]);
@@ -60,7 +103,7 @@ describe('translateSLIQ', () => {
   });
 
   it('parses blocked filter', () => {
-    const { postFilter } = translateSLIQ('blocked');
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere blocked\nselect templates.taskItem(t)');
     const blocked = makeTask({ blocked: true });
     const unblocked = makeTask({ blocked: false });
     const result = postFilter([blocked, unblocked]);
@@ -69,24 +112,36 @@ describe('translateSLIQ', () => {
   });
 
   it('parses sort order', () => {
-    const { filter } = translateSLIQ('sort due asc');
+    const { filter } = translateSLIQ('from t = index.objects("task")\norder by t.due asc\nselect templates.taskItem(t)');
     expect(filter.sortBy).toBe('due');
     expect(filter.sortOrder).toBe('asc');
   });
 
   it('parses limit', () => {
-    const { filter } = translateSLIQ('limit 50');
+    const { filter } = translateSLIQ('from t = index.objects("task")\nlimit 50\nselect templates.taskItem(t)');
     expect(filter.limit).toBe(50);
   });
 
   it('parses orphan filter', () => {
-    const { filter } = translateSLIQ('orphan');
-    expect(filter.orphan).toBe(true);
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere orphan\nselect templates.taskItem(t)');
+    const orphan = makeTask({ text: 'orphan' });
+    const child = makeTask({ text: 'child', parent: 'parent-task' });
+
+    const result = postFilter([orphan, child]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe('orphan');
   });
 
   it('parses recur filter', () => {
-    const { filter } = translateSLIQ('recur');
-    expect(filter.recur).toBe(true);
+    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere recur\nselect templates.taskItem(t)');
+    const recurring = makeTask({ text: 'recurring', recur: 'daily:1' });
+    const oneOff = makeTask({ text: 'one-off' });
+
+    const result = postFilter([recurring, oneOff]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].recur).toBe('daily:1');
   });
 });
 

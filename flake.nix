@@ -26,6 +26,16 @@
 
           sentryDsn = builtins.getEnv "SILVERMIND_SENTRY_DSN";
 
+          repoHooksShellHook = ''
+            if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+              current_hooks_path="$(git config --local --get core.hooksPath || true)"
+              if [ "$current_hooks_path" != ".githooks" ]; then
+                git config --local core.hooksPath .githooks
+                echo "[silvermind] Enabled git hooks via .githooks"
+              fi
+            fi
+          '';
+
           # ── Silvermind desktop app (Linux & macOS) ─────────────────
           silvermind-desktop = pkgs.buildGoModule {
             pname = "silvermind-desktop";
@@ -124,6 +134,7 @@
             packages =
               with pkgs;
               [
+                git
                 go
                 gopls
                 nodejs-slim_22
@@ -138,6 +149,8 @@
                 webkitgtk_4_1
                 gtk3
               ];
+
+            shellHook = repoHooksShellHook;
           };
 
           devShells.android =
@@ -149,6 +162,7 @@
             in
             pkgs.mkShell {
               packages = with pkgs; [
+                git
                 go
                 gopls
                 nodejs-slim_22
@@ -163,6 +177,7 @@
               ANDROID_SDK_ROOT = "${sdk}/libexec/android-sdk";
 
               shellHook = ''
+                ${repoHooksShellHook}
                 ANDROID_USER_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}/silvermind-android-sdk"
                 SDK_MARKER="$ANDROID_USER_HOME/.nix-sdk-version"
                 CURRENT_SDK="${sdk}/libexec/android-sdk"
@@ -182,6 +197,7 @@
 
           devShells.flatpak = pkgs.mkShell {
             packages = with pkgs; [
+              git
               flatpak
               flatpak-builder
               go
@@ -196,6 +212,7 @@
             ];
 
             shellHook = ''
+              ${repoHooksShellHook}
               if ! flatpak info org.gnome.Platform//46 &>/dev/null; then
                 echo ""
                 echo "  [flatpak] org.gnome.Platform//46 runtime not found."

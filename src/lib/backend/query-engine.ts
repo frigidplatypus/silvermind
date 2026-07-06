@@ -114,6 +114,64 @@ function defaultExcludeDone(tasks: Task[]): Task[] {
   return tasks.filter((t) => !t.done && t.status !== 'x');
 }
 
+function buildStatusOnlyFilter(
+  line: string,
+): { filter: (tasks: Task[]) => Task[]; includesDone: boolean } | null {
+  const normalized = line.trim().replace(/^(where|and)\s+/, '').trim();
+  if (!normalized) return null;
+
+  const stripped = normalized
+    .replace(/[()]/g, ' ')
+    .replace(/\b(and|or)\b/g, ' ')
+    .replace(/\bnot\s+t\.done\b/g, ' ')
+    .replace(/\bt\.done\b/g, ' ')
+    .replace(/\bt\.state\s*==\s*"[^"]*"/g, ' ')
+    .replace(/\bt\.state\s*!=\s*"[^"]*"/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (stripped) return null;
+
+  const includeStatuses = new Set<string>();
+  const excludeStatuses = new Set<string>();
+
+  const includeDone = /\bt\.done\b/.test(normalized.replace(/\bnot\s+t\.done\b/g, ''));
+  const excludeDone = /\bnot\s+t\.done\b/.test(normalized);
+  if (includeDone) includeStatuses.add('x');
+  if (excludeDone) excludeStatuses.add('x');
+
+  for (const match of normalized.matchAll(/\bt\.state\s*==\s*"([^"]+)"/g)) {
+    const st = match[1].toLowerCase();
+    if (st === 'waiting' || st === 'x' || st === 'maybe' || st === 'someday') {
+      includeStatuses.add(st);
+    }
+  }
+  for (const match of normalized.matchAll(/\bt\.state\s*!=\s*"([^"]+)"/g)) {
+    const st = match[1].toLowerCase();
+    if (st === 'waiting' || st === 'x' || st === 'maybe' || st === 'someday') {
+      excludeStatuses.add(st);
+    }
+  }
+
+  return {
+    includesDone: includeStatuses.has('x'),
+    filter: (tasks: Task[]): Task[] =>
+      tasks.filter((task) => {
+        const status = task.status.toLowerCase();
+        const done = task.done || status === 'x';
+
+        if (includeStatuses.size > 0) {
+          const matchesInclude = [...includeStatuses].some((st) => (st === 'x' ? done : status === st));
+          if (!matchesInclude) return false;
+        }
+
+        if (!includeStatuses.has('x') && excludeStatuses.has('x') && done) return false;
+        if ([...excludeStatuses].some((st) => st !== 'x' && status === st)) return false;
+
+        return true;
+      }),
+  };
+}
+
 export function translateSLIQ(rawSliq: string): {
   filter: TaskFilter;
   postFilter: (tasks: Task[]) => Task[];
@@ -126,6 +184,7 @@ export function translateSLIQ(rawSliq: string): {
   const pageExcludes: string[] = [];
   const pageIncludes: string[] = [];
   const clientFilters: ((tasks: Task[]) => Task[])[] = [];
+  let includesDone = false;
 
   const lines = sliq.split('\n');
   for (let line of lines) {
@@ -151,6 +210,13 @@ export function translateSLIQ(rawSliq: string): {
 
     if (line.startsWith('where ') || line.startsWith('and ')) {
       line = line.replace(/^(where|and)\s+/, '').trim();
+
+      const statusFilter = buildStatusOnlyFilter(line);
+      if (statusFilter) {
+        clientFilters.push(statusFilter.filter);
+        includesDone ||= statusFilter.includesDone;
+        continue;
+      }
 
       const orClauses = splitOr(line);
       for (const orClause of orClauses) {
@@ -193,13 +259,15 @@ export function translateSLIQ(rawSliq: string): {
     );
   }
 
-  const hasStatusFilter = filter.status && filter.status.length > 0;
+  if (filter.status && filter.status.includes('x')) {
+    includesDone = true;
+  }
 
   const postFilter = (tasks: Task[]): Task[] => {
     for (const f of clientFilters) {
       tasks = f(tasks);
     }
-    if (!hasStatusFilter) {
+    if (!includesDone) {
       tasks = defaultExcludeDone(tasks);
     }
     return tasks;
@@ -230,6 +298,26 @@ function processFilterClause(
   filter: TaskFilter,
 ): ((tasks: Task[]) => Task[])[] | null {
   if (!sub) return null;
+
+  if (sub === 'overdue') {
+    return [(tasks) => filterOverdue(tasks)];
+  }
+
+  if (sub === 'blocked') {
+    return [(tasks) => filterBlocked(tasks)];
+  }
+
+  if (sub === 'unblocked') {
+    return [(tasks) => filterUnblocked(tasks)];
+  }
+
+  if (sub === 'orphan') {
+    return [(tasks) => filterByOrphan(tasks)];
+  }
+
+  if (sub === 'recur') {
+    return [(tasks) => filterByRecur(tasks)];
+  }
 
   if (sub === 'not t.done') return null;
 
@@ -339,14 +427,8 @@ function processFilterClause(
   if (sub.includes('t.deferred') && sub.includes('<')) {
     const val = extractQuotedValue(sub);
     if (val) {
-      return [
-        (tasks) =>
-          tasks.filter((t) => {
-            if (!t.deferred) return false;
-            const d = parseJournalDate(t.deferred);
-            return d ? d < val : false;
-          }),
-      ];
+      filter.deferredBefore = val;
+      return null;
     }
     return null;
   }
@@ -354,14 +436,8 @@ function processFilterClause(
   if (sub.includes('t.due') && sub.includes('<')) {
     const val = extractQuotedValue(sub);
     if (val) {
-      return [
-        (tasks) =>
-          tasks.filter((t) => {
-            if (!t.due) return false;
-            const d = parseJournalDate(t.due);
-            return d ? d < val : false;
-          }),
-      ];
+      filter.dueBefore = val;
+      return null;
     }
     return null;
   }
@@ -369,14 +445,8 @@ function processFilterClause(
   if (sub.includes('t.due') && sub.includes('>')) {
     const val = extractQuotedValue(sub);
     if (val) {
-      return [
-        (tasks) =>
-          tasks.filter((t) => {
-            if (!t.due) return false;
-            const d = parseJournalDate(t.due);
-            return d ? d > val : false;
-          }),
-      ];
+      filter.dueAfter = val;
+      return null;
     }
     return null;
   }

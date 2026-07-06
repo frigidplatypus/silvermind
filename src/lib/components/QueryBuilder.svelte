@@ -48,7 +48,7 @@
   }
 
   let statusIncludes = $state<Set<string>>(new Set());
-  let statusExcludes = $state<Set<string>>(new Set());
+  let statusExcludes = $state<Set<string>>(new Set(['done']));
   let priority = $state('');
 
   function statusState(value: string): 'none' | 'include' | 'exclude' {
@@ -61,7 +61,17 @@
     const current = statusState(value);
     const nextIncludes = new Set(statusIncludes);
     const nextExcludes = new Set(statusExcludes);
-    if (current === 'none') {
+    if (value === 'done') {
+      if (current === 'exclude') {
+        nextExcludes.delete(value);
+        nextIncludes.add(value);
+      } else if (current === 'include') {
+        nextIncludes.delete(value);
+        nextExcludes.delete(value);
+      } else {
+        nextExcludes.add(value);
+      }
+    } else if (current === 'none') {
       nextIncludes.add(value);
       nextExcludes.delete(value);
     } else if (current === 'include') {
@@ -72,6 +82,16 @@
     }
     statusIncludes = nextIncludes;
     statusExcludes = nextExcludes;
+  }
+
+  function setStatusIncluded(value: string) {
+    statusIncludes = new Set([...statusIncludes, value]);
+    statusExcludes = new Set([...statusExcludes].filter((s) => s !== value));
+  }
+
+  function setStatusExcluded(value: string) {
+    statusExcludes = new Set([...statusExcludes, value]);
+    statusIncludes = new Set([...statusIncludes].filter((s) => s !== value));
   }
 
   function extractQuoted(s: string, after: string): string | null {
@@ -93,22 +113,26 @@
       if (!line || line.startsWith('from ') || line.startsWith('select ')) continue;
 
       line = line.replace(/^(where|and)\s+/, '');
+      line = line.replace(/\bt\./g, 'p.');
+
+      if (/\bnot\s+p\.done\b/.test(line)) {
+        setStatusExcluded('done');
+      }
+      if (/\bp\.done\b/.test(line.replace(/\bnot\s+p\.done\b/g, ''))) {
+        setStatusIncluded('done');
+      }
+      for (const match of line.matchAll(/\bp\.state\s*==\s*"([^"]+)"/g)) {
+        setStatusIncluded(match[1].toLowerCase());
+      }
+      for (const match of line.matchAll(/\bp\.state\s*!=\s*"([^"]+)"/g)) {
+        setStatusExcluded(match[1].toLowerCase());
+      }
 
       const clauses = line.split(' or ');
       for (let clause of clauses) {
         clause = clause.trim();
 
-        if (clause === 'p.done') {
-          statusIncludes = new Set([...statusIncludes, 'done']);
-        } else if (clause === 'not p.done') {
-          statusExcludes = new Set([...statusExcludes, 'done']);
-        } else if (clause.startsWith('p.state == ')) {
-          const st = extractQuoted(clause, 'p.state == ');
-          if (st) statusIncludes = new Set([...statusIncludes, st]);
-        } else if (clause.startsWith('p.state != ')) {
-          const st = extractQuoted(clause, 'p.state != ');
-          if (st) statusExcludes = new Set([...statusExcludes, st]);
-        } else if (clause.startsWith('p.priority == ')) {
+        if (clause.startsWith('p.priority == ')) {
           const pri = extractQuoted(clause, 'p.priority == ');
           if (pri && (availablePriorities as string[]).includes(pri)) priority = pri;
         } else if (clause.startsWith('table.includes(p.tags, ')) {
@@ -284,20 +308,23 @@
     extraAttrs = extraAttrs.filter((_, i) => i !== index);
   }
 
-   function buildSLIQ(): string {
+  function buildSLIQ(): string {
     const lines: string[] = ['from p = index.objects("task")'];
 
+    const includeClauses = [...statusIncludes].map((s) => (s === 'done' ? 'p.done' : `p.state == "${s}"`));
     const statusClauses: string[] = [];
-    for (const s of statusIncludes) {
-      if (s === 'done') statusClauses.push('p.done');
-      else statusClauses.push(`p.state == "${s}"`);
+    if (includeClauses.length > 0) {
+      statusClauses.push(includeClauses.length > 1 ? `(${includeClauses.join(' or ')})` : includeClauses[0]);
+    }
+    if (!statusIncludes.has('done')) {
+      statusClauses.push('not p.done');
     }
     for (const s of statusExcludes) {
-      if (s === 'done') statusClauses.push('not p.done');
-      else statusClauses.push(`p.state != "${s}"`);
+      if (s === 'done') continue;
+      statusClauses.push(`p.state != "${s}"`);
     }
     if (statusClauses.length > 0) {
-      const joined = statusClauses.join(' or ');
+      const joined = statusClauses.join(' and ');
       const prefix = lines.length <= 1 ? 'where' : 'and';
       lines.push(`${prefix} ${joined}`);
     }
@@ -453,7 +480,7 @@
     title = '';
     create = true;
     statusIncludes = new Set();
-    statusExcludes = new Set();
+    statusExcludes = new Set(['done']);
     priority = '';
     pageFilterType = 'equals';
     pageFilterValue = '';

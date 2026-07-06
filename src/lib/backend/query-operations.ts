@@ -3,7 +3,6 @@ import type { Task, QueryBlock, QueryBlockPage, TaskFilter } from './task-types'
 import {
   translateSLIQ,
   computeBlocked,
-  applyHardExclusions,
   sortTasks,
   normalizePositions,
   filterByTags,
@@ -11,6 +10,7 @@ import {
 } from './query-engine';
 import { parseTasksFromPage, mapRuntimeTask } from './task-parser';
 import { logInfo, logWarn, logError } from '$lib/helpers/logger';
+import * as yaml from 'js-yaml';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -237,7 +237,6 @@ export async function executeQuery(sliq: string, sbClient: SbClient): Promise<Ta
   }
 
   computeBlocked(tasks);
-  tasks = applyHardExclusions(tasks);
   tasks = postFilter(tasks);
   normalizePositions(tasks);
   if (filter.sortBy) {
@@ -245,6 +244,46 @@ export async function executeQuery(sliq: string, sbClient: SbClient): Promise<Ta
   }
 
   return tasks;
+}
+
+const QUERY_PAGE_TAG = 'silvermind/queries';
+
+function normalizePageTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((tag) => String(tag).trim().replace(/^#/, '')).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(/[\s,]+/)
+      .map((tag) => tag.trim().replace(/^#/, ''))
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function ensureQueryPageTagged(content: string): string {
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!fmMatch) {
+    const body = content.trimStart();
+    return `---\ntags:\n  - ${QUERY_PAGE_TAG}\n---\n${body}`;
+  }
+
+  let frontmatter: Record<string, unknown> = {};
+  try {
+    const parsed = yaml.load(fmMatch[1]);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      frontmatter = { ...(parsed as Record<string, unknown>) };
+    }
+  } catch {
+    frontmatter = {};
+  }
+
+  const tags = new Set([...normalizePageTags(frontmatter.tags), QUERY_PAGE_TAG]);
+  frontmatter.tags = [...tags];
+
+  const renderedFrontmatter = yaml.dump(frontmatter, { sortKeys: false, lineWidth: -1 }).trimEnd();
+  const body = content.slice(fmMatch[0].length);
+  return `---\n${renderedFrontmatter}\n---\n${body}`;
 }
 
 export async function saveQueryBlock(
@@ -255,13 +294,14 @@ export async function saveQueryBlock(
   sbClient: SbClient,
 ): Promise<void> {
   await sbClient.readModifyWrite(page, async (content) => {
-    const blocks = extractQueryBlocks(content);
+    const taggedContent = ensureQueryPageTagged(content);
+    const blocks = extractQueryBlocks(taggedContent);
     if (blockNumber > 0 && blocks.some((b) => b.number === blockNumber)) {
-      return replaceQueryBlock(content, blockNumber, title, sliq);
+      return replaceQueryBlock(taggedContent, blockNumber, title, sliq);
     }
     const newBlock = title
       ? `\n## ${title}\n\${query[[\n${sliq}\n]]}\n`
       : `\${query[[\n${sliq}\n]]}\n`;
-    return content.trimEnd() + '\n' + newBlock;
+    return taggedContent.trimEnd() + '\n' + newBlock;
   });
 }
