@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getServiceState } from '$lib/stores/service.svelte';
+  import { getServiceState, initServiceListener } from '$lib/stores/service.svelte';
   import { getActiveId } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
@@ -151,6 +151,7 @@
 
   onMount(() => {
     logInfo(`[layout] onMount — isDesktop=${getIsDesktop()} tab=${currentTab}`);
+    initServiceListener();
     // Show privacy consent after splash fades, before onboarding
     setTimeout(() => consentRef?.show(), 2000);
   });

@@ -14,17 +14,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     allowedHosts: ['p5810', 'p5810.local', '.local'],
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:7433',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/report': {
-        target: 'http://127.0.0.1:7433',
-        changeOrigin: true,
-      },
-    },
   },
   build: {
     outDir: 'dist',

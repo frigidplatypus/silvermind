@@ -1,11 +1,13 @@
 import type { ServiceHealth } from '$lib/types/service';
 
 let stateVal = $state<ServiceHealth>({
-  state: 'starting',
-  lastOkAt: null,
+  state: 'running',
+  lastOkAt: Date.now(),
   restartCount: 0,
   lastError: null,
 });
+
+let initialized = false;
 
 export function getServiceState(): ServiceHealth {
   return stateVal;
@@ -26,8 +28,12 @@ export function setServiceState(newState: ServiceHealth['state'], error?: string
 
 export function initServiceListener(): void {
   if (typeof window === 'undefined') return;
+  if (initialized) return;
+  initialized = true;
 
-  // Capacitor plugin events (mobile only)
+  setServiceState('running');
+
+  // Kept for older development builds; the JS-native backend has no service process.
   window.addEventListener('serviceStateChanged', ((event: CustomEvent) => {
     const payload = event.detail;
     if (payload) {
@@ -40,25 +46,4 @@ export function initServiceListener(): void {
     }
   }) as EventListener);
 
-  // Fallback health polling for desktop/web (no Capacitor)
-  startHealthPolling();
-}
-
-let _pollTimer: ReturnType<typeof setInterval> | null = null;
-
-function startHealthPolling() {
-  if (_pollTimer) return;
-  _pollTimer = setInterval(async () => {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch('/api/health', { signal: controller.signal });
-      clearTimeout(timer);
-      if (res.ok) {
-        if (stateVal.state !== 'running') setServiceState('running');
-      }
-    } catch {
-      if (stateVal.state === 'running') setServiceState('unhealthy', 'Health check failed');
-    }
-  }, 10_000);
 }

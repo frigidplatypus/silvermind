@@ -522,7 +522,7 @@
     <label class="field-label">
       <span>Save to page</span>
       <input type="text" bind:value={page} placeholder="e.g. queries/my-filters" class="field-input" />
-      <span class="field-hint">The sbtask page to store this query on</span>
+      <span class="field-hint">The SilverBullet page to store this query on</span>
     </label>
     <label class="field-label">
       <span>Query title</span>

@@ -1,4 +1,4 @@
-// Matches sbtask serve actual API response format
+// Matches the task shape returned by Silvermind's SilverBullet-backed API layer.
 export interface Task {
   page: string;
   position: number;

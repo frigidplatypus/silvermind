@@ -37,7 +37,6 @@ export default defineConfig({
         '@capacitor/preferences',
         '@capacitor/local-notifications',
         '@capacitor/browser',
-        '@capacitor/http',
         '@capacitor/filesystem',
       ],
     },

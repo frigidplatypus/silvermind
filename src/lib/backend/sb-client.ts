@@ -46,13 +46,9 @@ async function goProxyTransport(url: string, options: RequestInit): Promise<Resp
 }
 
 async function capacitorTransport(url: string, options: RequestInit): Promise<Response> {
-  const { CapacitorHttp } = await import('@capacitor/http');
-  const { url: reqUrl, ...fetchOpts } = (() => {
-    const { url: _u, ...rest } = { url, ...options };
-    return { url: _u, ...rest };
-  })();
+  const { CapacitorHttp } = await import('@capacitor/core');
   const result = await CapacitorHttp.request({
-    url: reqUrl,
+    url,
     method: (options.method || 'GET') as any,
     headers: (options.headers as Record<string, string>) || {},
     data: options.body,

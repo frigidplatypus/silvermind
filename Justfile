@@ -92,10 +92,6 @@ serve-web: build-web build-sbtask
 
 # ── iOS / Capacitor ──────────────────────────────────────────────────────────
 
-# Cross-compile sbtask for iOS arm64
-sbtask-fetch:
-    nix develop --command pnpm sbtask:fetch
-
 # Cross-compile sbtask for Android arm64
 sbtask-fetch-android:
     nix develop --command bash scripts/fetch-sbtask.sh android
@@ -116,8 +112,8 @@ cap-open:
 cap-open-android:
     nix develop --command pnpm cap:open:android
 
-# Full iOS build (dist + fetch + sync)
-build-ios: dist-mobile sbtask-fetch cap-sync
+# Full iOS build (dist + sync)
+build-ios: dist-mobile cap-sync
     @echo "✓ iOS assets ready — open with 'just cap-open'"
 
 # Install Android custom plugin into generated project

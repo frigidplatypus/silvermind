@@ -347,7 +347,7 @@ import { devLog } from '$lib/helpers/dev-log';
 
   <section class="section">
     <h3 class="section-title">About</h3>
-    <p class="about-text">Silvermind &mdash; task management powered by sbtask.</p>
+    <p class="about-text">Silvermind &mdash; task management powered by SilverBullet.</p>
   </section>
 </div>
 

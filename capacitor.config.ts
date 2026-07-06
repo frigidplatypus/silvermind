@@ -4,11 +4,6 @@ const config: CapacitorConfig = {
   appId: 'ai.silvermind.app',
   appName: 'Silvermind',
   webDir: 'dist',
-  server: {
-    url: 'http://127.0.0.1:7433',
-    cleartext: true,
-    allowNavigation: ['*'],
-  },
   ios: {
     scheme: 'Silvermind',
     contentInset: 'automatic',
