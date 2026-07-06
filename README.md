@@ -1,366 +1,300 @@
 # Silvermind
 
-**Silvermind** is a task management application that wraps the [sbtask](https://git.fluffy-rooster.ts.net/FRGD/sbtask) CLI tool with a native-feeling Svelte 5 web UI. It runs on **iOS** (via Capacitor) and **Linux desktop** (via Wails v2) from a single TypeScript/Svelte codebase.
+**Silvermind** is a cross-platform task app for [SilverBullet](https://silverbullet.md).
+It uses a Svelte 5 frontend with a native-feeling desktop shell and talks directly to
+SilverBullet pages and runtime APIs. `sbtask` is no longer part of the application
+architecture.
 
----
+## Current Status
+
+- JS-native backend: task CRUD, inbox loading, today view, query execution, and config
+  management all run from the app code in this repo.
+- Desktop app: Linux desktop shell via Wails.
+- Mobile app: Capacitor-based iOS and Android projects are present in the repo.
+- SilverBullet integration: direct reads and writes to SilverBullet pages plus runtime API
+  queries when available.
+- Query support: Silvermind can build, save, discover, and execute tagged SilverBullet
+  task queries.
 
 ## Architecture
 
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                    Svelte 5 UI (src/)                       │
+│ Inbox · Today · Global · Queries · Builder · Settings       │
+│ Quick capture · Task detail/editor · Desktop/mobile shells  │
+└─────────────────────────────┬────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│            TypeScript backend logic (src/lib/backend)       │
+│ SilverBullet client · task ops · inbox loading · queries    │
+│ config manager · parser/serializer · today/query engines    │
+└───────────────┬──────────────────────────────┬───────────────┘
+                │                              │
+                ▼                              ▼
+┌──────────────────────────────┐   ┌──────────────────────────┐
+│ SilverBullet .fs page access │   │ SilverBullet runtime API │
+│ read/write markdown pages    │   │ tasks/pages/tags lookup  │
+└──────────────────────────────┘   └──────────────────────────┘
+
+Desktop shell:
+- Wails app embeds the built frontend
+- Go layer provides config storage, URL opening, and proxy fetch helpers
+
+Mobile shell:
+- Capacitor wraps the same frontend
+- Native plugins provide filesystem, haptics, status bar, splash, and HTTP
 ```
-┌──────────────────────────────────────────────────────┐
-│                   Svelte 5 UI (src/)                 │
-│  Inbox · Today · Settings · Quick Capture · Sidebar  │
-│  Task detail · Task editor · Markdown · Space switch │
-└─────────────┬───────────────────────┬────────────────┘
-              │ HTTP (localhost:7433) │
-              ▼                       ▼
-┌─────────────────────┐   ┌──────────────────────────┐
-│  Vite dev server    │   │  Wails v2 (Go binary)    │
-│  (browser + mobile) │   │  embeds sbtask as lib    │
-│  proxies /api→7433  │   │  starts serve in-process │
-└─────────────────────┘   └──────┬───────────────────┘
-                                 │ Go module replace
-                                 ▼
-                    ┌────────────────────────┐
-                    │  sbtask (pkg/serve)    │
-                    │  REST API on :7433     │
-                    │  reads config.yaml     │
-                    └────────────────────────┘
-```
 
-### Mobile (iOS)
-- **Capacitor 6** wraps the Vite-built web app in a native WKWebView
-- `sbtask` runs as a **separate process** (spawned by the iOS app)
-- The Vite dev server proxies `/api` → `localhost:7433`
-- Capacitor plugins: Haptics, Preferences, Splash Screen, Status Bar
+## What Changed
 
-### Desktop (Linux)
-- **Wails v2** wraps the Vite-built web app in a WebKitGTK webview
-- `sbtask` runs **in-process** as a Go library via `go.mod replace`
-- The Go binary embeds `desktop/frontend/dist/` at compile time via `go:embed`
-- Go AppService methods (`ListSpaces`, `AddSpace`, `SetActiveSpace`, etc.) are bridged to the frontend via `window.go.main.App.*`
+Silvermind used to rely on `sbtask` as a separate backend/service layer.
+That is no longer true.
 
----
+Now:
+
+- task reads come from SilverBullet runtime APIs when possible, with page-based fallback
+- task mutations edit SilverBullet markdown directly
+- saved query pages are SilverBullet pages tagged with `silvermind/queries`
+- desktop config is managed by Silvermind itself in `~/.config/silvermind/config.yaml`
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Go | 1.26+ | |
-| Node.js | 22 | |
-| pnpm | latest | |
-| sbtask | latest | local checkout at `~/development/go/sbtask` |
-| WebKitGTK | 4.1 | desktop only |
-| GTK3 | — | desktop only |
-| pkg-config | — | desktop only |
-| Xcode | latest | iOS only |
-| CocoaPods | — | iOS only |
-| Capacitor CLI | 6.x | iOS only |
+### Runtime
 
----
+- A running SilverBullet instance
+- An auth token for that SilverBullet space
+
+### Development
+
+- Nix with flakes enabled
+- Go
+- Node.js 22
+- pnpm
+- WebKitGTK 4.1, GTK3, and pkg-config for Linux desktop builds
+- Xcode for iOS work
+- Android SDK / Gradle for Android work
+
+Use the Nix shell unless explicitly working outside it:
+
+```bash
+nix develop
+```
+
+The flake shell also enables the repository hooks from `.githooks` automatically.
 
 ## Project Structure
 
-```
+```text
 ├── src/
-│   ├── main.ts                    # App entry point (hash-based SPA router)
-│   ├── app.css                    # CSS variables, reset, theme (light/dark)
-│   ├── index.html                 # HTML shell
-│   ├── lib/
-│   │   ├── api/
-│   │   │   ├── client.ts          # HTTP client (auto-detects Wails/browser)
-│   │   │   ├── inbox.ts           # GET /tasks → filter active
-│   │   │   ├── today.ts           # GET /today
-│   │   │   ├── tasks.ts           # CRUD for tasks
-│   │   │   └── spaces.ts          # GET /spaces
-│   │   ├── components/
-│   │   │   ├── Autocomplete.svelte
-│   │   │   ├── DesktopShell.svelte # Desktop layout (sidebar + split pane)
-│   │   │   ├── Icon.svelte        # Feather Icons wrapper
-│   │   │   ├── Markdown.svelte    # Markdown renderer (links open in browser)
-│   │   │   ├── QuickCapture.svelte
-│   │   │   ├── Sidebar.svelte     # Desktop sidebar nav + space switcher
-│   │   │   ├── SpaceSwitcher.svelte
-│   │   │   ├── SplitPane.svelte   # Collapsible resizable right pane
-│   │   │   ├── TaskDetail.svelte  # overlay (mobile) / panel (desktop)
-│   │   │   ├── TaskEditor.svelte  # fullscreen (mobile) / modal (desktop)
-│   │   │   ├── TaskList.svelte    # List with pull-to-refresh, error state
-│   │   │   └── TaskRow.svelte     # Single task row
-│   │   ├── native/
-│   │   │   ├── haptics.ts         # Capacitor Haptics wrapper (graceful no-op)
-│   │   │   ├── splash.ts          # Capacitor SplashScreen wrapper
-│   │   │   └── status-bar.ts      # Capacitor StatusBar wrapper
-│   │   ├── stores/
-│   │   │   ├── desktop.svelte.ts  # Desktop state (split ratio, selected task)
-│   │   │   ├── service.svelte.ts  # sbtask server health
-│   │   │   ├── privacy.svelte.ts  # Crash reporting consent
-│   │   │   ├── space.svelte.ts    # Spaces from API + localStorage
-│   │   │   ├── tasknames.svelte.ts# Task names for autocomplete
-│   │   │   ├── tasks.svelte.ts    # Inbox/today tasks, error formatting
-│   │   │   └── theme.svelte.ts    # system/light/dark
-│   │   ├── types/
-│   │   │   ├── task.ts
-│   │   │   ├── space.ts
-│   │   │   ├── service.ts
-│   │   │   └── sort.ts
-│   │   ├── desktop-bridge.ts      # Typed Wails Go method wrappers
-│   │   └── router.ts              # Hash-based SPA router (#/inbox, #/today)
-│   └── routes/
-│       ├── +layout.svelte         # Root layout (mobile/desktop switch at 800px)
-│       ├── inbox/+page.svelte
-│       ├── today/+page.svelte
-│       └── settings/+page.svelte
+│   ├── routes/
+│   │   ├── +layout.svelte
+│   │   ├── inbox/
+│   │   ├── today/
+│   │   ├── global/
+│   │   ├── queries/
+│   │   ├── builder/
+│   │   └── settings/
+│   └── lib/
+│       ├── api/           # frontend-facing task/query/today/space APIs
+│       ├── backend/       # SilverBullet client, task ops, query engine, parsers
+│       ├── components/    # app UI components
+│       ├── helpers/       # logging, task actions, etc.
+│       ├── native/        # Capacitor wrappers
+│       ├── stores/        # Svelte state stores
+│       ├── types/         # shared frontend types
+│       └── desktop-bridge.ts
 ├── desktop/
-│   ├── main.go                    # Wails app entry, AppService methods
-│   ├── sbtask.go                  # sbtask in-process server wrapper
-│   ├── config.go                  # Config CRUD with migration from sbtask
-│   ├── wails.json                 # Wails project config
-│   └── frontend/dist/             # Pre-built frontend (checked into git)
-├── specs/
-│   ├── 001-silvermind-mobile-app/ # Original mobile app spec
-│   └── 002-desktop-layout/        # Desktop wrapper spec & plan
+│   ├── main.go           # Wails entry point + bindings
+│   ├── config.go         # desktop config persistence
+│   ├── sbtask.go         # legacy bridge file; no sbtask runtime integration
+│   └── frontend/dist/    # checked-in desktop frontend bundle
+├── android-plugin/       # Android helper/plugin code
 ├── scripts/
-│   └── fetch-sbtask.sh            # Cross-compile sbtask for iOS arm64
-├── ios/                           # Capacitor iOS project (gitignored)
-├── flake.nix                      # Nix flake: builds silvermind-desktop
-├── devenv.nix                     # devenv.sh: sbtask + vite dev
-├── vite.config.ts                 # Vite config (mobile/browser dev)
-├── vite.config.desktop.ts         # Vite config (desktop build, excludes Capacitor)
-├── package.json
-├── svelte.config.js               # Svelte 5 runes mode
-└── tsconfig.json
+├── flake.nix
+├── Justfile
+└── specs/
 ```
 
----
+## Configuration
 
-## Quick Start (Alpha Testers)
+Silvermind stores its config in:
 
-### 1. Download
+- Desktop: `~/.config/silvermind/config.yaml`
+- Capacitor platforms: app-managed storage/filesystem
 
-Grab the latest binary or APK from [Releases](https://git.fluffy-rooster.ts.net/FRGD/Silvermind/releases).
+Config shape:
 
-### 2. Configure your spaces
-
-Copy the example config to its expected location:
-
-```bash
-mkdir -p ~/.config/sbtask
-cp sbtask-config.example.yaml ~/.config/sbtask/config.yaml
-# Edit the file with your SilverBullet URL and auth token
+```yaml
+spaces:
+  my-space:
+    space: https://your-silverbullet-instance.example.com
+    auth_token: your-auth-token
+    default_page: Tasks
+    inbox_page: Inbox
+active_space: my-space
 ```
 
-Or run the interactive config generator:
+The example file in this repo is `sbtask-config.example.yaml`, but the active Silvermind
+desktop config path is `~/.config/silvermind/config.yaml`.
+
+## Query Pages
+
+Saved Silvermind query pages are regular SilverBullet pages.
+
+- They are tagged with `silvermind/queries`
+- A single tagged page can contain multiple query blocks
+- Task-list queries should render with `select templates.taskItem(...)`
+
+Silvermind uses these pages for the Queries sidebar and the query results views.
+
+## Quick Start
+
+### Desktop app
+
+Build and run the Linux desktop binary:
 
 ```bash
-sbtask config init
+nix develop
+just run
 ```
 
-### 3. Start the server
+Or build only:
 
-**Desktop (Linux/macOS):**
 ```bash
-sbtask serve --web-gui frontend/dist
-# Open http://localhost:9876
+nix develop
+just build
 ```
 
-**Android:** Install the APK and launch Silvermind from your app drawer.
-The app automatically starts the sbtask service on the device.
-
-### System Requirements
-
-- 64-bit Linux, macOS, or Android 10+
-- A running [SilverBullet](https://silverbullet.md) instance with the runtime-api Docker variant
-- Your SilverBullet auth token (found in your SilverBullet config)
-
----
-
-## Getting Started (Development)
-
-### Web Development (browser + Vite proxy)
+### Web/dev UI
 
 ```bash
-# Start sbtask server
-sbtask serve --port 7433
-
-# In another terminal, start Vite dev server
+nix develop
 pnpm dev
-# → http://localhost:5173 (proxies /api → :7433)
 ```
 
-### Desktop Development (Wails + Vite)
-
-Use the devenv shell:
+### iOS
 
 ```bash
-devenv shell
-devenv up
-# Starts sbtask serve + Vite dev server
-# For the actual desktop binary:
-build-desktop
-```
-
-Or manually:
-
-```bash
-# Terminal 1: sbtask backend
-sbtask serve --port 7433
-
-# Terminal 2: Vite dev for frontend
-pnpm dev
-
-# Terminal 3: build Go binary
-cd desktop
-CGO_ENABLED=1 CGO_CFLAGS="-Wno-error=incompatible-pointer-types" \
-  go build -tags "desktop production webkit2_41" -ldflags="-s -w" -o silvermind-desktop .
-./silvermind-desktop
-```
-
-### iOS Development
-
-```bash
-# Build sbtask for iOS arm64
-pnpm sbtask:fetch
-
-# Sync Capacitor
+nix develop
 pnpm cap:sync
-
-# Open Xcode
 pnpm cap:open
-# Build and run on device/simulator from Xcode
 ```
 
----
+### Android
+
+```bash
+nix develop .#android
+just build-android
+just cap-open-android
+```
+
+## Development Workflows
+
+### Recommended desktop workflow
+
+```bash
+nix develop
+just dist
+just build-go
+./desktop/silvermind-desktop
+```
+
+### Frontend-only workflow
+
+```bash
+nix develop
+pnpm dev
+```
+
+### Useful `just` commands
+
+- `just dist` - build desktop frontend bundle
+- `just build` - build full desktop app
+- `just run` - build and run desktop app
+- `just dist-mobile` - build mobile/browser frontend
+- `just build-android` - prepare Android app assets and sync
+- `just cap-open` - open iOS project
+- `just cap-open-android` - open Android project
 
 ## Build Commands
 
 | Command | Output | Description |
 |---------|--------|-------------|
-| `pnpm build` | `dist/` | Mobile/browser build |
-| `pnpm build:desktop` | `desktop/frontend/dist/` | Desktop frontend build (excludes Capacitor) |
-| `go build` (in `desktop/`) | `silvermind-desktop` | Desktop Go binary (embeds dist/) |
-| `pnpm sbtask:fetch` | `ios/App/sbtask` | Cross-compile sbtask for iOS arm64 |
-| `pnpm cap:sync` | ios/ | Sync Capacitor iOS project |
-| `pnpm cap:open` | — | Open iOS project in Xcode |
+| `pnpm build` | `dist/` | main frontend build |
+| `pnpm build:desktop` | `desktop/frontend/dist/` | desktop frontend bundle |
+| `pnpm build:web` | `frontend/dist/` | standalone web GUI bundle |
+| `just build` | `desktop/silvermind-desktop` | desktop binary |
+| `pnpm cap:sync` | `ios/` | sync iOS Capacitor app |
+| `pnpm cap:sync:android` | `android/` | sync Android Capacitor app |
 
-**Important**: Run `pnpm build:desktop` before `go build` to ensure `desktop/frontend/dist/` has fresh assets. This directory is checked into git so `go build` works in CI without Node.js.
+`desktop/frontend/dist/` is checked into git so the Wails desktop build can embed a known
+frontend bundle.
 
----
+## Desktop Integration
 
-## Configuration
+The Go desktop layer is intentionally thin.
 
-### Config file path
+It currently handles:
 
-| Platform | Path |
-|----------|------|
-| Desktop | `~/.config/silvermind/config.yaml` |
-| iOS | App sandbox (managed by sbtask) |
+- config file persistence
+- opening external URLs via `xdg-open`
+- HTTP proxy fetch support for desktop environments where direct browser fetch is unreliable
+- embedding and serving the built frontend bundle
 
-### Format
+It does not host a task server.
 
-```yaml
-spaces:
-  main:
-    space: http://localhost:3000
-    default_page: Tasks
-    inbox_page: Inbox
-active_space: main
-```
+## SilverBullet Integration Notes
 
-On first run, Silvermind **migrates** from `~/.config/sbtask/config.yaml` if the Silvermind config doesn't exist yet (skips bare default configs with only a `main`→`localhost:3000` space).
+Silvermind talks to SilverBullet in two ways:
 
-### Managing spaces
+- `/.runtime/objects/...` for fast task/page/tag lookups when the runtime API is healthy
+- `/.fs/...` for direct markdown page reads and writes
 
-Spaces can be managed from the **Settings** page in the app (desktop only for add/edit/remove) or by editing the YAML file directly.
-
----
-
-## Theme
-
-Three themes supported: `system` (follow OS), `light`, `dark`. Stored in `localStorage` as `silvermind-theme`. Dark mode uses a deep navy palette (`#1a1a2e` background).
-
-CSS custom properties are defined in `src/app.css` with `[data-theme="dark"]` overrides and `prefers-reduced-motion` support.
-
----
-
-## Key Design Decisions
-
-1. **Single codebase** — Same `src/` tree for mobile and desktop. Responsive layout at 800px breakpoint switches between mobile tab-bar layout and desktop sidebar+split-pane layout.
-
-2. **sbtask as library** — Desktop embeds sbtask in-process via `go.mod replace`. Mobile spawns sbtask as a separate process.
-
-3. **Frontend dist checked into git** — `desktop/frontend/dist/` is committed so `go build` works in Nix CI without pnpm/Node.js.
-
-4. **No authentication** — All API calls are to localhost.
-
-5. **Feather Icons** — Never emoji. All icons from `feather-icons` package via `Icon.svelte`.
-
-6. **Wails v2** — Only v2 available in nixpkgs. Uses `webkit2_41` build tag.
-
-7. **Visual feedback** — Toast notifications for success, error, and undo actions. Haptics provide complementary physical feedback on supported platforms.
-
-8. **External links** — All `<a>` links in Markdown and elsewhere open in the system default browser. Desktop uses `xdg-open` via Go bridge; mobile uses `window.open(_blank)`.
-
----
-
-## API Endpoints
-
-Silvermind communicates with the sbtask server on `localhost:7433`:
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/tasks` | List tasks (with `?space=` and `?limit=` params) |
-| POST | `/tasks` | Create task |
-| PUT | `/tasks/:page/:position` | Update task |
-| PUT | `/tasks/:page/:position/done` | Mark done |
-| PUT | `/tasks/:page/:position/undo` | Undo done |
-| DELETE | `/tasks/:page/:position` | Delete task |
-| GET | `/today` | Today view (overdue, due_today, deferred_today) |
-| GET | `/spaces` | List spaces |
-
-In browser dev, the Vite proxy rewrites `/api/*` → `/:1` (strips `/api` prefix).
-
----
-
-## Keyboard Shortcuts (Desktop)
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+N` | Focus quick capture |
-| `Ctrl+1` | Go to Inbox |
-| `Ctrl+2` | Go to Today |
-| `Ctrl+,` | Go to Settings |
-
----
-
-## Accessibility
-
-- Semantic HTML with ARIA roles throughout
-- VoiceOver-friendly labels on buttons and controls
-- Dynamic Type support (font-size respects system settings via `-webkit-text-size-adjust`)
-- Reduced motion respected via `prefers-reduced-motion` media query
-- Keyboard navigable (tab stops, arrow keys in autocomplete)
-
----
+When runtime APIs fail, some paths fall back to page-based loading.
 
 ## Troubleshooting
 
-### Desktop binary is 16K (frontend assets not embedded)
+### Queries page is empty
 
-Run `pnpm build:desktop` first to populate `desktop/frontend/dist/`. This directory is checked into git, so after the first build it persists.
+Make sure:
 
-### Space returns 502 / upstream unreachable
+- the SilverBullet page is tagged with `silvermind/queries`
+- the page contains valid task-list query blocks
+- the SilverBullet runtime object API is healthy enough to enumerate tagged pages
 
-The space URL in your config points to a server that isn't running. Verify the URL in `~/.config/silvermind/config.yaml` or the Settings page.
+### Desktop build is missing embedded frontend assets
 
-### External links don't open in browser
+Run:
 
-The link handler tries (in order): `go.main.App.OpenURL` (Wails bridge → `xdg-open`), `window.runtime.BrowserOpenURL` (Wails runtime), `window.open` (browser/Capacitor fallback).
+```bash
+nix develop
+just dist
+```
 
-### CORS errors in dev
+before `just build` or `go build` in `desktop/`.
 
-sbtask serve includes CORS middleware. The Vite proxy also handles this. If running without Vite, ensure the `--cors` flag is set on sbtask serve.
+### SilverBullet calls time out
 
----
+Verify:
+
+- the configured space URL is correct
+- the auth token is valid
+- the SilverBullet runtime API is enabled and healthy
+
+### External links do not open on desktop
+
+Desktop link opening uses the Wails Go bridge and `xdg-open`.
+
+## Keyboard Shortcuts
+
+Current desktop shortcuts include:
+
+- `Ctrl+N` - focus quick capture
+- `Ctrl+1` - inbox
+- `Ctrl+2` - today
+- `Ctrl+,` - settings
 
 ## License
 
