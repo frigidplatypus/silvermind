@@ -6,18 +6,13 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   ios: {
     scheme: 'Silvermind',
-    contentInset: 'automatic',
-    prefersStatusBarHidden: false,
-    infoPlist: {
-      NSAppTransportSecurity: {
-        NSAllowsLocalNetworking: true,
-      },
-    },
-  },
-  android: {
-    webContentsDebuggingEnabled: true,
+    contentInset: 'never',
   },
   plugins: {
+    StatusBar: {
+      overlaysWebView: true,
+      style: 'LIGHT',
+    },
     SplashScreen: {
       launchShowDuration: 3000,
       launchAutoHide: true,

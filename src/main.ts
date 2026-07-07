@@ -10,6 +10,7 @@ import { initCrashReporting } from '$lib/helpers/crash-reporting';
 import { initPrivacy } from '$lib/stores/privacy.svelte';
 import { initNotifications } from '$lib/stores/notifications.svelte';
 import { logInfo, logDebug } from '$lib/helpers/logger';
+import { initSafeArea } from '$lib/native/safe-area';
 import Layout from './routes/+layout.svelte';
 
 logInfo('[startup] main.ts loaded, beginning initialization');
@@ -18,15 +19,18 @@ initPrivacy();
 initCrashReporting();
 logDebug('[startup] privacy + crash reporting initialized');
 
-initBackend().then(() => {
-  logInfo('[startup] backend initialized, loading spaces');
-  loadSpaces();
-}).catch((e) => {
-  logInfo(`[startup] backend init skipped: ${e?.message || e}`, { desktop: isDesktopApp() });
-  loadSpaces().catch(() => {});
-});
+initBackend()
+  .then(() => {
+    logInfo('[startup] backend initialized, loading spaces');
+    loadSpaces();
+  })
+  .catch((e: any) => {
+    logInfo(`[startup] backend init skipped: ${e?.message || e}`, { desktop: isDesktopApp() });
+    loadSpaces().catch(() => {});
+  });
 initNotifications();
 logDebug('[startup] notifications initialized');
+initSafeArea().catch((e: any) => logInfo(`[startup] safe area init skipped: ${e?.message || e}`));
 
 async function checkOnboarding() {
   if (isDesktopApp()) {
@@ -37,13 +41,13 @@ async function checkOnboarding() {
         logInfo('[startup] no space configured — showing onboarding');
         startOnboarding('welcome');
       }
-    } catch (e) {
+    } catch (e: any) {
       logInfo(`[startup] onboarding check skipped: ${e?.message || e}`);
     }
     return;
   }
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
   await loadSpaces().catch(() => {});
   if (getSpacesList().length === 0) {
     startOnboarding('welcome');
@@ -83,7 +87,9 @@ function render() {
       );
       if (hasChildren) {
         const firstChild = root.children[0];
-        logDebug(`[startup] root child: <${firstChild.tagName.toLowerCase()} class="${firstChild.className}">`);
+        logDebug(
+          `[startup] root child: <${firstChild.tagName.toLowerCase()} class="${firstChild.className}">`,
+        );
       } else {
         logInfo('[startup] WARNING: #app is empty — Svelte did not mount');
         document.body.style.background = '#ff4444';
