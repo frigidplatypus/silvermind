@@ -51,17 +51,8 @@ export async function getConfigPath(): Promise<string> {
   return go().GetConfigPath();
 }
 
-export async function setSharedConfigDesktop(_sbtaskPath: string): Promise<SpaceInfo[]> {
-  return listSpacesDesktop();
-}
-
-export async function migrateSbtaskConfigDesktop(): Promise<SpaceInfo[]> {
-  return listSpacesDesktop();
-}
-
 export interface ConfigStatusDesktop {
   exists: boolean;
-  sbtask_exists: boolean;
   space_count: number;
   spaces: SpaceInfo[];
 }
@@ -76,7 +67,10 @@ export interface VerifyResultDesktop {
   error?: string;
 }
 
-export async function verifySpaceDesktop(url: string, authToken?: string): Promise<VerifyResultDesktop> {
+export async function verifySpaceDesktop(
+  url: string,
+  authToken?: string,
+): Promise<VerifyResultDesktop> {
   const { verifySpace } = await import('$lib/backend/space-operations');
   return verifySpace(url, authToken);
 }
@@ -84,5 +78,7 @@ export async function verifySpaceDesktop(url: string, authToken?: string): Promi
 export function notifyAlertDesktop(title: string, body: string): void {
   try {
     go().NotifyAlert(title, body);
-  } catch { /* silently fail */ }
+  } catch {
+    /* silently fail */
+  }
 }

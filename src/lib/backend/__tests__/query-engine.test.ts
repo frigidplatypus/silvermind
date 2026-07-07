@@ -3,6 +3,7 @@ import {
   translateSLIQ,
   computeBlocked,
   applyHardExclusions,
+  applyGlobalTaskExclusions,
   excludeDone,
   filterByTags,
   filterOverdue,
@@ -36,7 +37,9 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 describe('translateSLIQ', () => {
   it('excludes completed tasks by default', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nselect templates.taskItem(t)',
+    );
     const done = makeTask({ done: true, status: 'x' });
     const active = makeTask({ done: false });
 
@@ -47,7 +50,9 @@ describe('translateSLIQ', () => {
   });
 
   it('parses status filter', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere t.state == "waiting"\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere t.state == "waiting"\nselect templates.taskItem(t)',
+    );
     const waiting = makeTask({ status: 'waiting' });
     const active = makeTask({ done: false });
 
@@ -58,7 +63,9 @@ describe('translateSLIQ', () => {
   });
 
   it('parses explicit done inclusion', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere t.done\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere t.done\nselect templates.taskItem(t)',
+    );
     const done = makeTask({ done: true, status: 'x' });
     const active = makeTask({ done: false });
 
@@ -84,17 +91,23 @@ describe('translateSLIQ', () => {
   });
 
   it('parses due before filter', () => {
-    const { filter } = translateSLIQ('from t = index.objects("task")\nwhere t.due < "2026-01-01"\nselect templates.taskItem(t)');
+    const { filter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere t.due < "2026-01-01"\nselect templates.taskItem(t)',
+    );
     expect(filter.dueBefore).toBe('2026-01-01');
   });
 
   it('parses has tag filter', () => {
-    const { filter } = translateSLIQ('from t = index.objects("task")\nwhere table.includes(t.itags, "work")\nselect templates.taskItem(t)');
+    const { filter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere table.includes(t.itags, "work")\nselect templates.taskItem(t)',
+    );
     expect(filter.tags).toContain('work');
   });
 
   it('parses overdue filter', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere overdue\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere overdue\nselect templates.taskItem(t)',
+    );
     const overdue = makeTask({ due: '2020-01-01', done: false });
     const notOverdue = makeTask({ due: '2099-01-01', done: false });
     const result = postFilter([overdue, notOverdue]);
@@ -103,7 +116,9 @@ describe('translateSLIQ', () => {
   });
 
   it('parses blocked filter', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere blocked\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere blocked\nselect templates.taskItem(t)',
+    );
     const blocked = makeTask({ blocked: true });
     const unblocked = makeTask({ blocked: false });
     const result = postFilter([blocked, unblocked]);
@@ -112,18 +127,24 @@ describe('translateSLIQ', () => {
   });
 
   it('parses sort order', () => {
-    const { filter } = translateSLIQ('from t = index.objects("task")\norder by t.due asc\nselect templates.taskItem(t)');
+    const { filter } = translateSLIQ(
+      'from t = index.objects("task")\norder by t.due asc\nselect templates.taskItem(t)',
+    );
     expect(filter.sortBy).toBe('due');
     expect(filter.sortOrder).toBe('asc');
   });
 
   it('parses limit', () => {
-    const { filter } = translateSLIQ('from t = index.objects("task")\nlimit 50\nselect templates.taskItem(t)');
+    const { filter } = translateSLIQ(
+      'from t = index.objects("task")\nlimit 50\nselect templates.taskItem(t)',
+    );
     expect(filter.limit).toBe(50);
   });
 
   it('parses orphan filter', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere orphan\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere orphan\nselect templates.taskItem(t)',
+    );
     const orphan = makeTask({ text: 'orphan' });
     const child = makeTask({ text: 'child', parent: 'parent-task' });
 
@@ -134,7 +155,9 @@ describe('translateSLIQ', () => {
   });
 
   it('parses recur filter', () => {
-    const { postFilter } = translateSLIQ('from t = index.objects("task")\nwhere recur\nselect templates.taskItem(t)');
+    const { postFilter } = translateSLIQ(
+      'from t = index.objects("task")\nwhere recur\nselect templates.taskItem(t)',
+    );
     const recurring = makeTask({ text: 'recurring', recur: 'daily:1' });
     const oneOff = makeTask({ text: 'one-off' });
 
@@ -181,6 +204,42 @@ describe('applyHardExclusions', () => {
     const result = applyHardExclusions(tasks);
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('');
+  });
+
+  it('excludes Library pages and meta-tagged tasks', () => {
+    const tasks = [
+      makeTask({ page: 'Library/Templates', status: '' }),
+      makeTask({ page: 'Tasks', tags: ['meta'] }),
+      makeTask({ page: 'Tasks', tags: ['meta/template'] }),
+      makeTask({ page: 'Tasks', tags: ['work'] }),
+    ];
+    const result = applyHardExclusions(tasks);
+    expect(result).toHaveLength(1);
+    expect(result[0].tags).toEqual(['work']);
+  });
+});
+
+describe('applyGlobalTaskExclusions', () => {
+  it('excludes tasks from pages tagged meta or meta/*', async () => {
+    const tasks = [
+      makeTask({ page: 'Tasks' }),
+      makeTask({ page: 'Templates' }),
+      makeTask({ page: 'Library/Task Seed' }),
+    ];
+
+    const sbClient = {
+      getBaseURL: () => 'https://example.com',
+      readPage: async (page: string) => ({
+        content:
+          page === 'Templates'
+            ? '---\ntags:\n  - meta/template\n---\n- [ ] hidden\n'
+            : '---\ntags:\n  - work\n---\n- [ ] visible\n',
+        lastModified: 0,
+      }),
+    } as any;
+
+    const result = await applyGlobalTaskExclusions(tasks, sbClient);
+    expect(result.map((task) => task.page)).toEqual(['Tasks']);
   });
 });
 
@@ -245,10 +304,7 @@ describe('sortTasks', () => {
   });
 
   it('sorts descending', () => {
-    const tasks = [
-      makeTask({ text: 'a', position: 1 }),
-      makeTask({ text: 'b', position: 2 }),
-    ];
+    const tasks = [makeTask({ text: 'a', position: 1 }), makeTask({ text: 'b', position: 2 })];
     sortTasks(tasks, 'position', 'desc');
     expect(tasks[0].position).toBe(2);
     expect(tasks[1].position).toBe(1);

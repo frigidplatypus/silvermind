@@ -1,3 +1,4 @@
+import { CapacitorHttp } from '@capacitor/core';
 import { SbClientError, PreconditionFailedError } from './task-types';
 import type { SilverBulletPage } from './task-types';
 import { logDebug, logInfo, logWarn, logError } from '$lib/helpers/logger';
@@ -46,7 +47,6 @@ async function goProxyTransport(url: string, options: RequestInit): Promise<Resp
 }
 
 async function capacitorTransport(url: string, options: RequestInit): Promise<Response> {
-  const { CapacitorHttp } = await import('@capacitor/core');
   const result = await CapacitorHttp.request({
     url,
     method: (options.method || 'GET') as any,

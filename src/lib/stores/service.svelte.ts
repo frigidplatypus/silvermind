@@ -32,18 +32,4 @@ export function initServiceListener(): void {
   initialized = true;
 
   setServiceState('running');
-
-  // Kept for older development builds; the JS-native backend has no service process.
-  window.addEventListener('serviceStateChanged', ((event: CustomEvent) => {
-    const payload = event.detail;
-    if (payload) {
-      updateServiceHealth({
-        state: payload.state ?? stateVal.state,
-        lastOkAt: payload.lastOkAt ?? null,
-        restartCount: payload.restartCount ?? 0,
-        lastError: payload.lastError ?? null,
-      });
-    }
-  }) as EventListener);
-
 }

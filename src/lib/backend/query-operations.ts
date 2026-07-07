@@ -7,6 +7,7 @@ import {
   normalizePositions,
   filterByTags,
   filterExcludeTags,
+  applyGlobalTaskExclusions,
 } from './query-engine';
 import { parseTasksFromPage, mapRuntimeTask } from './task-parser';
 import { logInfo, logWarn, logError } from '$lib/helpers/logger';
@@ -227,6 +228,8 @@ export async function executeQuery(sliq: string, sbClient: SbClient): Promise<Ta
     logError('[queries] executeQuery runtime task query failed:', e);
     tasks = [];
   }
+
+  tasks = await applyGlobalTaskExclusions(tasks, sbClient);
 
   // Apply server-side tag filter if tags were specified
   if (filter.tags && filter.tags.length > 0) {

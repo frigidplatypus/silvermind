@@ -1,7 +1,7 @@
 import type { SbClient } from './sb-client';
 import type { Task, SpaceConfig } from './task-types';
 import { isBeforeToday, isToday } from './task-date';
-import { applyHardExclusions } from './query-engine';
+import { applyGlobalTaskExclusions } from './query-engine';
 import { loadTasks } from './inbox-operations';
 
 function extractDateFromDue(due: string): string | null {
@@ -24,7 +24,9 @@ export async function getToday(
 }> {
   const tasks: Task[] = await loadTasks(activeSpace, sbClient);
 
-  const active = applyHardExclusions(tasks).filter((t) => !t.done && t.status !== 'waiting');
+  const active = (await applyGlobalTaskExclusions(tasks, sbClient)).filter(
+    (t) => !t.done && t.status !== 'waiting',
+  );
 
   const overdue: Task[] = [];
   const dueToday: Task[] = [];

@@ -10,7 +10,7 @@ import { createTask } from '$lib/backend/inbox-operations';
 import { createSbClient } from '$lib/backend/sb-client';
 import type { Task } from '$lib/types/task';
 import type { SpaceConfig } from '$lib/backend/task-types';
-import { applyHardExclusions } from '$lib/backend/query-engine';
+import { applyGlobalTaskExclusions } from '$lib/backend/query-engine';
 import { mapRuntimeTask } from '$lib/backend/task-parser';
 import { loadTasks } from '$lib/backend/inbox-operations';
 import { logInfo, logWarn } from '$lib/helpers/logger';
@@ -43,13 +43,9 @@ function filterFallbackTasks(tasks: Task[], params?: Record<string, string>): Ta
   const search = (params?.search || params?.filter || '').trim().toLowerCase();
   if (search) {
     filtered = filtered.filter((task) => {
-      const haystack = [
-        task.text,
-        task.name,
-        task.page,
-        task.priority,
-        ...(task.tags || []),
-      ].join(' ').toLowerCase();
+      const haystack = [task.text, task.name, task.page, task.priority, ...(task.tags || [])]
+        .join(' ')
+        .toLowerCase();
       return haystack.includes(search);
     });
   }
@@ -76,7 +72,7 @@ async function loadTaskList(
       `Runtime task list for ${space.name}`,
     );
     const mapped = runtimeTasks.map(mapRuntimeTask) as Task[];
-    return applyHardExclusions(mapped) as TaskListResponse;
+    return (await applyGlobalTaskExclusions(mapped, sbClient)) as TaskListResponse;
   } catch (e: any) {
     logWarn(
       `[tasks-api] runtime task list failed; falling back to .fs pages — space="${space.name}" url="${space.url}" error="${e?.message || e}"`,
@@ -84,7 +80,10 @@ async function loadTaskList(
   }
 
   const fallback = await loadTasks(space, sbClient, 0);
-  return applyHardExclusions(filterFallbackTasks(fallback, params)) as TaskListResponse;
+  return (await applyGlobalTaskExclusions(
+    filterFallbackTasks(fallback, params),
+    sbClient,
+  )) as TaskListResponse;
 }
 
 async function getClientForTask(task: Task) {
@@ -139,14 +138,17 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
       `Runtime task list for ${active.name}`,
     );
     const mapped = runtimeTasks.map(mapRuntimeTask) as Task[];
-    return applyHardExclusions(mapped) as TaskListResponse;
+    return (await applyGlobalTaskExclusions(mapped, sbClient)) as TaskListResponse;
   } catch (e: any) {
     logWarn(
       `[tasks-api] active runtime task list failed; falling back to .fs pages — space="${active.name}" error="${e?.message || e}"`,
     );
   }
   const fallback = await loadTasks(active, sbClient, 0);
-  return applyHardExclusions(filterFallbackTasks(fallback, params)) as TaskListResponse;
+  return (await applyGlobalTaskExclusions(
+    filterFallbackTasks(fallback, params),
+    sbClient,
+  )) as TaskListResponse;
 }
 
 export async function createTaskFn(input: Record<string, unknown>): Promise<Task> {
@@ -220,14 +222,15 @@ export async function getTasksForSpace(
   params?: Record<string, string>,
 ): Promise<TaskListResponse> {
   const queryParamsInput = typeof authTokenOrParams === 'object' ? authTokenOrParams : params;
-  const space = typeof spaceOrUrl === 'string'
-    ? {
-        name: spaceOrUrl,
-        url: spaceOrUrl,
-        default_page: 'Tasks',
-        inbox_page: 'Inbox',
-        auth_token: typeof authTokenOrParams === 'string' ? authTokenOrParams : undefined,
-      }
-    : spaceOrUrl;
+  const space =
+    typeof spaceOrUrl === 'string'
+      ? {
+          name: spaceOrUrl,
+          url: spaceOrUrl,
+          default_page: 'Tasks',
+          inbox_page: 'Inbox',
+          auth_token: typeof authTokenOrParams === 'string' ? authTokenOrParams : undefined,
+        }
+      : spaceOrUrl;
   return loadTaskList(space, queryParamsInput);
 }

@@ -1,5 +1,9 @@
 import type { Task, TaskFilter } from './task-types';
+import type { SbClient } from './sb-client';
 import { isBeforeToday, isToday } from './task-date';
+import * as yaml from 'js-yaml';
+
+const excludedPageCache = new Map<string, boolean>();
 
 export function resolveDateFunctions(sliq: string): string {
   const now = new Date();
@@ -117,7 +121,10 @@ function defaultExcludeDone(tasks: Task[]): Task[] {
 function buildStatusOnlyFilter(
   line: string,
 ): { filter: (tasks: Task[]) => Task[]; includesDone: boolean } | null {
-  const normalized = line.trim().replace(/^(where|and)\s+/, '').trim();
+  const normalized = line
+    .trim()
+    .replace(/^(where|and)\s+/, '')
+    .trim();
   if (!normalized) return null;
 
   const stripped = normalized
@@ -160,7 +167,9 @@ function buildStatusOnlyFilter(
         const done = task.done || status === 'x';
 
         if (includeStatuses.size > 0) {
-          const matchesInclude = [...includeStatuses].some((st) => (st === 'x' ? done : status === st));
+          const matchesInclude = [...includeStatuses].some((st) =>
+            st === 'x' ? done : status === st,
+          );
           if (!matchesInclude) return false;
         }
 
@@ -562,6 +571,74 @@ export function applyHardExclusions(tasks: Task[]): Task[] {
     if (t.tags.some((tag) => tag === 'meta' || tag.startsWith('meta/'))) return false;
     return true;
   });
+}
+
+function normalizeTag(tag: string): string {
+  return tag.trim().replace(/^#/, '').toLowerCase();
+}
+
+function hasExcludedTag(tags: string[]): boolean {
+  return tags.some((tag) => {
+    const normalized = normalizeTag(tag);
+    return normalized === 'meta' || normalized.startsWith('meta/');
+  });
+}
+
+function extractPageTags(content: string): string[] {
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!fmMatch) return [];
+
+  try {
+    const parsed = yaml.load(fmMatch[1]) as Record<string, unknown> | null;
+    const rawTags = parsed?.tags;
+    if (Array.isArray(rawTags)) {
+      return rawTags.map((tag) => String(tag));
+    }
+    if (typeof rawTags === 'string') {
+      return rawTags.split(/[\s,]+/).filter(Boolean);
+    }
+  } catch {
+    return [];
+  }
+
+  return [];
+}
+
+async function isExcludedPage(page: string, sbClient: SbClient): Promise<boolean> {
+  if (page.startsWith('Library/')) return true;
+
+  const cacheKey = `${sbClient.getBaseURL()}::${page}`;
+  const cached = excludedPageCache.get(cacheKey);
+  if (cached != null) return cached;
+
+  try {
+    const { content } = await sbClient.readPage(page);
+    const excluded = hasExcludedTag(extractPageTags(content));
+    excludedPageCache.set(cacheKey, excluded);
+    return excluded;
+  } catch {
+    excludedPageCache.set(cacheKey, false);
+    return false;
+  }
+}
+
+export async function applyGlobalTaskExclusions(
+  tasks: Task[],
+  sbClient: SbClient,
+): Promise<Task[]> {
+  const filteredTasks = applyHardExclusions(tasks);
+  const uniquePages = [...new Set(filteredTasks.map((task) => task.page).filter(Boolean))];
+  const excludedPages = new Set<string>();
+
+  await Promise.all(
+    uniquePages.map(async (page) => {
+      if (await isExcludedPage(page, sbClient)) {
+        excludedPages.add(page);
+      }
+    }),
+  );
+
+  return filteredTasks.filter((task) => !excludedPages.has(task.page));
 }
 
 export function excludeDone(tasks: Task[]): Task[] {

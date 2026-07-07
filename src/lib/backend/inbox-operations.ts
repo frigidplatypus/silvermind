@@ -2,7 +2,7 @@ import type { SbClient } from './sb-client';
 import type { Task, SpaceConfig } from './task-types';
 import { toMarkdown } from './task-serializer';
 import { logInfo, logError } from '$lib/helpers/logger';
-import { applyHardExclusions } from './query-engine';
+import { applyGlobalTaskExclusions } from './query-engine';
 import { mapRuntimeTask, parseTasksFromPage } from './task-parser';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -46,10 +46,9 @@ export async function loadTasks(
     }
   }
 
-  const pages = [
-    activeSpace.default_page || 'Tasks',
-    activeSpace.inbox_page || 'Inbox',
-  ].filter((page, index, all) => page && all.indexOf(page) === index);
+  const pages = [activeSpace.default_page || 'Tasks', activeSpace.inbox_page || 'Inbox'].filter(
+    (page, index, all) => page && all.indexOf(page) === index,
+  );
 
   const results = await Promise.allSettled(pages.map((page) => readTasksFromPage(sbClient, page)));
   const tasks: Task[] = [];
@@ -71,7 +70,7 @@ export async function getInbox(
   try {
     const tasks = await loadTasks(activeSpace, sbClient);
 
-    const active = applyHardExclusions(tasks).filter((t) => !t.done);
+    const active = (await applyGlobalTaskExclusions(tasks, sbClient)).filter((t) => !t.done);
     logInfo(`Inbox: ${active.length} active / ${tasks.length} total tasks`);
     return active;
   } catch (e: any) {

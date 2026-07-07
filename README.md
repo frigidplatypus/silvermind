@@ -108,7 +108,6 @@ The flake shell also enables the repository hooks from `.githooks` automatically
 ├── desktop/
 │   ├── main.go           # Wails entry point + bindings
 │   ├── config.go         # desktop config persistence
-│   ├── sbtask.go         # legacy bridge file; no sbtask runtime integration
 │   └── frontend/dist/    # checked-in desktop frontend bundle
 ├── android-plugin/       # Android helper/plugin code
 ├── scripts/
@@ -136,7 +135,7 @@ spaces:
 active_space: my-space
 ```
 
-The example file in this repo is `sbtask-config.example.yaml`, but the active Silvermind
+The example file in this repo is `silvermind-config.example.yaml`, but the active Silvermind
 desktop config path is `~/.config/silvermind/config.yaml`.
 
 ## Query Pages
@@ -220,14 +219,14 @@ pnpm dev
 
 ## Build Commands
 
-| Command | Output | Description |
-|---------|--------|-------------|
-| `pnpm build` | `dist/` | main frontend build |
-| `pnpm build:desktop` | `desktop/frontend/dist/` | desktop frontend bundle |
-| `pnpm build:web` | `frontend/dist/` | standalone web GUI bundle |
-| `just build` | `desktop/silvermind-desktop` | desktop binary |
-| `pnpm cap:sync` | `ios/` | sync iOS Capacitor app |
-| `pnpm cap:sync:android` | `android/` | sync Android Capacitor app |
+| Command                 | Output                       | Description                |
+| ----------------------- | ---------------------------- | -------------------------- |
+| `pnpm build`            | `dist/`                      | main frontend build        |
+| `pnpm build:desktop`    | `desktop/frontend/dist/`     | desktop frontend bundle    |
+| `pnpm build:web`        | `frontend/dist/`             | standalone web GUI bundle  |
+| `just build`            | `desktop/silvermind-desktop` | desktop binary             |
+| `pnpm cap:sync`         | `ios/`                       | sync iOS Capacitor app     |
+| `pnpm cap:sync:android` | `android/`                   | sync Android Capacitor app |
 
 `desktop/frontend/dist/` is checked into git so the Wails desktop build can embed a known
 frontend bundle.

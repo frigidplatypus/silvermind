@@ -1,5 +1,4 @@
-# Copy this file to ~/.config/sbtask/config.yaml and edit for your spaces.
-# Or: run `sbtask config init` to generate one interactively.
+# Copy this file to ~/.config/silvermind/config.yaml and edit for your spaces.
 
 spaces:
   my-space:

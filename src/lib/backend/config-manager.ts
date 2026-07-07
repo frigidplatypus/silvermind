@@ -40,26 +40,21 @@ function createWailsStore(): ConfigStore {
 }
 
 function createCapacitorStore(): ConfigStore {
+  const key = 'silvermind_config';
+
   return {
     async read(): Promise<string | null> {
       try {
-        const { Filesystem } = await import('@capacitor/filesystem');
-        const result = await Filesystem.readFile({
-          path: 'config.yaml',
-          directory: 'DOCUMENTS' as any,
-        });
-        return result.data as string;
+        const { Preferences } = await import('@capacitor/preferences');
+        const stored = await Preferences.get({ key });
+        return stored.value;
       } catch {
         return null;
       }
     },
     async write(raw: string): Promise<void> {
-      const { Filesystem } = await import('@capacitor/filesystem');
-      await Filesystem.writeFile({
-        path: 'config.yaml',
-        data: raw,
-        directory: 'DOCUMENTS' as any,
-      });
+      const { Preferences } = await import('@capacitor/preferences');
+      await Preferences.set({ key, value: raw });
     },
   };
 }
@@ -134,7 +129,7 @@ export function createConfigManager() {
   }
 
   async function getSpaces(): Promise<SpaceConfig[]> {
-    const config = cache || await load();
+    const config = cache || (await load());
     return Object.entries(config.spaces).map(([name, sp]) => ({
       name,
       url: sp.url,
@@ -145,7 +140,7 @@ export function createConfigManager() {
   }
 
   async function getActiveSpace(): Promise<SpaceConfig | null> {
-    const config = cache || await load();
+    const config = cache || (await load());
     if (!config.active_space) return null;
     const sp = config.spaces[config.active_space];
     if (!sp) return null;
@@ -158,8 +153,14 @@ export function createConfigManager() {
     };
   }
 
-  async function addSpace(name: string, url: string, defaultPage?: string, inboxPage?: string, authToken?: string): Promise<SpaceConfig[]> {
-    const config = cache || await load();
+  async function addSpace(
+    name: string,
+    url: string,
+    defaultPage?: string,
+    inboxPage?: string,
+    authToken?: string,
+  ): Promise<SpaceConfig[]> {
+    const config = cache || (await load());
     const nameLower = name.toLowerCase();
     for (const existingName of Object.keys(config.spaces)) {
       if (existingName.toLowerCase() === nameLower) {
@@ -180,8 +181,15 @@ export function createConfigManager() {
     return getSpaces();
   }
 
-  async function updateSpace(name: string, newName: string, url: string, defaultPage?: string, inboxPage?: string, authToken?: string): Promise<SpaceConfig[]> {
-    const config = cache || await load();
+  async function updateSpace(
+    name: string,
+    newName: string,
+    url: string,
+    defaultPage?: string,
+    inboxPage?: string,
+    authToken?: string,
+  ): Promise<SpaceConfig[]> {
+    const config = cache || (await load());
     const sp = config.spaces[name];
     if (!sp) {
       throw new Error(`Space "${name}" not found`);
@@ -208,7 +216,7 @@ export function createConfigManager() {
   }
 
   async function removeSpace(name: string): Promise<SpaceConfig[]> {
-    const config = cache || await load();
+    const config = cache || (await load());
     if (!config.spaces[name]) {
       throw new Error(`Space "${name}" not found`);
     }
@@ -225,7 +233,7 @@ export function createConfigManager() {
   }
 
   async function setActiveSpace(name: string): Promise<SpaceConfig[]> {
-    const config = cache || await load();
+    const config = cache || (await load());
     if (!config.spaces[name]) {
       throw new Error(`Space "${name}" not found`);
     }

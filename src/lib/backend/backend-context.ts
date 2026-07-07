@@ -60,7 +60,7 @@ export async function setActiveSpace(name: string): Promise<SpaceConfig | null> 
   const cm = getConfigManager();
   await cm.setActiveSpace(name);
   const spaces = await cm.getSpaces();
-  const active = spaces.find(s => s.name === name) || null;
+  const active = spaces.find((s) => s.name === name) || null;
   if (active) {
     _activeSpaceName = active.name;
     _initPromise = Promise.resolve(active);
@@ -74,7 +74,6 @@ export async function setActiveSpace(name: string): Promise<SpaceConfig | null> 
 
 export async function getConfigStatus(): Promise<{
   exists: boolean;
-  sbtask_exists: boolean;
   space_count: number;
   spaces: { name: string; url: string; default: boolean }[];
 }> {
@@ -84,9 +83,8 @@ export async function getConfigStatus(): Promise<{
   const active = await cm.getActiveSpace();
   return {
     exists: spaces.length > 0,
-    sbtask_exists: false,
     space_count: spaces.length,
-    spaces: spaces.map(s => ({
+    spaces: spaces.map((s) => ({
       name: s.name,
       url: s.url,
       default: active?.name === s.name,
