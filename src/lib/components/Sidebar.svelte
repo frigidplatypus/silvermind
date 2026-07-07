@@ -90,7 +90,6 @@
   class="sidebar"
   class:collapsed={width <= 0}
   style="width: {width}px"
-  role="navigation"
   aria-label="Main navigation"
 >
   <div class="sidebar-brand">

@@ -8,8 +8,6 @@
 
   let { onNavigate }: { onNavigate?: (view: string) => void } = $props();
 
-  devLog('[query-builder] script loaded, onNavigate=', typeof onNavigate, onNavigate ? 'defined' : 'undefined');
-
   let page = $state('');
   let title = $state('');
   let create = $state(true);
@@ -32,7 +30,11 @@
       if (edit.sliq) prefillFromSLIQ(edit.sliq);
       clearBuilderEdit();
     }
-    checkHelpers().then(r => { helpersMissing = !r.exists; }).catch(() => {});
+    checkHelpers()
+      .then((r) => {
+        helpersMissing = !r.exists;
+      })
+      .catch(() => {});
   });
 
   async function handleDeployHelpers() {
@@ -156,12 +158,18 @@
         }
       }
 
-      if ((line.includes('p.due != nil') || line.includes('p.deferred != nil')) && line.includes(' or ')) {
+      if (
+        (line.includes('p.due != nil') || line.includes('p.deferred != nil')) &&
+        line.includes(' or ')
+      ) {
         hasDateFilter = 'has';
         dateField = 'both';
       } else if (line.includes('p.due != nil') || line.includes('p.deferred != nil')) {
         hasDateFilter = 'has';
-      } else if ((line.includes('p.due == nil') || line.includes('p.deferred == nil')) && line.includes(' and ')) {
+      } else if (
+        (line.includes('p.due == nil') || line.includes('p.deferred == nil')) &&
+        line.includes(' and ')
+      ) {
         hasDateFilter = 'missing';
         dateField = 'both';
       } else if (line.includes('p.due == nil') || line.includes('p.deferred == nil')) {
@@ -169,12 +177,16 @@
       }
 
       if (line.includes('p.deferred')) dateField = 'deferred';
-      if ((line.includes('p.due') || line.includes('p.')) && line.includes('p.deferred')) dateField = 'both';
+      if ((line.includes('p.due') || line.includes('p.')) && line.includes('p.deferred'))
+        dateField = 'both';
 
       if (!activePresetLabel) {
         if ((line.includes('"@today"') || line.includes('today()')) && line.includes('==')) {
           activePresetLabel = 'Today';
-        } else if ((line.includes('"@tomorrow"') || line.includes('tomorrow()')) && line.includes('==')) {
+        } else if (
+          (line.includes('"@tomorrow"') || line.includes('tomorrow()')) &&
+          line.includes('==')
+        ) {
           activePresetLabel = 'Tomorrow';
         } else if ((line.includes('"@today"') || line.includes('today()')) && line.includes('<')) {
           activePresetLabel = 'Overdue';
@@ -195,13 +207,13 @@
 
       if (line.startsWith('order by ')) {
         const rest = line.slice('order by '.length).trim();
-        const keys = rest.split(',').map(k => k.trim());
+        const keys = rest.split(',').map((k) => k.trim());
         sortKeys = [];
         for (const key of keys) {
           const parts = key.split(/\s+/);
           const field = parts[0].replace(/^p\./, '').replace(',', '').trim();
-          if (sortFieldOptions.some(o => o.value === field)) {
-            const dir = parts[1] === 'desc' ? 'desc' as const : 'asc' as const;
+          if (sortFieldOptions.some((o) => o.value === field)) {
+            const dir = parts[1] === 'desc' ? ('desc' as const) : ('asc' as const);
             let nulls: '' | 'first' | 'last' = '';
             const nullsIdx = parts.indexOf('nulls');
             if (nullsIdx >= 0 && nullsIdx + 1 < parts.length) {
@@ -230,7 +242,7 @@
 
   function presetSLIQFor(field: string): string {
     if (!activePresetLabel) return '';
-    const p = datePresets.find(x => x.label === activePresetLabel);
+    const p = datePresets.find((x) => x.label === activePresetLabel);
     return p ? p.sliq.replace(/\$\{field\}/g, `p.${field}`) : '';
   }
 
@@ -246,11 +258,11 @@
   }
 
   const datePresets: { label: string; sliq: string }[] = [
-    { label: 'Today',      sliq: '${field} == today()' },
-    { label: 'Tomorrow',   sliq: '${field} == tomorrow()' },
-    { label: 'Overdue',    sliq: '${field} < today()' },
-    { label: 'This week',  sliq: '${field} >= weekStart() and ${field} <= weekEnd()' },
-    { label: 'Next week',  sliq: '${field} >= addDays(7) and ${field} <= addDays(13)' },
+    { label: 'Today', sliq: '${field} == today()' },
+    { label: 'Tomorrow', sliq: '${field} == tomorrow()' },
+    { label: 'Overdue', sliq: '${field} < today()' },
+    { label: 'This week', sliq: '${field} >= weekStart() and ${field} <= weekEnd()' },
+    { label: 'Next week', sliq: '${field} >= addDays(7) and ${field} <= addDays(13)' },
     { label: 'This month', sliq: '${field} >= monthStart() and ${field} <= monthEnd()' },
   ];
 
@@ -311,10 +323,14 @@
   function buildSLIQ(): string {
     const lines: string[] = ['from p = index.objects("task")'];
 
-    const includeClauses = [...statusIncludes].map((s) => (s === 'done' ? 'p.done' : `p.state == "${s}"`));
+    const includeClauses = [...statusIncludes].map((s) =>
+      s === 'done' ? 'p.done' : `p.state == "${s}"`,
+    );
     const statusClauses: string[] = [];
     if (includeClauses.length > 0) {
-      statusClauses.push(includeClauses.length > 1 ? `(${includeClauses.join(' or ')})` : includeClauses[0]);
+      statusClauses.push(
+        includeClauses.length > 1 ? `(${includeClauses.join(' or ')})` : includeClauses[0],
+      );
     }
     if (!statusIncludes.has('done')) {
       statusClauses.push('not p.done');
@@ -385,7 +401,10 @@
     }
 
     if (includeTags) {
-      const tagList = includeTags.split(',').map(t => t.trim()).filter(Boolean);
+      const tagList = includeTags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
       for (const tag of tagList) {
         const prefix = lines.length <= 1 ? 'where' : 'and';
         lines.push(`${prefix} table.includes(p.tags, "${tag}")`);
@@ -393,7 +412,10 @@
     }
 
     if (excludeTags) {
-      const tagList = excludeTags.split(',').map(t => t.trim()).filter(Boolean);
+      const tagList = excludeTags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
       for (const tag of tagList) {
         const prefix = lines.length <= 1 ? 'where' : 'and';
         lines.push(`${prefix} not table.includes(p.tags, "${tag}")`);
@@ -408,7 +430,7 @@
     }
 
     if (sortKeys.length > 0) {
-      const parts = sortKeys.map(sk => {
+      const parts = sortKeys.map((sk) => {
         let p = `p.${sk.field} ${sk.dir}`;
         if (sk.nulls) p += ` nulls ${sk.nulls}`;
         return p;
@@ -429,7 +451,10 @@
   let hasFilters = $derived(sliqPreview.trim().length > 0);
 
   async function handleTest() {
-    if (!hasFilters) { error = 'At least one filter is required'; return; }
+    if (!hasFilters) {
+      error = 'At least one filter is required';
+      return;
+    }
     testing = true;
     error = null;
     testResult = null;
@@ -437,7 +462,9 @@
       const result = await testQuery(sliqPreview);
       testResult = {
         count: result.tasks.length,
-        preview: result.tasks.slice(0, 5).map(t => (t.text ?? '').replace(/\s*\[.*?\]/g, '').trim()),
+        preview: result.tasks
+          .slice(0, 5)
+          .map((t) => (t.text ?? '').replace(/\s*\[.*?\]/g, '').trim()),
       };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to test query';
@@ -447,9 +474,18 @@
   }
 
   async function handleSave() {
-    if (!page.trim()) { error = 'Page name is required'; return; }
-    if (!title.trim()) { error = 'Query title is required'; return; }
-    if (!hasFilters) { error = 'At least one filter is required'; return; }
+    if (!page.trim()) {
+      error = 'Page name is required';
+      return;
+    }
+    if (!title.trim()) {
+      error = 'Query title is required';
+      return;
+    }
+    if (!hasFilters) {
+      error = 'At least one filter is required';
+      return;
+    }
 
     saving = true;
     error = null;
@@ -511,7 +547,9 @@
   {/if}
   {#if helpersMissing}
     <div class="helpers-banner" role="alert">
-      <span>Date helpers not installed. Queries using date presets won&rsquo;t render in SilverBullet.</span>
+      <span
+        >Date helpers not installed. Queries using date presets won&rsquo;t render in SilverBullet.</span
+      >
       <button class="btn btn-secondary" onclick={handleDeployHelpers} disabled={deployingHelpers}>
         {deployingHelpers ? 'Deploying…' : 'Deploy'}
       </button>
@@ -521,12 +559,22 @@
   <div class="form-section">
     <label class="field-label">
       <span>Save to page</span>
-      <input type="text" bind:value={page} placeholder="e.g. queries/my-filters" class="field-input" />
+      <input
+        type="text"
+        bind:value={page}
+        placeholder="e.g. queries/my-filters"
+        class="field-input"
+      />
       <span class="field-hint">The SilverBullet page to store this query on</span>
     </label>
     <label class="field-label">
       <span>Query title</span>
-      <input type="text" bind:value={title} placeholder="e.g. High Priority Tasks" class="field-input" />
+      <input
+        type="text"
+        bind:value={title}
+        placeholder="e.g. High Priority Tasks"
+        class="field-input"
+      />
       <span class="field-hint">Displayed as the heading in the sidebar</span>
     </label>
   </div>
@@ -575,7 +623,12 @@
           <option value="starts">starts with</option>
           <option value="not-starts">not starts with</option>
         </select>
-        <input type="text" bind:value={pageFilterValue} placeholder="page name" class="field-input" />
+        <input
+          type="text"
+          bind:value={pageFilterValue}
+          placeholder="page name"
+          class="field-input"
+        />
       </div>
     </div>
 
@@ -583,19 +636,43 @@
       <div class="filter-label-row">
         <span class="filter-label">Date filter</span>
         <div class="date-field-toggle">
-          <button class="toggle-btn" class:active={dateField === 'due'} onclick={() => (dateField = 'due')}>Due</button>
-          <button class="toggle-btn" class:active={dateField === 'deferred'} onclick={() => (dateField = 'deferred')}>Sch</button>
-          <button class="toggle-btn" class:active={dateField === 'both'} onclick={() => (dateField = 'both')}>Both</button>
+          <button
+            class="toggle-btn"
+            class:active={dateField === 'due'}
+            onclick={() => (dateField = 'due')}>Due</button
+          >
+          <button
+            class="toggle-btn"
+            class:active={dateField === 'deferred'}
+            onclick={() => (dateField = 'deferred')}>Sch</button
+          >
+          <button
+            class="toggle-btn"
+            class:active={dateField === 'both'}
+            onclick={() => (dateField = 'both')}>Both</button
+          >
         </div>
       </div>
       <div class="date-mode-toggle">
-        <button class="toggle-btn" class:active={dateMode === 'relative'} onclick={() => (dateMode = 'relative')}>Relative</button>
-        <button class="toggle-btn" class:active={dateMode === 'calendar'} onclick={() => (dateMode = 'calendar')}>Calendar</button>
+        <button
+          class="toggle-btn"
+          class:active={dateMode === 'relative'}
+          onclick={() => (dateMode = 'relative')}>Relative</button
+        >
+        <button
+          class="toggle-btn"
+          class:active={dateMode === 'calendar'}
+          onclick={() => (dateMode = 'calendar')}>Calendar</button
+        >
       </div>
       {#if dateMode === 'relative'}
         <div class="preset-group">
           {#each datePresets as p}
-            <button class="toggle-btn" class:active={activePresetLabel === p.label} onclick={() => applyPreset(p.label)}>{p.label}</button>
+            <button
+              class="toggle-btn"
+              class:active={activePresetLabel === p.label}
+              onclick={() => applyPreset(p.label)}>{p.label}</button
+            >
           {/each}
           {#if activePresetLabel}
             <button class="toggle-btn" onclick={clearPreset}>Clear</button>
@@ -626,24 +703,45 @@
 
     <div class="filter-group">
       <span class="filter-label">Include tags</span>
-      <input type="text" bind:value={includeTags} placeholder="comma separated, e.g. work, urgent" class="field-input" />
+      <input
+        type="text"
+        bind:value={includeTags}
+        placeholder="comma separated, e.g. work, urgent"
+        class="field-input"
+      />
     </div>
 
     <div class="filter-group">
       <span class="filter-label">Exclude tags</span>
-      <input type="text" bind:value={excludeTags} placeholder="comma separated, e.g. archive, done" class="field-input" />
+      <input
+        type="text"
+        bind:value={excludeTags}
+        placeholder="comma separated, e.g. archive, done"
+        class="field-input"
+      />
     </div>
 
     <div class="filter-group">
       <div class="filter-label-row">
         <span class="filter-label">Custom attributes</span>
-        <button class="add-btn" onclick={addExtraAttr} aria-label="Add attribute"><Icon name="plus" size="0.875rem" /></button>
+        <button class="add-btn" onclick={addExtraAttr} aria-label="Add attribute"
+          ><Icon name="plus" size="0.875rem" /></button
+        >
       </div>
       {#each extraAttrs as attr, i}
         <div class="extra-row">
-          <input type="text" bind:value={attr.key} placeholder="key" class="field-input extra-key" />
+          <input
+            type="text"
+            bind:value={attr.key}
+            placeholder="key"
+            class="field-input extra-key"
+          />
           <input type="text" bind:value={attr.value} placeholder="value" class="field-input" />
-          <button class="remove-btn" onclick={() => removeExtraAttr(i)} aria-label="Remove attribute"><Icon name="x" size="0.875rem" /></button>
+          <button
+            class="remove-btn"
+            onclick={() => removeExtraAttr(i)}
+            aria-label="Remove attribute"><Icon name="x" size="0.875rem" /></button
+          >
         </div>
       {/each}
     </div>
@@ -653,7 +751,9 @@
     <div class="filter-label-row">
       <h3 class="section-title">Sorting</h3>
       {#if sortKeys.length < 3}
-        <button class="add-btn" onclick={addSortKey} aria-label="Add sort key"><Icon name="plus" size="0.875rem" /></button>
+        <button class="add-btn" onclick={addSortKey} aria-label="Add sort key"
+          ><Icon name="plus" size="0.875rem" /></button
+        >
       {/if}
     </div>
     {#each sortKeys as sk, i}
@@ -672,7 +772,9 @@
           <option value="first">Nulls first</option>
           <option value="last">Nulls last</option>
         </select>
-        <button class="remove-btn" onclick={() => removeSortKey(i)} aria-label="Remove sort key"><Icon name="x" size="0.875rem" /></button>
+        <button class="remove-btn" onclick={() => removeSortKey(i)} aria-label="Remove sort key"
+          ><Icon name="x" size="0.875rem" /></button
+        >
       </div>
     {:else}
       <p class="field-hint">No sort keys. Results will be returned in default order.</p>
@@ -682,20 +784,33 @@
   <div class="form-section">
     <label class="field-label">
       <span>Result limit</span>
-      <input type="number" bind:value={limit} min="1" max="1000" class="field-input" style="max-width:8rem" />
+      <input
+        type="number"
+        bind:value={limit}
+        min="1"
+        max="1000"
+        class="field-input"
+        style="max-width:8rem"
+      />
       <span class="field-hint">Maximum tasks returned (max 1000)</span>
     </label>
   </div>
 
   <div class="form-section">
-      <h3 class="section-title">SLIQ Preview</h3>
-      <button class="btn btn-secondary btn-test" onclick={handleTest} disabled={testing || !hasFilters}>
-        {testing ? 'Testing…' : 'Test'}
-      </button>
+    <h3 class="section-title">SLIQ Preview</h3>
+    <button
+      class="btn btn-secondary btn-test"
+      onclick={handleTest}
+      disabled={testing || !hasFilters}
+    >
+      {testing ? 'Testing…' : 'Test'}
+    </button>
     <pre class="sliq-preview">{sliqPreview || '(no filters selected)'}</pre>
     {#if testResult}
       <div class="test-result" role="status">
-        <span class="test-count">{testResult.count} task{testResult.count === 1 ? '' : 's'} found</span>
+        <span class="test-count"
+          >{testResult.count} task{testResult.count === 1 ? '' : 's'} found</span
+        >
         {#if testResult.count === 0}
           <p class="test-empty">No tasks match these filters.</p>
         {:else if testResult.preview.length > 0}
@@ -717,7 +832,9 @@
       <input type="checkbox" bind:checked={create} />
       <span>Save as new page</span>
     </label>
-    <p class="field-hint">{create ? 'Creates a new page with this query.' : 'Appends this query to the existing page.'}</p>
+    <p class="field-hint">
+      {create ? 'Creates a new page with this query.' : 'Appends this query to the existing page.'}
+    </p>
   </div>
 
   <div class="button-row">
@@ -808,12 +925,14 @@
     color: var(--color-text);
     cursor: pointer;
   }
-  .checkbox-item input[type="checkbox"]:checked + span,
-  .checkbox-item input[type="radio"]:checked + span {
+  .checkbox-item input[type='checkbox']:checked + span,
+  .checkbox-item input[type='radio']:checked + span {
     color: var(--color-accent);
     font-weight: var(--font-weight-semibold);
   }
-  .status-none, .status-include, .status-exclude {
+  .status-none,
+  .status-include,
+  .status-exclude {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
@@ -824,7 +943,10 @@
     border: 1px solid var(--color-border);
     background: var(--color-bg);
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      color 0.15s;
   }
   .status-none .status-circle {
     width: 0.75rem;
@@ -890,19 +1012,24 @@
     display: flex;
     gap: var(--space-3);
   }
-  .options-row .field-label {
-    flex: 1;
-    margin-bottom: 0;
-  }
   .sort-key-row {
     display: flex;
     align-items: center;
     gap: 0.375rem;
     margin-bottom: 0.375rem;
   }
-  .sort-field { flex: 1; min-width: 0; }
-  .sort-dir { width: 5rem; flex-shrink: 0; }
-  .sort-nulls { width: 7rem; flex-shrink: 0; }
+  .sort-field {
+    flex: 1;
+    min-width: 0;
+  }
+  .sort-dir {
+    width: 5rem;
+    flex-shrink: 0;
+  }
+  .sort-nulls {
+    width: 7rem;
+    flex-shrink: 0;
+  }
   .extra-row {
     display: flex;
     align-items: center;
@@ -913,7 +1040,8 @@
     width: 120px;
     flex-shrink: 0;
   }
-  .add-btn, .remove-btn {
+  .add-btn,
+  .remove-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -921,7 +1049,8 @@
     border-radius: var(--radius-sm);
     color: var(--color-text-tertiary);
   }
-  .add-btn:hover, .remove-btn:hover {
+  .add-btn:hover,
+  .remove-btn:hover {
     color: var(--color-accent);
   }
   .preview-header {
@@ -929,9 +1058,6 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: var(--space-3);
-  }
-  .preview-header .section-title {
-    margin-bottom: 0;
   }
   .btn-test {
     padding: 0.25rem 0.75rem;

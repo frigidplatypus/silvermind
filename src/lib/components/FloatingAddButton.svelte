@@ -44,8 +44,10 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); }
-    else if (e.key === 'Escape') handleCancel();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    } else if (e.key === 'Escape') handleCancel();
   }
 
   function handleOverlayKeydown(e: KeyboardEvent) {
@@ -63,9 +65,22 @@
 </script>
 
 {#if open}
-  <div class="fab-overlay" onclick={handleOverlayClick} onkeydown={handleOverlayKeydown} role="dialog" aria-modal="true" aria-label="Add task" tabindex="-1">
+  <div
+    class="fab-overlay"
+    onclick={handleOverlayClick}
+    onkeydown={handleOverlayKeydown}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Add task"
+    tabindex="-1"
+  >
     <div class="fab-sheet" onclick={(e) => e.stopPropagation()} role="document">
-      <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+      <form
+        onsubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
         <div class="fab-input-row">
           <input
             id="fab-input"
@@ -90,15 +105,21 @@
   </div>
 {/if}
 
-<button class="fab" onclick={() => trigger()} aria-label="Add task">
-  <Icon name="plus" size="1.5rem" />
-</button>
+<div class="fab-anchor">
+  <button class="fab" onclick={() => trigger()} aria-label="Add task">
+    <Icon name="plus" size="1.5rem" />
+  </button>
+</div>
 
 <style>
-  .fab {
+  .fab-anchor {
     position: fixed;
-    bottom: calc(5rem + var(--safe-area-bottom, 0px));
+    bottom: calc(5.75rem + var(--safe-area-bottom, 0px));
     right: 1.5rem;
+    z-index: var(--z-dropdown);
+    pointer-events: none;
+  }
+  .fab {
     width: 3.5rem;
     height: 3.5rem;
     border-radius: var(--radius-full);
@@ -108,9 +129,11 @@
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-fab);
-    z-index: var(--z-dropdown);
     cursor: pointer;
-    transition: transform var(--duration-normal) var(--easing), box-shadow var(--duration-normal) var(--easing);
+    pointer-events: auto;
+    transition:
+      transform var(--duration-normal) var(--easing),
+      box-shadow var(--duration-normal) var(--easing);
   }
   .fab:hover {
     transform: scale(1.08);
@@ -186,6 +209,20 @@
   .fab-submit:disabled {
     opacity: 0.5;
   }
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 </style>

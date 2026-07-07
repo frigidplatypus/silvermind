@@ -55,17 +55,21 @@
     onNavigate: (view: string) => void;
   } = $props();
 
-  let prevView = $state(activeView);
+  let prevView = $state('');
   let editing = $state(false);
   let showShortcuts = $state(false);
   let consentRef: { show(): void } | undefined = $state();
 
   let sidebarWidth = $state(loadSidebarWidth());
-  let sidebarCollapsed = $state(sidebarWidth === 0);
+  let sidebarCollapsed = $state(false);
   let lastSidebarWidth = loadSidebarWidth() || 220;
   let sidebarDragging = $state(false);
   let sidebarDragStartX = 0;
   let sidebarDragStartWidth = 0;
+
+  $effect(() => {
+    sidebarCollapsed = sidebarWidth === 0;
+  });
 
   function toggleSidebar() {
     if (sidebarCollapsed) {

@@ -1,11 +1,23 @@
 <script lang="ts">
-  import { getSpacesList, getActiveSpace, getActiveId, setActiveSpace, getSpacesLoading, getSpacesError } from '$lib/stores/space.svelte';
+  import {
+    getSpacesList,
+    getActiveSpace,
+    getActiveId,
+    setActiveSpace,
+    getSpacesLoading,
+    getSpacesError,
+  } from '$lib/stores/space.svelte';
   import Icon from './Icon.svelte';
 
   let isOpen = $state(false);
 
-  function toggle() { isOpen = !isOpen; }
-  function selectSpace(spaceId: string) { setActiveSpace(spaceId); isOpen = false; }
+  function toggle() {
+    isOpen = !isOpen;
+  }
+  function selectSpace(spaceId: string) {
+    setActiveSpace(spaceId);
+    isOpen = false;
+  }
 </script>
 
 <div class="space-switcher">
@@ -17,11 +29,21 @@
     aria-expanded={isOpen}
   >
     <span class="switcher-label">{getActiveSpace()?.name ?? 'No spaces'}</span>
-    <span class="switcher-chevron" aria-hidden="true"><Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size="0.75rem" /></span>
+    <span class="switcher-chevron" aria-hidden="true"
+      ><Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size="0.75rem" /></span
+    >
   </button>
 
   {#if isOpen}
-    <div class="space-menu" role="menu" aria-label="Workspaces" onkeydown={(e) => { if (e.key === 'Escape') isOpen = false; }}>
+    <div
+      class="space-menu"
+      role="menu"
+      tabindex="-1"
+      aria-label="Workspaces"
+      onkeydown={(e) => {
+        if (e.key === 'Escape') isOpen = false;
+      }}
+    >
       {#if getSpacesLoading()}
         <div class="menu-loading">Loading spaces…</div>
       {:else if getSpacesError()}
@@ -35,7 +57,9 @@
             aria-checked={space.id === getActiveId()}
             onclick={() => selectSpace(space.id)}
           >
-            <span class="checkmark">{#if space.id === getActiveId()}<Icon name="check" size="0.875rem" />{/if}</span>
+            <span class="checkmark"
+              >{#if space.id === getActiveId()}<Icon name="check" size="0.875rem" />{/if}</span
+            >
             <span>{space.name}</span>
           </button>
         {/each}

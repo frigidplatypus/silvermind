@@ -6,12 +6,23 @@
   import TaskDetail from '$lib/components/TaskDetail.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
 
-  let { onTaskTap: externalOnTaskTap, onToggleDone }: { onTaskTap?: (t: Task) => void; onToggleDone?: (t: Task) => void | boolean | Promise<void | boolean> } = $props();
+  let {
+    onTaskTap: externalOnTaskTap,
+    onToggleDone,
+  }: {
+    onTaskTap?: (t: Task) => void;
+    onToggleDone?: (t: Task) => void | boolean | Promise<void | boolean>;
+  } = $props();
 
   let selectedTask = $state<Task | null>(null);
-  let handleToggle = onToggleDone ?? ((task: Task) => toggleTaskDone(task, () => loadInbox()));
 
-  onMount(() => { loadInbox(); });
+  function handleToggle(task: Task) {
+    return onToggleDone ? onToggleDone(task) : toggleTaskDone(task, () => loadInbox());
+  }
+
+  onMount(() => {
+    loadInbox();
+  });
 
   function handleTaskTap(t: Task) {
     if (externalOnTaskTap) {
@@ -21,17 +32,36 @@
     }
   }
 
-  function handleDetailClose() { selectedTask = null; }
-  function handleTaskChanged(_t: Task) { selectedTask = null; loadInbox(); }
+  function handleDetailClose() {
+    selectedTask = null;
+  }
+  function handleTaskChanged(_t: Task) {
+    selectedTask = null;
+    loadInbox();
+  }
 </script>
 
 <div class="inbox-view">
-  <TaskList tasks={getTasks()} isLoading={getTasksLoading()} error={getTasksError()} onTaskTap={handleTaskTap} onToggleDone={handleToggle} onRefresh={async () => { loadInbox(); }} emptyMessage="All tasks complete" />
+  <TaskList
+    tasks={getTasks()}
+    isLoading={getTasksLoading()}
+    error={getTasksError()}
+    onTaskTap={handleTaskTap}
+    onToggleDone={handleToggle}
+    onRefresh={async () => {
+      loadInbox();
+    }}
+    emptyMessage="All tasks complete"
+  />
   {#if !externalOnTaskTap}
     <TaskDetail task={selectedTask} onclose={handleDetailClose} ontaskchanged={handleTaskChanged} />
   {/if}
 </div>
 
 <style>
-  .inbox-view { display: flex; flex-direction: column; height: 100%; }
+  .inbox-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
 </style>
