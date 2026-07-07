@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { getServiceState, initServiceListener } from '$lib/stores/service.svelte';
   import { getActiveId } from '$lib/stores/space.svelte';
-  import { loadInbox } from '$lib/stores/tasks.svelte';
+  import { addTask, loadInbox } from '$lib/stores/tasks.svelte';
   import { toggleTaskDone } from '$lib/helpers/task-actions';
   import { loadTaskNames } from '$lib/stores/tasknames.svelte';
   import { loadTagNames } from '$lib/stores/tagnames.svelte';
@@ -51,6 +51,9 @@
   } from '$lib/stores/queries.svelte';
   import { devLog } from '$lib/helpers/dev-log';
   import { goto } from '$lib/router';
+  import { consumePendingIntent, handleIncomingIntent } from '$lib/native/siri';
+  import { showError, showSuccess } from '$lib/stores/toast.svelte';
+  import { notifyError, notifySuccess } from '$lib/native/haptics';
 
   let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
   let currentTab = $state<string>(activeTab);
@@ -87,6 +90,14 @@
     logInfo(
       `[ui-debug] ${uiDebugLastEvent}${uiDebugBottomStack ? ` :: ${uiDebugBottomStack}` : ''}`,
     );
+  }
+
+  function decodeQueryPage(page: string): string {
+    try {
+      return decodeURIComponent(page);
+    } catch {
+      return page;
+    }
   }
 
   function isEditing(): boolean {
@@ -192,7 +203,7 @@
   $effect(() => {
     if (currentTab.startsWith('queries:')) {
       const parts = currentTab.slice(8).split(':');
-      const page = parts[0];
+      const page = decodeQueryPage(parts[0]);
       const index = parts[1] ? parseInt(parts[1]) : undefined;
       querySelectedTask = null;
       clearQueryResults();
@@ -205,6 +216,35 @@
       loadQueryPages();
     }
   });
+
+  async function handleShortcutIntent(
+    intentName: string,
+    parameters?: Record<string, unknown>,
+  ): Promise<void> {
+    const rawTitle = typeof parameters?.title === 'string' ? parameters.title.trim() : '';
+    logInfo(
+      `[shortcuts] received intent="${intentName}" title="${rawTitle.slice(0, 120)}" activeSpace="${getActiveId() || ''}"`,
+    );
+
+    if (intentName === 'OpenQuickAdd' || (intentName === 'AddTaskIntent' && !rawTitle)) {
+      navigate('inbox');
+      setTimeout(() => triggerAddTask(), 0);
+      showSuccess('Quick Add opened');
+      return;
+    }
+
+    if (intentName === 'AddTaskIntent') {
+      navigate('inbox');
+      const task = await addTask(rawTitle);
+      if (task) {
+        notifySuccess();
+        showSuccess(`Task added to ${task.page}`);
+      } else {
+        notifyError();
+        showError('Shortcut task add failed');
+      }
+    }
+  }
 
   onMount(() => {
     logInfo(`[layout] onMount — isDesktop=${getIsDesktop()} tab=${currentTab}`);
@@ -265,6 +305,7 @@
       document.removeEventListener('touchend', captureTouchEnd, true);
       document.removeEventListener('click', captureClick, true);
       window.removeEventListener('hashchange', handleHashChange);
+      removeShortcutListener();
     };
   });
 
@@ -515,6 +556,12 @@
     z-index: var(--z-header);
     flex-shrink: 0;
     padding-top: var(--safe-area-top);
+  }
+  :global(.task-editor-open) .app-header {
+    display: none;
+  }
+  :global(.task-editor-open) .tab-bar {
+    display: none;
   }
   .header-content {
     display: flex;

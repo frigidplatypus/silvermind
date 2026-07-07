@@ -108,6 +108,14 @@
     return `${task._spaceUrl ?? task._spaceName ?? 'active'}/${task.page}/${task.position}`;
   }
 
+  function decodeQueryPage(page: string): string {
+    try {
+      return decodeURIComponent(page);
+    } catch {
+      return page;
+    }
+  }
+
   function onSidebarDown(e: PointerEvent) {
     sidebarDragging = true;
     sidebarDragStartX = e.clientX;
@@ -144,7 +152,7 @@
       setSelectedTaskId(null);
       if (activeView.startsWith('queries:')) {
         const parts = activeView.split(':');
-        const page = parts[1];
+        const page = decodeQueryPage(parts[1]);
         const index = parts[2] ? parseInt(parts[2]) : undefined;
         runQuery(page, index);
       } else {
@@ -191,7 +199,7 @@
     // Re-run the current query to refresh results
     if (activeView.startsWith('queries:')) {
       const parts = activeView.split(':');
-      const page = parts[1];
+      const page = decodeQueryPage(parts[1]);
       const index = parts[2] ? parseInt(parts[2]) : undefined;
       runQuery(page, index);
     }
@@ -203,7 +211,7 @@
 
   async function handleEditQuery() {
     const parts = activeView.split(':');
-    const page = parts[1];
+    const page = decodeQueryPage(parts[1]);
     const blockNumber = parts[2] ? parseInt(parts[2]) : 0;
     const title = queryTitle ?? '';
 
