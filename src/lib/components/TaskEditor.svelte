@@ -42,12 +42,25 @@
   let newAlertDate = $state('');
   let newAlertTime = $state('');
   let loadedTaskKey = $state('');
+  let editorBodyEl: HTMLDivElement | null = $state(null);
 
   const originalDue = $derived(task.due_parsed?.date || task.due || '');
   const originalScheduled = $derived(task.deferred_parsed?.date || task.deferred || '');
   const taskKey = $derived(
     `${task._spaceUrl ?? task._spaceName ?? 'active'}:${task.page}:${task.position}`,
   );
+
+  $effect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('task-editor-open');
+    }
+
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('task-editor-open');
+      }
+    };
+  });
 
   $effect(() => {
     if (taskKey === loadedTaskKey) return;
@@ -70,6 +83,10 @@
     newAlertTime = '';
     showDeleteConfirm = false;
     loadedTaskKey = taskKey;
+
+    queueMicrotask(() => {
+      editorBodyEl?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    });
   });
 
   const hasChanges = $derived.by(() => {
@@ -456,6 +473,20 @@
     <span class="meta-label">Position</span><span class="meta-value">{task.position}</span>
   </div>
 
+  <div class="editor-actions-row">
+    <button
+      class="done-btn"
+      onclick={handleToggleDone}
+      aria-label={task.done ? 'Mark active' : 'Mark done'}
+    >
+      <Icon name={task.done ? 'rotate-ccw' : 'check'} />
+      {task.done ? 'Undo' : 'Mark Done'}
+    </button>
+    <button class="save-btn" onclick={handleSave} disabled={isSaving || !text.trim()}>
+      {isSaving ? 'Saving…' : 'Save'}
+    </button>
+  </div>
+
   <div class="delete-section">
     {#if showDeleteConfirm}
       <p>Delete this task permanently?</p>
@@ -484,22 +515,9 @@
     <div class="modal-dialog" onclick={(e) => e.stopPropagation()} role="document">
       <div class="modal-header">
         <h2 class="modal-title">Edit Task</h2>
-        <div class="modal-actions">
-          <button
-            class="done-btn"
-            onclick={handleToggleDone}
-            aria-label={task.done ? 'Mark active' : 'Mark done'}
-          >
-            <Icon name={task.done ? 'rotate-ccw' : 'check'} />
-            {task.done ? 'Undo' : 'Done'}
-          </button>
-          <button class="save-btn" onclick={handleSave} disabled={isSaving || !text.trim()}>
-            {isSaving ? '...' : 'Save'}
-          </button>
-          <button class="close-btn" onclick={handleAttemptClose} aria-label="Close"
-            ><Icon name="x" /></button
-          >
-        </div>
+        <button class="close-btn" onclick={handleAttemptClose} aria-label="Close"
+          ><Icon name="x" /></button
+        >
       </div>
       <div class="modal-body">
         {@render formContent()}
@@ -509,25 +527,14 @@
 {:else}
   <div class="editor">
     <div class="editor-header">
-      <button class="back-btn" onclick={handleAttemptClose} aria-label="Back"
-        ><Icon name="arrow-left" size="1rem" /> Back</button
+      <button class="back-btn" onclick={handleAttemptClose} aria-label="Dismiss editor"
+        ><Icon name="arrow-left" size="1rem" /> Close</button
       >
-      <div class="header-actions">
-        <button
-          class="done-btn"
-          onclick={handleToggleDone}
-          aria-label={task.done ? 'Mark active' : 'Mark done'}
-        >
-          <Icon name={task.done ? 'rotate-ccw' : 'check'} />
-          {task.done ? 'Undo' : 'Done'}
-        </button>
-        <button class="save-btn" onclick={handleSave} disabled={isSaving || !text.trim()}>
-          {isSaving ? '...' : 'Save'}
-        </button>
-      </div>
+      <div class="editor-title">Edit Task</div>
+      <div class="editor-header-spacer" aria-hidden="true"></div>
     </div>
 
-    <div class="editor-body">
+    <div class="editor-body" bind:this={editorBodyEl}>
       {@render formContent()}
     </div>
   </div>
@@ -537,15 +544,16 @@
   .editor {
     position: fixed;
     inset: 0;
-    z-index: 300;
+    z-index: calc(var(--z-toast) + 1);
     background: var(--color-bg);
     display: flex;
     flex-direction: column;
+    padding-top: var(--safe-area-top);
   }
   .modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 300;
+    z-index: calc(var(--z-toast) + 1);
     background: var(--color-overlay);
     display: flex;
     align-items: center;
@@ -555,7 +563,7 @@
     background: var(--color-surface);
     border-radius: var(--radius-xl);
     width: min(640px, 90vw);
-    max-height: 85vh;
+    max-height: min(100dvh - 1rem, 85vh);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -572,11 +580,6 @@
     font-size: var(--font-size-lg);
     font-weight: 700;
     color: var(--color-text);
-  }
-  .modal-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
   }
   .modal-body {
     flex: 1;
@@ -602,43 +605,61 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1rem;
-    padding-top: max(0.75rem, var(--safe-area-top));
     border-bottom: 0.5px solid var(--color-separator);
     background: var(--color-bg);
+    flex-shrink: 0;
   }
   .back-btn {
     color: var(--color-accent);
     font-weight: 500;
     font-size: var(--font-size-base);
   }
-  .header-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+  .editor-title {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .editor-header-spacer {
+    width: 2.25rem;
+    flex-shrink: 0;
   }
   .done-btn {
+    min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: var(--font-size-sm);
     color: var(--color-success);
     background: var(--color-success-light);
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
   }
   .save-btn {
+    min-height: 2.75rem;
     padding: 0.5rem 1rem;
     border-radius: var(--radius-md);
     background: var(--color-accent);
     color: var(--color-on-accent);
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-sm);
+    flex: 1;
   }
   .save-btn:disabled {
     opacity: 0.4;
+  }
+  .editor-actions-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
   }
   .editor-body {
     flex: 1;
     overflow-y: auto;
     padding: 1rem;
+    padding-bottom: calc(1rem + var(--safe-area-bottom));
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -824,6 +845,7 @@
   }
   .delete-section {
     margin-top: 2rem;
+    margin-bottom: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-separator);
   }
@@ -856,5 +878,19 @@
     color: var(--color-on-danger);
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-sm);
+  }
+  @media (max-width: 720px) {
+    .modal-overlay {
+      align-items: flex-end;
+    }
+    .modal-dialog {
+      width: 100%;
+      max-height: 100dvh;
+      height: min(100dvh, 100%);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .modal-header {
+      padding-top: max(1rem, var(--safe-area-top));
+    }
   }
 </style>

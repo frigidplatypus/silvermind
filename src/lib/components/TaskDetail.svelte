@@ -76,6 +76,17 @@
 
   const doneIcon = $derived(task?.done ? 'rotate-ccw' : 'check');
   const doneLabel = $derived(task?.done ? 'Undo' : 'Mark Done');
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+
+    const isOpen = Boolean(task) || editing;
+    document.documentElement.classList.toggle('task-overlay-open', isOpen);
+
+    return () => {
+      document.documentElement.classList.remove('task-overlay-open');
+    };
+  });
 </script>
 
 {#if task && !editing}
@@ -144,6 +155,9 @@
         {/each}
       {/if}
     </div>
+  {/snippet}
+
+  {#snippet actionContent()}
     <button
       class="done-btn"
       class:is-done={task.done}
@@ -170,6 +184,9 @@
         <Markdown text={displayText} {spaceURL} />
       </div>
       {@render metaContent()}
+      <div class="panel-actions">
+        {@render actionContent()}
+      </div>
     </div>
   {:else}
     <div
@@ -187,10 +204,15 @@
           ><Icon name="edit-3" /></button
         >
 
-        <div class="detail-body">
-          <Markdown text={displayText} {spaceURL} />
+        <div class="sheet-content">
+          <div class="detail-body">
+            <Markdown text={displayText} {spaceURL} />
+          </div>
+          {@render metaContent()}
         </div>
-        {@render metaContent()}
+        <div class="sheet-actions">
+          {@render actionContent()}
+        </div>
       </div>
     </div>
   {/if}
@@ -211,7 +233,7 @@
   .overlay {
     position: fixed;
     inset: 0;
-    z-index: var(--z-overlay);
+    z-index: calc(var(--z-toast) + 1);
     background: var(--color-overlay);
     display: flex;
     align-items: flex-end;
@@ -221,13 +243,19 @@
   .sheet {
     background: var(--color-surface);
     width: 100%;
-    max-height: 85vh;
-    overflow-y: auto;
+    max-height: calc(100dvh - var(--safe-area-top) - 0.5rem);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     padding: 2.5rem var(--space-4) 2rem;
-    padding-bottom: max(2rem, var(--safe-area-bottom));
+    padding-bottom: calc(6rem + var(--safe-area-bottom));
     position: relative;
     animation: slide-up var(--duration-normal) var(--easing);
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet-content {
+    overflow-y: auto;
+    min-height: 0;
+    padding-bottom: var(--space-2);
   }
   .close-btn {
     position: absolute;
@@ -364,6 +392,18 @@
     border-radius: var(--radius-sm);
     background: var(--color-accent-light);
     color: var(--color-accent);
+  }
+  .sheet-actions,
+  .panel-actions {
+    border-top: 1px solid var(--color-separator);
+    background: var(--color-surface);
+    padding-top: var(--space-3);
+  }
+  .sheet-actions {
+    padding-bottom: calc(5rem + var(--safe-area-bottom));
+  }
+  .panel-actions {
+    padding-bottom: var(--space-2);
   }
   @keyframes fade-in {
     from {

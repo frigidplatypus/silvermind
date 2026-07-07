@@ -119,6 +119,9 @@
     z-index: var(--z-dropdown);
     pointer-events: none;
   }
+  :global(.task-overlay-open) .fab-anchor {
+    display: none;
+  }
   .fab {
     width: 3.5rem;
     height: 3.5rem;

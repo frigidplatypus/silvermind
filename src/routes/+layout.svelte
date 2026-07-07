@@ -228,6 +228,23 @@
       updateUIDebug('click', e.target, e.clientX, e.clientY);
     };
 
+    const removeShortcutListener = handleIncomingIntent((intentName, parameters) => {
+      handleShortcutIntent(intentName, parameters).catch((e) => {
+        logInfo(`[shortcuts] live intent failed: ${e instanceof Error ? e.message : String(e)}`);
+      });
+    });
+
+    consumePendingIntent()
+      .then((pending: { intentName: string; parameters?: Record<string, unknown> } | null) => {
+        if (!pending) return;
+        return handleShortcutIntent(pending.intentName, pending.parameters);
+      })
+      .catch((e: any) => {
+        logInfo(
+          `[shortcuts] pending intent consume skipped: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      });
+
     document.addEventListener('touchstart', captureTouchStart, true);
     document.addEventListener('touchend', captureTouchEnd, true);
     document.addEventListener('click', captureClick, true);
