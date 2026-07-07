@@ -1,4 +1,10 @@
-import { listSpaces, addSpace, removeSpace, setActive, verifySpace } from '$lib/backend/space-operations';
+import {
+  listSpaces,
+  addSpace,
+  removeSpace,
+  setActive,
+  verifySpace,
+} from '$lib/backend/space-operations';
 import { getConfigManager } from '$lib/backend/backend-context';
 import type { SpacesResponse } from '$lib/types/space';
 
@@ -7,10 +13,11 @@ export async function getSpaces(): Promise<SpacesResponse> {
   await cm.load();
   const active = await cm.getActiveSpace();
   const spaces = await listSpaces();
-  return spaces.map(s => ({
+  return spaces.map((s) => ({
     id: s.name,
     name: s.name,
     url: s.url,
+    inbox_page: s.inbox_page || 'Inbox',
     active: active?.name === s.name,
     is_default: s.name === 'main',
   }));
@@ -38,10 +45,20 @@ export interface UpdateSpaceRequest {
   auth_token?: string;
 }
 
-export async function updateSpace(name: string, req: UpdateSpaceRequest): Promise<{ status: string; name: string }> {
+export async function updateSpace(
+  name: string,
+  req: UpdateSpaceRequest,
+): Promise<{ status: string; name: string }> {
   const cm = getConfigManager();
   await cm.load();
-  await cm.updateSpace(name, req.name || name, req.url || '', req.default_page, req.inbox_page, req.auth_token);
+  await cm.updateSpace(
+    name,
+    req.name || name,
+    req.url || '',
+    req.default_page,
+    req.inbox_page,
+    req.auth_token,
+  );
   return { status: 'ok', name: req.name || name };
 }
 

@@ -38,13 +38,13 @@
   let isDesktop = $state(false);
   let newName = $state('');
   let newUrl = $state('');
+  let newInboxPage = $state('Inbox');
   let newAuthToken = $state('');
   let saving = $state(false);
   let error = $state<string | null>(null);
   let editingSpace = $state<string | null>(null);
   let editName = $state('');
   let editUrl = $state('');
-  let editDefaultPage = $state('');
   let editInboxPage = $state('');
   let editAuthToken = $state('');
   let showEditToken = $state(false);
@@ -124,8 +124,7 @@
     editingSpace = space.name;
     editName = space.name;
     editUrl = space.url;
-    editDefaultPage = '';
-    editInboxPage = '';
+    editInboxPage = space.inbox_page || 'Inbox';
     editAuthToken = '';
     showEditToken = false;
   }
@@ -146,7 +145,7 @@
           originalName,
           name !== originalName ? name : '',
           url,
-          editDefaultPage,
+          '',
           editInboxPage,
           editAuthToken,
         );
@@ -154,7 +153,6 @@
         await updateSpace(originalName, {
           name: name !== originalName ? name : undefined,
           url,
-          default_page: editDefaultPage || undefined,
           inbox_page: editInboxPage || undefined,
           auth_token: editAuthToken || undefined,
         });
@@ -180,12 +178,18 @@
     error = null;
     try {
       if (isDesktop) {
-        await addSpaceDesktop(name, url, '', '', newAuthToken);
+        await addSpaceDesktop(name, url, '', newInboxPage || 'Inbox', newAuthToken);
       } else {
-        await addSpace({ name, url, auth_token: newAuthToken || undefined });
+        await addSpace({
+          name,
+          url,
+          inbox_page: newInboxPage || undefined,
+          auth_token: newAuthToken || undefined,
+        });
       }
       newName = '';
       newUrl = '';
+      newInboxPage = 'Inbox';
       newAuthToken = '';
       await loadSpaces();
       deployHelpers().catch(() => {});
@@ -369,15 +373,6 @@
                   </span>
                 {/if}
               </div>
-              <label class="field-label" for="edit-dp-{space.name}">Default page</label>
-              <input
-                id="edit-dp-{space.name}"
-                type="text"
-                class="field"
-                bind:value={editDefaultPage}
-                placeholder="Tasks"
-                disabled={saving}
-              />
               <label class="field-label" for="edit-ip-{space.name}">Inbox page</label>
               <input
                 id="edit-ip-{space.name}"
@@ -423,6 +418,7 @@
             <div class="space-info">
               <span class="space-name">{space.name}</span>
               <span class="space-url">{space.url}</span>
+              <span class="space-meta">Quick Add goes to: {space.inbox_page || 'Inbox'}</span>
             </div>
             <div class="space-actions">
               {#if !space.active}
@@ -472,6 +468,13 @@
         class="field"
         placeholder="Space URL"
         bind:value={newUrl}
+        disabled={saving}
+      />
+      <input
+        type="text"
+        class="field"
+        placeholder="Inbox page (defaults to Inbox)"
+        bind:value={newInboxPage}
         disabled={saving}
       />
       <div style="display:flex;gap:0.5rem;margin-top:0.25rem">

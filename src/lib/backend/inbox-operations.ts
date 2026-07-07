@@ -94,6 +94,10 @@ export async function createTask(
 ): Promise<Task> {
   const inboxPage = input.page || activeSpace.inbox_page || 'Inbox';
 
+  logInfo(
+    `[tasks-create] start space="${activeSpace.name}" targetPage="${inboxPage}" configuredInbox="${activeSpace.inbox_page || 'Inbox'}" text="${input.text.slice(0, 120)}"`,
+  );
+
   const task: Task = {
     page: inboxPage,
     position: 0,
@@ -112,10 +116,17 @@ export async function createTask(
 
   const line = toMarkdown(task);
 
+  logInfo(`[tasks-create] markdown line for page="${inboxPage}": ${line}`);
+
   await sbClient.readModifyWrite(inboxPage, async (content) => {
     const trimmed = content.trimEnd();
+    logInfo(
+      `[tasks-create] appending to page="${inboxPage}" existingLength=${content.length} resultingLength=${trimmed.length + (trimmed ? 1 : 0) + line.length + 1}`,
+    );
     return trimmed ? `${trimmed}\n${line}\n` : `${line}\n`;
   });
+
+  logInfo(`[tasks-create] write complete space="${activeSpace.name}" page="${inboxPage}"`);
 
   return task;
 }

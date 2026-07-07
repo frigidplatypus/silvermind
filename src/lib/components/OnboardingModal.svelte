@@ -12,6 +12,7 @@
   let url = $state('');
   let name = $state('');
   let authToken = $state('');
+  let inboxPage = $state('Inbox');
   let showToken = $state(false);
   let verifying = $state(false);
   let verifyResult = $state<{ ok: boolean; task_count?: number; error?: string } | null>(null);
@@ -50,9 +51,20 @@
     error = '';
     try {
       if (isDesktopApp()) {
-        await addSpaceDesktop(name.trim(), url.trim(), 'Tasks', 'Inbox', authToken);
+        await addSpaceDesktop(
+          name.trim(),
+          url.trim(),
+          'Tasks',
+          inboxPage.trim() || 'Inbox',
+          authToken,
+        );
       } else {
-        await addSpace({ name: name.trim(), url: url.trim(), auth_token: authToken || undefined });
+        await addSpace({
+          name: name.trim(),
+          url: url.trim(),
+          inbox_page: inboxPage.trim() || 'Inbox',
+          auth_token: authToken || undefined,
+        });
       }
       goToStep('saving');
       await loadSpaces();
@@ -166,6 +178,19 @@
             type="text"
             bind:value={name}
             placeholder="notes"
+            class="field-input"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="wizard-inbox-page"
+            >Inbox Page <span class="label-optional">optional</span></label
+          >
+          <input
+            id="wizard-inbox-page"
+            type="text"
+            bind:value={inboxPage}
+            placeholder="Inbox"
             class="field-input"
           />
         </div>

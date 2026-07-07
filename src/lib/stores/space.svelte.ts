@@ -12,18 +12,36 @@ let isLoadingVal = $state(false);
 let errorVal = $state<string | null>(null);
 
 function persist(key: string, value: string) {
-  try { localStorage.setItem(key, value); } catch { /* noop */ }
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* noop */
+  }
 }
 
 function restore(key: string): string | null {
-  try { return localStorage.getItem(key); } catch { return null; }
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
-export function getSpacesList(): Space[] { return spacesVal; }
-export function getActiveSpace(): Space | null { return spacesVal.find((s) => s.id === activeIdVal) ?? null; }
-export function getActiveId(): string | null { return activeIdVal; }
-export function getSpacesLoading(): boolean { return isLoadingVal; }
-export function getSpacesError(): string | null { return errorVal; }
+export function getSpacesList(): Space[] {
+  return spacesVal;
+}
+export function getActiveSpace(): Space | null {
+  return spacesVal.find((s) => s.id === activeIdVal) ?? null;
+}
+export function getActiveId(): string | null {
+  return activeIdVal;
+}
+export function getSpacesLoading(): boolean {
+  return isLoadingVal;
+}
+export function getSpacesError(): string | null {
+  return errorVal;
+}
 
 export function currentSpaceId(): string | null {
   return activeIdVal;
@@ -36,12 +54,13 @@ export async function loadSpaces(): Promise<void> {
     const res = isDesktopApp() ? await listSpacesDesktop() : await getSpaces();
     const raw = Array.isArray(res) ? res : [];
     const nextSpaces = raw.map((s: any) => ({
-        id: s.name || s.url,
-        name: s.name || s.url,
-        url: s.url || s.space,
-        active: s.active ?? false,
-        is_default: s.is_default ?? false,
-      }));
+      id: s.name || s.url,
+      name: s.name || s.url,
+      url: s.url || s.space,
+      inbox_page: s.inbox_page || 'Inbox',
+      active: s.active ?? false,
+      is_default: s.is_default ?? false,
+    }));
     if (nextSpaces.length === 0 && spacesVal.length > 0) {
       logWarn('[spaces] load returned no spaces; preserving previous list');
       errorVal = 'No spaces returned from config';
@@ -86,6 +105,7 @@ export async function setActiveSpace(spaceId: string): Promise<void> {
           id: s.name || s.url,
           name: s.name || s.url,
           url: s.url || s.space,
+          inbox_page: s.inbox_page || 'Inbox',
           active: s.active ?? false,
           is_default: s.is_default ?? false,
         }))

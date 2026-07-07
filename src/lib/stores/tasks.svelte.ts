@@ -5,7 +5,7 @@ import { createTask } from '$lib/api/tasks';
 import { getActiveSpace } from '$lib/stores/space.svelte';
 import { loadGlobalView } from '$lib/stores/global.svelte';
 import { formatError } from '$lib/helpers/format-error';
-import { logWarn } from '$lib/helpers/logger';
+import { logInfo, logWarn } from '$lib/helpers/logger';
 import { rescheduleAll } from './notifications.svelte';
 
 let _tasks = $state<Task[]>([]);
@@ -16,15 +16,27 @@ let _overdue = $state<Task[]>([]);
 let _dueToday = $state<Task[]>([]);
 let _deferredToday = $state<Task[]>([]);
 
-export function getTasks(): Task[] { return _tasks; }
-export function getTasksLoading(): boolean { return _isLoading; }
-export function getTasksError(): string | null { return _lastError; }
-export function getTodayOverdue(): Task[] { return _overdue; }
-export function getTodayDue(): Task[] { return _dueToday; }
-export function getTodayDeferred(): Task[] { return _deferredToday; }
+export function getTasks(): Task[] {
+  return _tasks;
+}
+export function getTasksLoading(): boolean {
+  return _isLoading;
+}
+export function getTasksError(): string | null {
+  return _lastError;
+}
+export function getTodayOverdue(): Task[] {
+  return _overdue;
+}
+export function getTodayDue(): Task[] {
+  return _dueToday;
+}
+export function getTodayDeferred(): Task[] {
+  return _deferredToday;
+}
 
 export function updateTaskInList(updated: Task) {
-  const idx = _tasks.findIndex(t => t.page === updated.page && t.position === updated.position);
+  const idx = _tasks.findIndex((t) => t.page === updated.page && t.position === updated.position);
   if (idx >= 0) {
     _tasks[idx] = updated;
     _tasks = [..._tasks];
@@ -47,7 +59,11 @@ export async function loadInbox(): Promise<Task[]> {
   return _tasks;
 }
 
-export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[]; deferred_today: Task[] }> {
+export async function loadToday(): Promise<{
+  overdue: Task[];
+  due_today: Task[];
+  deferred_today: Task[];
+}> {
   _isLoading = true;
   _lastError = null;
   try {
@@ -68,7 +84,11 @@ export async function loadToday(): Promise<{ overdue: Task[]; due_today: Task[];
 
 export async function addTask(text: string): Promise<Task | null> {
   try {
+    logInfo(`[tasks-store] addTask requested text="${text.slice(0, 120)}"`);
     const task = await createTask({ text });
+    logInfo(
+      `[tasks-store] addTask returned page="${task.page}" position=${task.position} text="${task.text.slice(0, 120)}"`,
+    );
     // Refresh lists in background — don't block the FAB from closing
     Promise.all([loadInbox(), loadToday()]).catch(() => {});
     loadGlobalView();
@@ -94,9 +114,14 @@ function tasksEqual(a: Task[], b: Task[]): boolean {
   for (const ta of a) {
     const tb = mapB.get(`${ta.page}/${ta.position}`);
     if (!tb) return false;
-    if (ta.text !== tb.text || ta.done !== tb.done ||
-      ta.status !== tb.status || ta.due !== tb.due ||
-      ta.priority !== tb.priority) return false;
+    if (
+      ta.text !== tb.text ||
+      ta.done !== tb.done ||
+      ta.status !== tb.status ||
+      ta.due !== tb.due ||
+      ta.priority !== tb.priority
+    )
+      return false;
     if (JSON.stringify(ta.tags) !== JSON.stringify(tb.tags)) return false;
   }
   return true;
