@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>ai.silvermind.app</id>
   <name>Silvermind</name>
-  <summary>Task management powered by sbtask</summary>
+  <summary>Task management powered by SilverBullet</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <description>

@@ -2,7 +2,6 @@ import { verifySpace } from '$lib/backend/space-operations';
 
 export interface ConfigStatus {
   exists: boolean;
-  sbtask_exists: boolean;
   space_count: number;
   spaces: { name: string; url: string; default: boolean }[];
 }

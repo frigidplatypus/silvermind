@@ -1,19 +1,36 @@
 <script lang="ts">
   import { getTheme, setTheme, getAccent, setAccent } from '$lib/stores/theme.svelte';
-  import { getDefaultView, setDefaultView, getShowToday, setShowToday } from '$lib/stores/landing.svelte';
+  import {
+    getDefaultView,
+    setDefaultView,
+    getShowToday,
+    setShowToday,
+  } from '$lib/stores/landing.svelte';
   import { getSpacesList, loadSpaces, setActiveSpace } from '$lib/stores/space.svelte';
   import type { Mode } from '$lib/stores/theme.svelte';
   import type { AccentPreset } from '$lib/themes';
   import { presets } from '$lib/themes';
   import type { Space } from '$lib/types/space';
   import Icon from '$lib/components/Icon.svelte';
-  import { isDesktopApp, addSpaceDesktop, removeSpaceDesktop, updateSpaceDesktop, verifySpaceDesktop } from '$lib/desktop-bridge';
-  import { addSpace, updateSpace, removeSpace, setActiveSpaceApi, verifySpace } from '$lib/api/spaces';
+  import {
+    isDesktopApp,
+    addSpaceDesktop,
+    removeSpaceDesktop,
+    updateSpaceDesktop,
+    verifySpaceDesktop,
+  } from '$lib/desktop-bridge';
+  import {
+    addSpace,
+    updateSpace,
+    removeSpace,
+    setActiveSpaceApi,
+    verifySpace,
+  } from '$lib/api/spaces';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
   import { isCrashReportingEnabled, setCrashReporting } from '$lib/stores/privacy.svelte';
   import { downloadLogs } from '$lib/helpers/crash-reporting';
   import { deployHelpers } from '$lib/api/queries';
-import { devLog } from '$lib/helpers/dev-log';
+  import { devLog } from '$lib/helpers/dev-log';
 
   let currentTheme = $state<Mode>(getTheme());
   let currentAccent = $state<AccentPreset>(getAccent());
@@ -45,7 +62,10 @@ import { devLog } from '$lib/helpers/dev-log';
       if (isDesktop) {
         verifyAddResult = await verifySpaceDesktop(newUrl.trim(), newAuthToken || undefined);
       } else {
-        const res = await verifySpace({ url: newUrl.trim(), auth_token: newAuthToken || undefined });
+        const res = await verifySpace({
+          url: newUrl.trim(),
+          auth_token: newAuthToken || undefined,
+        });
         verifyAddResult = { ok: res.ok, task_count: res.task_count, error: res.error };
       }
     } catch (e: any) {
@@ -63,7 +83,10 @@ import { devLog } from '$lib/helpers/dev-log';
       if (isDesktop) {
         verifyEditResult = await verifySpaceDesktop(editUrl.trim(), editAuthToken || undefined);
       } else {
-        const res = await verifySpace({ url: editUrl.trim(), auth_token: editAuthToken || undefined });
+        const res = await verifySpace({
+          url: editUrl.trim(),
+          auth_token: editAuthToken || undefined,
+        });
         verifyEditResult = { ok: res.ok, task_count: res.task_count, error: res.error };
       }
     } catch (e: any) {
@@ -77,12 +100,24 @@ import { devLog } from '$lib/helpers/dev-log';
     isDesktop = isDesktopApp();
   });
 
-  function onThemeChange(t: Mode) { currentTheme = t; setTheme(t); }
-  function onAccentChange(a: AccentPreset) { currentAccent = a; setAccent(a); }
-  function onDefaultChange(v: string) { currentDefault = v; setDefaultView(v); }
+  function onThemeChange(t: Mode) {
+    currentTheme = t;
+    setTheme(t);
+  }
+  function onAccentChange(a: AccentPreset) {
+    currentAccent = a;
+    setAccent(a);
+  }
+  function onDefaultChange(v: string) {
+    currentDefault = v;
+    setDefaultView(v);
+  }
   function onShowTodayChange(show: boolean) {
     setShowToday(show);
-    if (!show && currentDefault === 'today') { currentDefault = 'inbox'; setDefaultView('inbox'); }
+    if (!show && currentDefault === 'today') {
+      currentDefault = 'inbox';
+      setDefaultView('inbox');
+    }
   }
 
   function startEdit(space: Space) {
@@ -107,9 +142,22 @@ import { devLog } from '$lib/helpers/dev-log';
     error = null;
     try {
       if (isDesktop) {
-        await updateSpaceDesktop(originalName, name !== originalName ? name : '', url, editDefaultPage, editInboxPage, editAuthToken);
+        await updateSpaceDesktop(
+          originalName,
+          name !== originalName ? name : '',
+          url,
+          editDefaultPage,
+          editInboxPage,
+          editAuthToken,
+        );
       } else {
-        await updateSpace(originalName, { name: name !== originalName ? name : undefined, url, default_page: editDefaultPage || undefined, inbox_page: editInboxPage || undefined, auth_token: editAuthToken || undefined });
+        await updateSpace(originalName, {
+          name: name !== originalName ? name : undefined,
+          url,
+          default_page: editDefaultPage || undefined,
+          inbox_page: editInboxPage || undefined,
+          auth_token: editAuthToken || undefined,
+        });
       }
       editingSpace = null;
       await loadSpaces();
@@ -195,7 +243,12 @@ import { devLog } from '$lib/helpers/dev-log';
     <h3 class="section-title">Color Theme</h3>
     <div class="accent-picker">
       {#each presets as p}
-        <button class="accent-btn" class:active={currentAccent === p.id} onclick={() => onAccentChange(p.id)} aria-label={p.label}>
+        <button
+          class="accent-btn"
+          class:active={currentAccent === p.id}
+          onclick={() => onAccentChange(p.id)}
+          aria-label={p.label}
+        >
           <span class="accent-swatch" style="background: {p.color}"></span>
           <span class="accent-label">{p.label}</span>
         </button>
@@ -206,8 +259,12 @@ import { devLog } from '$lib/helpers/dev-log';
   <section class="section">
     <h3 class="section-title">Appearance</h3>
     <div class="theme-picker">
-      {#each (['system', 'light', 'dark'] as Mode[]) as t}
-        <button class="theme-btn" class:active={currentTheme === t} onclick={() => onThemeChange(t)}>
+      {#each ['system', 'light', 'dark'] as Mode[] as t}
+        <button
+          class="theme-btn"
+          class:active={currentTheme === t}
+          onclick={() => onThemeChange(t)}
+        >
           <Icon name={t === 'system' ? 'monitor' : t === 'light' ? 'sun' : 'moon'} size="1.5rem" />
           <span class="theme-label">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
         </button>
@@ -220,7 +277,11 @@ import { devLog } from '$lib/helpers/dev-log';
     <div class="default-picker">
       {#each [{ id: 'inbox', icon: 'inbox', label: 'Task List' }, { id: 'today', icon: 'calendar', label: 'Today' }, { id: 'global', icon: 'globe', label: 'All Tasks' }] as item}
         {#if item.id !== 'today' || getShowToday()}
-          <button class="default-btn" class:active={currentDefault === item.id} onclick={() => onDefaultChange(item.id)}>
+          <button
+            class="default-btn"
+            class:active={currentDefault === item.id}
+            onclick={() => onDefaultChange(item.id)}
+          >
             <Icon name={item.icon} size="1.5rem" />
             <span class="default-label">{item.label}</span>
           </button>
@@ -232,7 +293,11 @@ import { devLog } from '$lib/helpers/dev-log';
   <section class="section">
     <h3 class="section-title">Views</h3>
     <label class="toggle-row">
-      <input type="checkbox" checked={getShowToday()} onchange={(e) => onShowTodayChange((e.target as HTMLInputElement).checked)} />
+      <input
+        type="checkbox"
+        checked={getShowToday()}
+        onchange={(e) => onShowTodayChange((e.target as HTMLInputElement).checked)}
+      />
       <span>Show Today view</span>
     </label>
   </section>
@@ -240,11 +305,19 @@ import { devLog } from '$lib/helpers/dev-log';
   <section class="section">
     <h3 class="section-title">Privacy</h3>
     <label class="checkbox-item" style="margin-bottom:0.75rem">
-      <input type="checkbox" checked={isCrashReportingEnabled()} onchange={(e) => setCrashReporting((e.target as HTMLInputElement).checked)} />
+      <input
+        type="checkbox"
+        checked={isCrashReportingEnabled()}
+        onchange={(e) => setCrashReporting((e.target as HTMLInputElement).checked)}
+      />
       <span>Share anonymous crash reports</span>
     </label>
-    <p class="section-desc">Helps us fix bugs. No task content, page names, or personal data is ever sent.</p>
-    <button class="btn btn-secondary" onclick={downloadLogs} style="margin-top:0.5rem"><Icon name="download" size="0.875rem" /> Export diagnostic logs</button>
+    <p class="section-desc">
+      Helps us fix bugs. No task content, page names, or personal data is ever sent.
+    </p>
+    <button class="btn btn-secondary" onclick={downloadLogs} style="margin-top:0.5rem"
+      ><Icon name="download" size="0.875rem" /> Export diagnostic logs</button
+    >
   </section>
 
   <section class="section">
@@ -260,33 +333,88 @@ import { devLog } from '$lib/helpers/dev-log';
           {#if editingSpace === space.name}
             <div class="space-edit-form">
               <label class="field-label" for="edit-name-{space.name}">Name</label>
-              <input id="edit-name-{space.name}" type="text" class="field" bind:value={editName} disabled={saving} />
+              <input
+                id="edit-name-{space.name}"
+                type="text"
+                class="field"
+                bind:value={editName}
+                disabled={saving}
+              />
               <label class="field-label" for="edit-url-{space.name}">URL</label>
-              <input id="edit-url-{space.name}" type="text" class="field" bind:value={editUrl} disabled={saving} />
+              <input
+                id="edit-url-{space.name}"
+                type="text"
+                class="field"
+                bind:value={editUrl}
+                disabled={saving}
+              />
               <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
-                <button class="verify-btn" onclick={handleVerifyEdit} disabled={verifyingEdit || !editUrl.trim()} style="flex-shrink:0">
+                <button
+                  class="verify-btn"
+                  onclick={handleVerifyEdit}
+                  disabled={verifyingEdit || !editUrl.trim()}
+                  style="flex-shrink:0"
+                >
                   {verifyingEdit ? 'Verifying…' : 'Verify'}
                 </button>
                 {#if verifyEditResult}
-                  <span class="verify-result" class:ok={verifyEditResult.ok} class:fail={!verifyEditResult.ok}>
-                    {verifyEditResult.ok ? `✓ ${verifyEditResult.task_count} tasks` : `✕ ${verifyEditResult.error}`}
+                  <span
+                    class="verify-result"
+                    class:ok={verifyEditResult.ok}
+                    class:fail={!verifyEditResult.ok}
+                  >
+                    {verifyEditResult.ok
+                      ? `✓ ${verifyEditResult.task_count} tasks`
+                      : `✕ ${verifyEditResult.error}`}
                   </span>
                 {/if}
               </div>
               <label class="field-label" for="edit-dp-{space.name}">Default page</label>
-              <input id="edit-dp-{space.name}" type="text" class="field" bind:value={editDefaultPage} placeholder="Tasks" disabled={saving} />
+              <input
+                id="edit-dp-{space.name}"
+                type="text"
+                class="field"
+                bind:value={editDefaultPage}
+                placeholder="Tasks"
+                disabled={saving}
+              />
               <label class="field-label" for="edit-ip-{space.name}">Inbox page</label>
-              <input id="edit-ip-{space.name}" type="text" class="field" bind:value={editInboxPage} placeholder="Inbox" disabled={saving} />
+              <input
+                id="edit-ip-{space.name}"
+                type="text"
+                class="field"
+                bind:value={editInboxPage}
+                placeholder="Inbox"
+                disabled={saving}
+              />
               <label class="field-label" for="edit-token-{space.name}" style="margin-top:0.25rem">
                 Auth token
-                <button class="field-toggle" onclick={() => (showEditToken = !showEditToken)} type="button" aria-label={showEditToken ? 'Hide token' : 'Show token'}>
+                <button
+                  class="field-toggle"
+                  onclick={() => (showEditToken = !showEditToken)}
+                  type="button"
+                  aria-label={showEditToken ? 'Hide token' : 'Show token'}
+                >
                   <Icon name={showEditToken ? 'eye-off' : 'eye'} size="1rem" />
                 </button>
               </label>
-              <input id="edit-token-{space.name}" type={showEditToken ? 'text' : 'password'} class="field" bind:value={editAuthToken} placeholder="Leave empty to keep or clear" disabled={saving} />
+              <input
+                id="edit-token-{space.name}"
+                type={showEditToken ? 'text' : 'password'}
+                class="field"
+                bind:value={editAuthToken}
+                placeholder="Leave empty to keep or clear"
+                disabled={saving}
+              />
               <div class="edit-actions">
-                <button class="action-btn cancel" onclick={cancelEdit} disabled={saving}>Cancel</button>
-                <button class="action-btn save" onclick={() => handleEditSave(space.name)} disabled={saving || !editName.trim() || !editUrl.trim()}>
+                <button class="action-btn cancel" onclick={cancelEdit} disabled={saving}
+                  >Cancel</button
+                >
+                <button
+                  class="action-btn save"
+                  onclick={() => handleEditSave(space.name)}
+                  disabled={saving || !editName.trim() || !editUrl.trim()}
+                >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
               </div>
@@ -298,20 +426,32 @@ import { devLog } from '$lib/helpers/dev-log';
             </div>
             <div class="space-actions">
               {#if !space.active}
-                <button class="action-btn set-active" onclick={() => handleSetActive(space.name)} aria-label="Set {space.name} as active space">
+                <button
+                  class="action-btn set-active"
+                  onclick={() => handleSetActive(space.name)}
+                  aria-label="Set {space.name} as active space"
+                >
                   <Icon name="check-circle" size="1rem" /> Set active
                 </button>
               {:else}
                 <span class="active-badge">Active</span>
               {/if}
-              <button class="action-btn edit" onclick={() => startEdit(space)} aria-label="Edit space {space.name}">
-                  <Icon name="edit-3" size="1rem" />
+              <button
+                class="action-btn edit"
+                onclick={() => startEdit(space)}
+                aria-label="Edit space {space.name}"
+              >
+                <Icon name="edit-3" size="1rem" />
+              </button>
+              {#if getSpacesList().length > 1}
+                <button
+                  class="action-btn remove"
+                  onclick={() => handleRemoveSpace(space.name)}
+                  aria-label="Remove space {space.name}"
+                >
+                  <Icon name="trash-2" size="1rem" />
                 </button>
-                {#if getSpacesList().length > 1}
-                  <button class="action-btn remove" onclick={() => handleRemoveSpace(space.name)} aria-label="Remove space {space.name}">
-                    <Icon name="trash-2" size="1rem" />
-                  </button>
-                {/if}
+              {/if}
             </div>
           {/if}
         </div>
@@ -320,29 +460,67 @@ import { devLog } from '$lib/helpers/dev-log';
 
     <div class="add-space-form">
       <h4 class="form-title">Add Space</h4>
-        <input type="text" class="field" placeholder="Space name" bind:value={newName} disabled={saving} />
-        <input type="text" class="field" placeholder="Space URL" bind:value={newUrl} disabled={saving} />
-        <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
-          <button class="verify-btn" onclick={handleVerifyNew} disabled={verifyingAdd || !newUrl.trim()} style="flex-shrink:0">
-            {verifyingAdd ? 'Verifying…' : 'Verify'}
-          </button>
-          {#if verifyAddResult}
-            <span class="verify-result" class:ok={verifyAddResult.ok} class:fail={!verifyAddResult.ok}>
-              {verifyAddResult.ok ? `✓ ${verifyAddResult.task_count} tasks` : `✕ ${verifyAddResult.error}`}
-            </span>
-          {/if}
-        </div>
-        <label class="field-label" style="margin-top:0.25rem">
-          Auth token
-          <button class="field-toggle" onclick={() => (showNewToken = !showNewToken)} type="button" aria-label={showNewToken ? 'Hide token' : 'Show token'}>
-            <Icon name={showNewToken ? 'eye-off' : 'eye'} size="1rem" />
-          </button>
-        </label>
-        <input type={showNewToken ? 'text' : 'password'} class="field" placeholder="Auth token (optional)" bind:value={newAuthToken} disabled={saving} />
-        <button class="add-btn" onclick={handleAddSpace} disabled={saving || !newName.trim() || !newUrl.trim()}>
-          {saving ? 'Adding…' : 'Add Space'}
+      <input
+        type="text"
+        class="field"
+        placeholder="Space name"
+        bind:value={newName}
+        disabled={saving}
+      />
+      <input
+        type="text"
+        class="field"
+        placeholder="Space URL"
+        bind:value={newUrl}
+        disabled={saving}
+      />
+      <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+        <button
+          class="verify-btn"
+          onclick={handleVerifyNew}
+          disabled={verifyingAdd || !newUrl.trim()}
+          style="flex-shrink:0"
+        >
+          {verifyingAdd ? 'Verifying…' : 'Verify'}
         </button>
+        {#if verifyAddResult}
+          <span
+            class="verify-result"
+            class:ok={verifyAddResult.ok}
+            class:fail={!verifyAddResult.ok}
+          >
+            {verifyAddResult.ok
+              ? `✓ ${verifyAddResult.task_count} tasks`
+              : `✕ ${verifyAddResult.error}`}
+          </span>
+        {/if}
       </div>
+      <label class="field-label" style="margin-top:0.25rem">
+        Auth token
+        <button
+          class="field-toggle"
+          onclick={() => (showNewToken = !showNewToken)}
+          type="button"
+          aria-label={showNewToken ? 'Hide token' : 'Show token'}
+        >
+          <Icon name={showNewToken ? 'eye-off' : 'eye'} size="1rem" />
+        </button>
+      </label>
+      <input
+        type={showNewToken ? 'text' : 'password'}
+        class="field"
+        placeholder="Auth token (optional)"
+        bind:value={newAuthToken}
+        disabled={saving}
+      />
+      <button
+        class="add-btn"
+        onclick={handleAddSpace}
+        disabled={saving || !newName.trim() || !newUrl.trim()}
+      >
+        {saving ? 'Adding…' : 'Add Space'}
+      </button>
+    </div>
   </section>
 
   <section class="section">
@@ -352,48 +530,258 @@ import { devLog } from '$lib/helpers/dev-log';
 </div>
 
 <style>
-  .settings-page { padding: var(--space-4); overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .section { margin-bottom: 2rem; }
-  .section-title { font-size: var(--font-size-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-secondary); margin-bottom: 0.75rem; }
-  .section-desc { font-size: var(--font-size-sm); color: var(--color-text-tertiary); margin-bottom: 0.75rem; }
-  .error-msg { font-size: var(--font-size-sm); color: var(--color-danger); margin-bottom: 0.5rem; }
-  .accent-picker { display: flex; gap: 0.375rem; flex-wrap: wrap; }
-  .accent-btn { display: flex; flex-direction: column; align-items: center; gap: 0.375rem; flex: 1; min-width: 3rem; padding: 0.625rem 0.25rem; border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-xs); color: var(--color-text-secondary); border: 2px solid transparent; cursor: pointer; }
-  .accent-btn.active { border-color: var(--color-accent); background: var(--color-accent-light); color: var(--color-accent); }
-  .accent-swatch { display: block; width: 1.5rem; height: 1.5rem; border-radius: 50%; box-shadow: 0 0 0 2px var(--color-bg); }
-  .accent-label { font-weight: 500; margin-top: 0.125rem; }
-  .theme-picker { display: flex; gap: 0.5rem; }
-  .theme-btn { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; flex: 1; padding: 0.75rem 0.25rem; border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-sm); color: var(--color-text-secondary); border: 2px solid transparent; }
-  .theme-btn i { font-size: 1.5rem; }
-  .theme-btn.active { border-color: var(--color-accent); background: var(--color-accent-light); color: var(--color-accent); }
-  .theme-label { font-weight: 500; }
-  .default-picker { display: flex; gap: 0.5rem; }
-  .default-btn { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; flex: 1; padding: 0.75rem 0.25rem; border-radius: var(--radius-lg); background: var(--color-bg-secondary); font-size: var(--font-size-sm); color: var(--color-text-secondary); border: 2px solid transparent; cursor: pointer; }
-  .default-btn.active { border-color: var(--color-accent); background: var(--color-accent-light); color: var(--color-accent); }
-  .default-label { font-weight: 500; }
-  .space-list { display: flex; flex-direction: column; gap: 0.5rem; }
-  .space-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: var(--radius-md); background: var(--color-bg-secondary); gap: 0.75rem; }
-  .space-info { display: flex; flex-direction: column; gap: 0.125rem; flex: 1; min-width: 0; }
-  .space-name { font-size: var(--font-size-base); font-weight: 500; }
-  .space-url { font-size: var(--font-size-xs); color: var(--color-text-tertiary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .space-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-  .action-btn { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.625rem; border-radius: var(--radius-md); font-size: var(--font-size-xs); font-weight: 500; }
-  .action-btn.set-active { color: var(--color-accent); background: var(--color-accent-light); }
-  .action-btn.edit { color: var(--color-accent); background: var(--color-accent-light); padding: 0.375rem; }
-  .action-btn.remove { color: var(--color-danger); background: var(--color-danger-light); padding: 0.375rem; }
-  .action-btn.cancel { color: var(--color-text-secondary); background: var(--color-bg-tertiary); }
-  .action-btn.save { color: var(--color-on-accent); background: var(--color-accent); }
-  .action-btn.save:disabled { opacity: 0.4; }
-  .active-badge { font-size: var(--font-size-xs); padding: 0.125rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-success-light); color: var(--color-success); font-weight: 600; }
-  .space-edit-form { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
-  .field-label { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
-  .edit-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.25rem; }
-  .add-space-form { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; border-radius: var(--radius-md); background: var(--color-bg-secondary); }
-  .form-title { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text); }
-  .field { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: var(--font-size-sm); color: var(--color-text); outline: none; font-family: inherit; }
-  .field:focus { border-color: var(--color-accent); }
-  .add-btn { padding: 0.5rem 1rem; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
-  .add-btn:disabled { opacity: 0.4; }
+  .settings-page {
+    padding: var(--space-4);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .section {
+    margin-bottom: 2rem;
+  }
+  .section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.75rem;
+  }
+  .section-desc {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+    margin-bottom: 0.75rem;
+  }
+  .error-msg {
+    font-size: var(--font-size-sm);
+    color: var(--color-danger);
+    margin-bottom: 0.5rem;
+  }
+  .accent-picker {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+  .accent-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 1;
+    min-width: 3rem;
+    padding: 0.625rem 0.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .accent-btn.active {
+    border-color: var(--color-accent);
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+  .accent-swatch {
+    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--color-bg);
+  }
+  .accent-label {
+    font-weight: 500;
+    margin-top: 0.125rem;
+  }
+  .theme-picker {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .theme-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    padding: 0.75rem 0.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    border: 2px solid transparent;
+  }
+  .theme-btn.active {
+    border-color: var(--color-accent);
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+  .theme-label {
+    font-weight: 500;
+  }
+  .default-picker {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .default-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    padding: 0.75rem 0.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .default-btn.active {
+    border-color: var(--color-accent);
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+  .default-label {
+    font-weight: 500;
+  }
+  .space-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .space-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+    gap: 0.75rem;
+  }
+  .space-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .space-name {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+  }
+  .space-url {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .space-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+  }
+  .action-btn.set-active {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+  }
+  .action-btn.edit {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    padding: 0.375rem;
+  }
+  .action-btn.remove {
+    color: var(--color-danger);
+    background: var(--color-danger-light);
+    padding: 0.375rem;
+  }
+  .action-btn.cancel {
+    color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+  }
+  .action-btn.save {
+    color: var(--color-on-accent);
+    background: var(--color-accent);
+  }
+  .action-btn.save:disabled {
+    opacity: 0.4;
+  }
+  .active-badge {
+    font-size: var(--font-size-xs);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-success-light);
+    color: var(--color-success);
+    font-weight: 600;
+  }
+  .space-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  .field-label {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+  }
+  .add-space-form {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+  }
+  .form-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .field {
+    width: 100%;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    outline: none;
+    font-family: inherit;
+  }
+  .field:focus {
+    border-color: var(--color-accent);
+  }
+  .add-btn {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+  }
+  .add-btn:disabled {
+    opacity: 0.4;
+  }
   .verify-btn {
     padding: 0.375rem 0.75rem;
     border-radius: var(--radius-md);
@@ -402,14 +790,52 @@ import { devLog } from '$lib/helpers/dev-log';
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
   }
-  .verify-btn:hover:not(:disabled) { background: var(--color-border); }
-  .verify-btn:disabled { opacity: 0.4; }
-  .verify-result { font-size: var(--font-size-xs); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .verify-result.ok { color: var(--color-accent); }
-  .verify-result.fail { color: var(--color-danger); }
-  .field-toggle { background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 0; display: inline-flex; align-items: center; margin-left: 0.25rem; }
-  .field-toggle:hover { color: var(--color-text-secondary); }
-  .about-text { font-size: var(--font-size-sm); color: var(--color-text-tertiary); }
-  .toggle-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); cursor: pointer; }
-  .toggle-row input { accent-color: var(--color-accent); }
+  .verify-btn:hover:not(:disabled) {
+    background: var(--color-border);
+  }
+  .verify-btn:disabled {
+    opacity: 0.4;
+  }
+  .verify-result {
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .verify-result.ok {
+    color: var(--color-accent);
+  }
+  .verify-result.fail {
+    color: var(--color-danger);
+  }
+  .field-toggle {
+    background: none;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.25rem;
+  }
+  .field-toggle:hover {
+    color: var(--color-text-secondary);
+  }
+  .about-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .toggle-row input {
+    accent-color: var(--color-accent);
+  }
 </style>

@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import LogoSvg from './LogoSvg.svelte';
-  import { getOnboardingStep, getMigrationSpaces, goToStep, closeOnboarding } from '$lib/stores/onboarding.svelte';
-  import { isDesktopApp, setSharedConfigDesktop, migrateSbtaskConfigDesktop, verifySpaceDesktop, addSpaceDesktop } from '$lib/desktop-bridge';
+  import { getOnboardingStep, goToStep, closeOnboarding } from '$lib/stores/onboarding.svelte';
+  import { isDesktopApp, verifySpaceDesktop, addSpaceDesktop } from '$lib/desktop-bridge';
   import { addSpace, verifySpace } from '$lib/api/spaces';
   import { loadSpaces } from '$lib/stores/space.svelte';
   import { loadInbox } from '$lib/stores/tasks.svelte';
@@ -65,51 +65,13 @@
     }
   }
 
-  async function handleUseSbtask() {
-    saving = true;
-    try {
-      if (isDesktopApp()) {
-        await setSharedConfigDesktop('');
-        await loadSpaces();
-        loadInbox();
-        closeOnboarding();
-      }
-    } catch (e: any) {
-      error = e?.error || e?.message || String(e);
-    } finally {
-      saving = false;
-    }
-  }
-
-  async function handleCopy() {
-    saving = true;
-    try {
-      if (isDesktopApp()) {
-        await migrateSbtaskConfigDesktop();
-        await loadSpaces();
-        loadInbox();
-        closeOnboarding();
-      }
-    } catch (e: any) {
-      error = e?.error || e?.message || String(e);
-    } finally {
-      saving = false;
-    }
-  }
-
-  function handleSkipMigration() {
-    goToStep('welcome');
-  }
-
   const step = $derived(getOnboardingStep());
-  const migrationSpaces = $derived(getMigrationSpaces());
-  const showMigration = $derived(isDesktopApp() && step === 'migration');
   const showWelcome = $derived(step === 'welcome');
   const showConnect = $derived(step === 'connect');
   const showSaving = $derived(step === 'saving');
   const canAdvanceFromConnect = $derived(!!url.trim() && !!name.trim() && verifyResult?.ok);
-  const stepCount = $derived(showMigration ? 4 : 3);
-  const currentStepNum = $derived(showMigration ? 0 : showWelcome ? 1 : showConnect ? 2 : showSaving ? 3 : 1);
+  const stepCount = $derived(3);
+  const currentStepNum = $derived(showWelcome ? 1 : showConnect ? 2 : showSaving ? 3 : 1);
 </script>
 
 <div class="wizard-overlay" role="dialog" aria-modal="true" aria-label="Silvermind Setup">
@@ -124,66 +86,32 @@
 
     <!-- Step indicators -->
     <div class="step-indicators" role="tablist" aria-label="Setup progress">
-      {#if showMigration}
-        <span class="step-dot active" aria-label="Step 0: Migration options. Current step."></span>
-        <span class="step-line"></span>
-      {/if}
-      <span class="step-dot" class:active={showWelcome} aria-label="Step {showMigration ? 1 : 0}: Welcome. {showWelcome ? 'Current step.' : ''}"></span>
+      <span
+        class="step-dot"
+        class:active={showWelcome}
+        aria-label="Step 1: Welcome. {showWelcome ? 'Current step.' : ''}"
+      ></span>
       <span class="step-line" class:active={showConnect || showSaving}></span>
-      <span class="step-dot" class:active={showConnect || showSaving} aria-label="Step {showMigration ? 2 : 1}: Connect space. {showConnect || showSaving ? 'Current step.' : ''}"></span>
+      <span
+        class="step-dot"
+        class:active={showConnect || showSaving}
+        aria-label="Step 2: Connect space. {showConnect || showSaving ? 'Current step.' : ''}"
+      ></span>
       <span class="step-line" class:active={showSaving}></span>
-      <span class="step-dot" class:active={showSaving} aria-label="Step {showMigration ? 3 : 2}: Done. {showSaving ? 'Current step.' : ''}"></span>
+      <span
+        class="step-dot"
+        class:active={showSaving}
+        aria-label="Step 3: Done. {showSaving ? 'Current step.' : ''}"
+      ></span>
     </div>
 
-    <!-- Step: Migration -->
-    {#if showMigration}
-      <div class="step-content">
-        <h2 class="step-title">Existing Configuration Found</h2>
-        <p class="step-desc">Found sbtask config with {migrationSpaces.length} space{migrationSpaces.length === 1 ? '' : 's'}.</p>
-
-        <div class="migration-spaces">
-          {#each migrationSpaces as s}
-            <div class="migration-space">
-              <Icon name="globe" size="0.875rem" />
-              <span class="migration-name">{s.name}</span>
-              <span class="migration-url">{s.url}</span>
-            </div>
-          {/each}
-        </div>
-
-        {#if error}
-          <div class="wizard-error" role="alert">{error}</div>
-        {/if}
-
-        <div class="wizard-actions">
-          <button class="btn btn-primary" onclick={handleUseSbtask} disabled={saving}>
-            <Icon name="link" size="0.875rem" />
-            {saving ? 'Saving…' : 'Use sbtask config'}
-          </button>
-          <span class="btn-hint">Keep both tools in sync with a shared config file</span>
-        </div>
-        <div class="wizard-actions">
-          <button class="btn btn-secondary" onclick={handleCopy} disabled={saving}>
-            <Icon name="copy" size="0.875rem" />
-            Copy to Silvermind
-          </button>
-          <span class="btn-hint">One-time migration — copies settings to Silvermind's own config</span>
-        </div>
-        <div class="wizard-actions">
-          <button class="btn btn-ghost" onclick={handleSkipMigration} disabled={saving}>
-            Start fresh
-          </button>
-          <span class="btn-hint">Skip migration and add spaces manually</span>
-        </div>
-      </div>
-
     <!-- Step: Welcome -->
-    {:else if showWelcome}
+    {#if showWelcome}
       <div class="step-content">
         <h2 class="step-title">Welcome to Silvermind</h2>
         <p class="step-desc">
-          A native task management app that connects to your SilverBullet wiki.
-          Manage todos, track dependencies, set recurring tasks, and more.
+          A native task management app that connects to your SilverBullet wiki. Manage todos, track
+          dependencies, set recurring tasks, and more.
         </p>
         <div class="feature-cards">
           <div class="feature-card">
@@ -211,36 +139,69 @@
         </div>
       </div>
 
-    <!-- Step: Connect Space -->
+      <!-- Step: Connect Space -->
     {:else if showConnect}
       <div class="step-content">
         <h2 class="step-title">Connect Your Space</h2>
-        <p class="step-desc">Enter your SilverBullet wiki URL. The app will verify the connection before saving.</p>
+        <p class="step-desc">
+          Enter your SilverBullet wiki URL. The app will verify the connection before saving.
+        </p>
 
         <div class="form-field">
           <label for="wizard-url">Space URL</label>
-          <input id="wizard-url" type="text" bind:value={url} oninput={(e: any) => updateNameFromURL(e.target.value)} placeholder="https://notes.example.com" class="field-input" />
+          <input
+            id="wizard-url"
+            type="text"
+            bind:value={url}
+            oninput={(e: any) => updateNameFromURL(e.target.value)}
+            placeholder="https://notes.example.com"
+            class="field-input"
+          />
         </div>
 
         <div class="form-field">
           <label for="wizard-name">Display Name</label>
-          <input id="wizard-name" type="text" bind:value={name} placeholder="notes" class="field-input" />
+          <input
+            id="wizard-name"
+            type="text"
+            bind:value={name}
+            placeholder="notes"
+            class="field-input"
+          />
         </div>
 
         <div class="form-field">
           <label for="wizard-token">Auth Token <span class="label-optional">optional</span></label>
           <div class="token-row">
-            <input id="wizard-token" type={showToken ? 'text' : 'password'} bind:value={authToken} placeholder="silverbullet" class="field-input" />
-            <button class="token-toggle" onclick={() => (showToken = !showToken)} aria-label="Toggle token visibility">
+            <input
+              id="wizard-token"
+              type={showToken ? 'text' : 'password'}
+              bind:value={authToken}
+              placeholder="silverbullet"
+              class="field-input"
+            />
+            <button
+              class="token-toggle"
+              onclick={() => (showToken = !showToken)}
+              aria-label="Toggle token visibility"
+            >
               <Icon name={showToken ? 'eye-off' : 'eye'} size="0.875rem" />
             </button>
           </div>
         </div>
 
         {#if verifyResult}
-          <div class="verify-result" class:ok={verifyResult.ok} class:fail={!verifyResult.ok} role="status">
+          <div
+            class="verify-result"
+            class:ok={verifyResult.ok}
+            class:fail={!verifyResult.ok}
+            role="status"
+          >
             {#if verifyResult.ok}
-              <Icon name="check-circle" size="0.875rem" /> Connected — {verifyResult.task_count} task{verifyResult.task_count === 1 ? '' : 's'} found.
+              <Icon name="check-circle" size="0.875rem" /> Connected — {verifyResult.task_count} task{verifyResult.task_count ===
+              1
+                ? ''
+                : 's'} found.
             {:else}
               <Icon name="alert-circle" size="0.875rem" /> {verifyResult.error}
             {/if}
@@ -252,16 +213,24 @@
         {/if}
 
         <div class="wizard-actions wizard-actions-row">
-          <button class="btn btn-secondary" onclick={handleVerify} disabled={verifying || !url.trim()}>
+          <button
+            class="btn btn-secondary"
+            onclick={handleVerify}
+            disabled={verifying || !url.trim()}
+          >
             {verifying ? 'Verifying…' : 'Verify Connection'}
           </button>
-          <button class="btn btn-primary" onclick={handleFinish} disabled={saving || !canAdvanceFromConnect}>
+          <button
+            class="btn btn-primary"
+            onclick={handleFinish}
+            disabled={saving || !canAdvanceFromConnect}
+          >
             {saving ? 'Saving…' : 'Save & Continue'}
           </button>
         </div>
       </div>
 
-    <!-- Step: Saving -->
+      <!-- Step: Saving -->
     {:else if showSaving}
       <div class="step-content saving-step">
         <div class="saving-spinner">
@@ -282,11 +251,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0, 0, 0, 0.55);
     padding: var(--space-4);
     animation: fadeIn 0.2s ease;
   }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
   .wizard-card {
     background: var(--color-surface);
@@ -297,7 +273,16 @@
     box-shadow: var(--shadow-xl);
     animation: slideUp 0.25s ease;
   }
-  @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes slideUp {
+    from {
+      transform: translateY(12px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 
   .wizard-header {
     text-align: center;
@@ -387,33 +372,6 @@
     color: var(--color-text-secondary);
   }
 
-  .migration-spaces {
-    margin-bottom: 1rem;
-  }
-  .migration-space {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-md);
-    margin-bottom: 0.375rem;
-  }
-  .migration-name {
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-sm);
-    color: var(--color-text);
-  }
-  .migration-url {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-tertiary);
-    margin-left: auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 200px;
-  }
-
   .form-field {
     margin-bottom: 0.75rem;
   }
@@ -459,7 +417,9 @@
     cursor: pointer;
     border: none;
   }
-  .token-toggle:hover { color: var(--color-text-secondary); }
+  .token-toggle:hover {
+    color: var(--color-text-secondary);
+  }
 
   .verify-result {
     display: flex;
@@ -470,8 +430,14 @@
     font-size: var(--font-size-sm);
     margin-bottom: 0.75rem;
   }
-  .verify-result.ok { background: var(--color-accent-light); color: var(--color-accent); }
-  .verify-result.fail { background: var(--color-danger-light); color: var(--color-danger); }
+  .verify-result.ok {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+  .verify-result.fail {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+  }
 
   .wizard-error {
     padding: 0.5rem 0.625rem;
@@ -492,13 +458,6 @@
   .wizard-actions-row .btn {
     flex: 1;
   }
-  .btn-hint {
-    display: block;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-tertiary);
-    margin-top: 0.25rem;
-  }
-
   .saving-step {
     text-align: center;
     padding: 1.5rem 0 0.5rem;
@@ -508,7 +467,14 @@
     margin-bottom: 0.75rem;
     animation: spin 1s linear infinite;
   }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
   .btn {
     display: inline-flex;
@@ -522,14 +488,31 @@
     cursor: pointer;
     text-align: center;
     border: none;
-    transition: filter 0.15s, background 0.15s;
+    transition:
+      filter 0.15s,
+      background 0.15s;
   }
-  .btn:disabled { opacity: 0.45; cursor: default; }
-  .btn-primary { background: var(--color-accent); color: var(--color-on-accent); width: 100%; }
-  .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
-  .btn-secondary { background: var(--color-bg-tertiary); color: var(--color-text-secondary); width: 100%; }
-  .btn-secondary:hover:not(:disabled) { background: var(--color-border); }
-  .btn-ghost { background: transparent; color: var(--color-text-tertiary); width: 100%; }
-  .btn-ghost:hover:not(:disabled) { color: var(--color-text-secondary); }
-  .btn-full { width: 100%; }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    width: 100%;
+  }
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  .btn-secondary {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    width: 100%;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-border);
+  }
+  .btn-full {
+    width: 100%;
+  }
 </style>
