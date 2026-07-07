@@ -9,6 +9,11 @@ export interface SiriIntent {
   parameters?: Record<string, unknown>;
 }
 
+export interface IncomingIntent {
+  intentName: string;
+  parameters?: Record<string, unknown>;
+}
+
 const addTaskIntent: SiriIntent = {
   name: 'AddTaskIntent',
   title: 'Add Task',
@@ -61,9 +66,21 @@ export async function donateAllIntents(): Promise<void> {
 
 export function handleIncomingIntent(
   callback: (intentName: string, parameters?: Record<string, unknown>) => void,
-): void {
-  // Listen for incoming Siri intent from the Capacitor app delegate
-  window.addEventListener('appIntentReceived', ((event: CustomEvent) => {
+): () => void {
+  const listener = ((event: CustomEvent) => {
     callback(event.detail?.intentName, event.detail?.parameters);
-  }) as EventListener);
+  }) as EventListener;
+
+  window.addEventListener('appIntentReceived', listener);
+  return () => window.removeEventListener('appIntentReceived', listener);
+}
+
+export async function consumePendingIntent(): Promise<IncomingIntent | null> {
+  try {
+    const CapsSiri = (await import('./siri-plugin')).SiriPlugin;
+    if (!CapsSiri?.consumePendingIntent) return null;
+    return (await CapsSiri.consumePendingIntent()) as IncomingIntent | null;
+  } catch {
+    return null;
+  }
 }

@@ -1,0 +1,1 @@
+import{Preferences as n}from"@capacitor/preferences";const t="silvermind_pending_app_intent",a={donate:async e=>{},async consumePendingIntent(){const e=await n.get({key:t});if(!e.value)return null;await n.remove({key:t});try{return JSON.parse(e.value)}catch{return null}},async clearPendingIntent(){await n.remove({key:t})}};export{t as PENDING_APP_INTENT_KEY,a as SiriPlugin};
