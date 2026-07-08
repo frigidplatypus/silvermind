@@ -4,6 +4,7 @@
 # Environment ─────────────────────────────────────────────────────────────────
 cgo_enabled := "1"
 cgo_cflags  := "-Wno-error=incompatible-pointer-types"
+cgo_ldflags := "-framework UniformTypeIdentifiers"
 go_tags     := "desktop production webkit2_41"
 go_ldflags  := "-s -w"
 
@@ -19,7 +20,7 @@ default: list
 # Build the desktop binary (frontend dist + go build)
 build: dist check-dist
     cd desktop && \
-    CGO_ENABLED={{cgo_enabled}} CGO_CFLAGS='{{cgo_cflags}}' \
+    CGO_ENABLED={{cgo_enabled}} CGO_CFLAGS='{{cgo_cflags}}' CGO_LDFLAGS='{{cgo_ldflags}}' \
     go build -tags '{{go_tags}}' -ldflags='{{go_ldflags}}' \
     -o {{binary_name}} .
     @echo "✓ Built {{binary_path}}"
@@ -36,7 +37,7 @@ run-nix: dist check-dist
 # Build just the Go binary (skip frontend — assumes dist is up-to-date)
 build-go:
     cd desktop && \
-    CGO_ENABLED={{cgo_enabled}} CGO_CFLAGS='{{cgo_cflags}}' \
+    CGO_ENABLED={{cgo_enabled}} CGO_CFLAGS='{{cgo_cflags}}' CGO_LDFLAGS='{{cgo_ldflags}}' \
     go build -tags '{{go_tags}}' -ldflags='{{go_ldflags}}' \
     -o {{binary_name}} .
     @echo "✓ Built {{binary_path}}"
