@@ -1,4 +1,4 @@
-import { CapacitorHttp } from '@capacitor/core';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { SbClientError, PreconditionFailedError } from './task-types';
 import type { SilverBulletPage } from './task-types';
 import { logDebug, logInfo, logWarn, logError } from '$lib/helpers/logger';
@@ -11,11 +11,11 @@ export interface SbClientConfig {
 export type Transport = (url: string, options: RequestInit) => Promise<Response>;
 
 function detectTransport(): Transport {
-  if (typeof window !== 'undefined' && (window as any).Capacitor) {
-    return capacitorTransport;
-  }
   if (typeof window !== 'undefined' && (window as any).go?.main?.App?.ProxyFetch) {
     return goProxyTransport;
+  }
+  if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+    return capacitorTransport;
   }
   return fetchTransport;
 }

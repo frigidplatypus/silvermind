@@ -28,9 +28,9 @@ export default defineConfig({
       output: {
         inlineDynamicImports: true,
         format: 'iife',
+        entryFileNames: 'assets/index-BU9u5dt0.js',
       },
       external: [
-        '@capacitor/core',
         '@capacitor/haptics',
         '@capacitor/status-bar',
         '@capacitor/splash-screen',

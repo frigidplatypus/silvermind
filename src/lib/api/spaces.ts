@@ -18,6 +18,7 @@ export async function getSpaces(): Promise<SpacesResponse> {
     name: s.name,
     url: s.url,
     inbox_page: s.inbox_page || 'Inbox',
+    default_exclude_tags: s.default_exclude_tags || [],
     active: active?.name === s.name,
     is_default: s.name === 'main',
   }));
@@ -29,10 +30,18 @@ export interface AddSpaceRequest {
   default_page?: string;
   inbox_page?: string;
   auth_token?: string;
+  default_exclude_tags?: string[];
 }
 
 export async function addSpaceFn(req: AddSpaceRequest): Promise<{ status: string; name: string }> {
-  await addSpace(req.name, req.url, req.default_page, req.inbox_page, req.auth_token);
+  await addSpace(
+    req.name,
+    req.url,
+    req.default_page,
+    req.inbox_page,
+    req.auth_token,
+    req.default_exclude_tags || [],
+  );
   return { status: 'ok', name: req.name };
 }
 export { addSpaceFn as addSpace };
@@ -43,6 +52,7 @@ export interface UpdateSpaceRequest {
   default_page?: string;
   inbox_page?: string;
   auth_token?: string;
+  default_exclude_tags?: string[];
 }
 
 export async function updateSpace(
@@ -58,6 +68,7 @@ export async function updateSpace(
     req.default_page,
     req.inbox_page,
     req.auth_token,
+    req.default_exclude_tags,
   );
   return { status: 'ok', name: req.name || name };
 }

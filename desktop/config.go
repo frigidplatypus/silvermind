@@ -12,10 +12,11 @@ import (
 )
 
 type SpaceConfig struct {
-	Space       string `yaml:"space,omitempty" json:"space"`
-	AuthToken   string `yaml:"auth_token,omitempty" json:"auth_token,omitempty"`
-	DefaultPage string `yaml:"default_page,omitempty" json:"default_page,omitempty"`
-	InboxPage   string `yaml:"inbox_page,omitempty" json:"inbox_page,omitempty"`
+	Space              string   `yaml:"space,omitempty" json:"space"`
+	AuthToken          string   `yaml:"auth_token,omitempty" json:"auth_token,omitempty"`
+	DefaultPage        string   `yaml:"default_page,omitempty" json:"default_page,omitempty"`
+	InboxPage          string   `yaml:"inbox_page,omitempty" json:"inbox_page,omitempty"`
+	DefaultExcludeTags []string `yaml:"default_exclude_tags,omitempty" json:"default_exclude_tags,omitempty"`
 }
 
 type ConfigFile struct {
@@ -24,11 +25,12 @@ type ConfigFile struct {
 }
 
 type SpaceInfo struct {
-	Name        string `json:"name"`
-	URL         string `json:"url"`
-	DefaultPage string `json:"default_page"`
-	InboxPage   string `json:"inbox_page"`
-	Active      bool   `json:"active"`
+	Name               string   `json:"name"`
+	URL                string   `json:"url"`
+	DefaultPage        string   `json:"default_page"`
+	InboxPage          string   `json:"inbox_page"`
+	DefaultExcludeTags []string `json:"default_exclude_tags"`
+	Active             bool     `json:"active"`
 }
 
 type ConfigManager struct {
@@ -122,11 +124,12 @@ func toSpaces(cfg *ConfigFile) []SpaceInfo {
 	var spaces []SpaceInfo
 	for name, sp := range cfg.Spaces {
 		spaces = append(spaces, SpaceInfo{
-			Name:        name,
-			URL:         sp.Space,
-			DefaultPage: sp.DefaultPage,
-			InboxPage:   sp.InboxPage,
-			Active:      name == cfg.ActiveSpace,
+			Name:               name,
+			URL:                sp.Space,
+			DefaultPage:        sp.DefaultPage,
+			InboxPage:          sp.InboxPage,
+			DefaultExcludeTags: sp.DefaultExcludeTags,
+			Active:             name == cfg.ActiveSpace,
 		})
 	}
 	sort.Slice(spaces, func(i, j int) bool { return spaces[i].Name < spaces[j].Name })
@@ -142,7 +145,7 @@ func (c *ConfigManager) ListSpaces() []SpaceInfo {
 	return toSpaces(cfg)
 }
 
-func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
+func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken string, defaultExcludeTags []string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -160,10 +163,11 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken st
 		inboxPage = "Inbox"
 	}
 	cfg.Spaces[name] = SpaceConfig{
-		Space:       url,
-		AuthToken:   authToken,
-		DefaultPage: defaultPage,
-		InboxPage:   inboxPage,
+		Space:              url,
+		AuthToken:          authToken,
+		DefaultPage:        defaultPage,
+		InboxPage:          inboxPage,
+		DefaultExcludeTags: defaultExcludeTags,
 	}
 	if cfg.ActiveSpace == "" {
 		cfg.ActiveSpace = name
@@ -175,7 +179,7 @@ func (c *ConfigManager) AddSpace(name, url, defaultPage, inboxPage, authToken st
 	return toSpaces(cfg), nil
 }
 
-func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken string) ([]SpaceInfo, error) {
+func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage, authToken string, defaultExcludeTags []string) ([]SpaceInfo, error) {
 	cfg, err := c.load()
 	if err != nil {
 		return nil, err
@@ -196,6 +200,7 @@ func (c *ConfigManager) UpdateSpace(name, newName, url, defaultPage, inboxPage, 
 	if authToken != "" {
 		sp.AuthToken = authToken
 	}
+	sp.DefaultExcludeTags = defaultExcludeTags
 	if newName == "" {
 		newName = name
 	}

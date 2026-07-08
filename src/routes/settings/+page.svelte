@@ -39,6 +39,7 @@
   let newName = $state('');
   let newUrl = $state('');
   let newInboxPage = $state('Inbox');
+  let newDefaultExcludeTags = $state('');
   let newAuthToken = $state('');
   let saving = $state(false);
   let error = $state<string | null>(null);
@@ -46,6 +47,7 @@
   let editName = $state('');
   let editUrl = $state('');
   let editInboxPage = $state('');
+  let editDefaultExcludeTags = $state('');
   let editAuthToken = $state('');
   let showEditToken = $state(false);
   let showNewToken = $state(false);
@@ -120,11 +122,19 @@
     }
   }
 
+  function parseTags(value: string): string[] {
+    return value
+      .split(/[\s,]+/)
+      .map((tag) => tag.trim().replace(/^#/, ''))
+      .filter(Boolean);
+  }
+
   function startEdit(space: Space) {
     editingSpace = space.name;
     editName = space.name;
     editUrl = space.url;
     editInboxPage = space.inbox_page || 'Inbox';
+    editDefaultExcludeTags = (space.default_exclude_tags || []).map((tag) => `#${tag}`).join(', ');
     editAuthToken = '';
     showEditToken = false;
   }
@@ -148,6 +158,7 @@
           '',
           editInboxPage,
           editAuthToken,
+          parseTags(editDefaultExcludeTags),
         );
       } else {
         await updateSpace(originalName, {
@@ -155,6 +166,7 @@
           url,
           inbox_page: editInboxPage || undefined,
           auth_token: editAuthToken || undefined,
+          default_exclude_tags: parseTags(editDefaultExcludeTags),
         });
       }
       editingSpace = null;
@@ -178,18 +190,27 @@
     error = null;
     try {
       if (isDesktop) {
-        await addSpaceDesktop(name, url, '', newInboxPage || 'Inbox', newAuthToken);
+        await addSpaceDesktop(
+          name,
+          url,
+          '',
+          newInboxPage || 'Inbox',
+          newAuthToken,
+          parseTags(newDefaultExcludeTags),
+        );
       } else {
         await addSpace({
           name,
           url,
           inbox_page: newInboxPage || undefined,
           auth_token: newAuthToken || undefined,
+          default_exclude_tags: parseTags(newDefaultExcludeTags),
         });
       }
       newName = '';
       newUrl = '';
       newInboxPage = 'Inbox';
+      newDefaultExcludeTags = '';
       newAuthToken = '';
       await loadSpaces();
       deployHelpers().catch(() => {});
@@ -382,6 +403,20 @@
                 placeholder="Inbox"
                 disabled={saving}
               />
+              <label class="field-label" for="edit-exclude-tags-{space.name}">
+                Exclude from default views
+              </label>
+              <input
+                id="edit-exclude-tags-{space.name}"
+                type="text"
+                class="field"
+                bind:value={editDefaultExcludeTags}
+                placeholder="#shopping-list, #coram-deo"
+                disabled={saving}
+              />
+              <p class="field-help">
+                These tags are hidden from Task List, Today, and All Tasks. Custom queries can still use them.
+              </p>
               <label class="field-label" for="edit-token-{space.name}" style="margin-top:0.25rem">
                 Auth token
                 <button
@@ -419,6 +454,11 @@
               <span class="space-name">{space.name}</span>
               <span class="space-url">{space.url}</span>
               <span class="space-meta">Quick Add goes to: {space.inbox_page || 'Inbox'}</span>
+              {#if space.default_exclude_tags?.length}
+                <span class="space-meta">
+                  Default views exclude: {space.default_exclude_tags.map((tag) => `#${tag}`).join(', ')}
+                </span>
+              {/if}
             </div>
             <div class="space-actions">
               {#if !space.active}
@@ -477,6 +517,16 @@
         bind:value={newInboxPage}
         disabled={saving}
       />
+      <input
+        type="text"
+        class="field"
+        placeholder="Exclude tags from default views, e.g. #shopping-list, #coram-deo"
+        bind:value={newDefaultExcludeTags}
+        disabled={saving}
+      />
+      <p class="field-help">
+        Hidden from Task List, Today, and All Tasks. Custom queries can still use these tags.
+      </p>
       <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
         <button
           class="verify-btn"
@@ -739,6 +789,12 @@
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+  }
+  .field-help {
+    margin: -0.25rem 0 0.25rem;
+    font-size: var(--font-size-xs);
+    line-height: 1.35;
+    color: var(--color-text-tertiary);
   }
   .edit-actions {
     display: flex;

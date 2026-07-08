@@ -10,7 +10,7 @@ import { createTask } from '$lib/backend/inbox-operations';
 import { createSbClient } from '$lib/backend/sb-client';
 import type { Task } from '$lib/types/task';
 import type { SpaceConfig } from '$lib/backend/task-types';
-import { applyGlobalTaskExclusions } from '$lib/backend/query-engine';
+import { applyDefaultViewExclusions, applyGlobalTaskExclusions } from '$lib/backend/query-engine';
 import { mapRuntimeTask } from '$lib/backend/task-parser';
 import { loadTasks } from '$lib/backend/inbox-operations';
 import { logInfo, logWarn } from '$lib/helpers/logger';
@@ -58,6 +58,14 @@ function filterFallbackTasks(tasks: Task[], params?: Record<string, string>): Ta
   return filtered;
 }
 
+function applyConfiguredDefaultExclusions(
+  tasks: Task[],
+  space: SpaceConfig,
+  sbClient: ReturnType<typeof createSbClient>,
+): Promise<Task[]> {
+  return applyDefaultViewExclusions(tasks, sbClient, space.default_exclude_tags || []);
+}
+
 async function loadTaskList(
   space: SpaceConfig,
   params?: Record<string, string>,
@@ -72,7 +80,10 @@ async function loadTaskList(
       `Runtime task list for ${space.name}`,
     );
     const mapped = runtimeTasks.map(mapRuntimeTask) as Task[];
-    return (await applyGlobalTaskExclusions(mapped, sbClient)) as TaskListResponse;
+    return (await applyGlobalTaskExclusions(
+      await applyConfiguredDefaultExclusions(mapped, space, sbClient),
+      sbClient,
+    )) as TaskListResponse;
   } catch (e: any) {
     logWarn(
       `[tasks-api] runtime task list failed; falling back to .fs pages — space="${space.name}" url="${space.url}" error="${e?.message || e}"`,
@@ -138,7 +149,10 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
       `Runtime task list for ${active.name}`,
     );
     const mapped = runtimeTasks.map(mapRuntimeTask) as Task[];
-    return (await applyGlobalTaskExclusions(mapped, sbClient)) as TaskListResponse;
+    return (await applyGlobalTaskExclusions(
+      await applyConfiguredDefaultExclusions(mapped, active, sbClient),
+      sbClient,
+    )) as TaskListResponse;
   } catch (e: any) {
     logWarn(
       `[tasks-api] active runtime task list failed; falling back to .fs pages — space="${active.name}" error="${e?.message || e}"`,

@@ -3,6 +3,7 @@ export interface Space {
   name: string;
   url: string;
   inbox_page: string;
+  default_exclude_tags: string[];
   active: boolean;
   is_default: boolean;
 }

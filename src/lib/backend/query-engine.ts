@@ -584,6 +584,11 @@ function hasExcludedTag(tags: string[]): boolean {
   });
 }
 
+function hasAnyTag(tags: string[], expected: string[]): boolean {
+  const normalizedExpected = expected.map(normalizeTag).filter(Boolean);
+  return tags.some((tag) => normalizedExpected.includes(normalizeTag(tag)));
+}
+
 function extractPageTags(content: string): string[] {
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
   if (!fmMatch) return [];
@@ -641,19 +646,49 @@ export async function applyGlobalTaskExclusions(
   return filteredTasks.filter((task) => !excludedPages.has(task.page));
 }
 
+export async function applyDefaultViewExclusions(
+  tasks: Task[],
+  sbClient: SbClient,
+  excludeTags: string[] = [],
+): Promise<Task[]> {
+  const normalizedExcludeTags = excludeTags.map(normalizeTag).filter(Boolean);
+  if (normalizedExcludeTags.length === 0) return tasks;
+
+  const filteredTasks = filterExcludeTags(tasks, normalizedExcludeTags);
+  const uniquePages = [...new Set(filteredTasks.map((task) => task.page).filter(Boolean))];
+  const excludedPages = new Set<string>();
+
+  await Promise.all(
+    uniquePages.map(async (page) => {
+      try {
+        const { content } = await sbClient.readPage(page);
+        if (hasAnyTag(extractPageTags(content), normalizedExcludeTags)) {
+          excludedPages.add(page);
+        }
+      } catch {
+        /* Keep tasks visible if page metadata cannot be read. */
+      }
+    }),
+  );
+
+  return filteredTasks.filter((task) => !excludedPages.has(task.page));
+}
+
 export function excludeDone(tasks: Task[]): Task[] {
   return tasks.filter((t) => !t.done && t.status !== 'waiting');
 }
 
 export function filterByTags(tasks: Task[], required: string[]): Task[] {
+  const normalizedRequired = required.map(normalizeTag).filter(Boolean);
   return tasks.filter((t) =>
-    required.every((tag) => t.tags.some((tt) => tt.toLowerCase() === tag.toLowerCase())),
+    normalizedRequired.every((tag) => t.tags.some((tt) => normalizeTag(tt) === tag)),
   );
 }
 
 export function filterExcludeTags(tasks: Task[], exclude: string[]): Task[] {
+  const normalizedExclude = exclude.map(normalizeTag).filter(Boolean);
   return tasks.filter(
-    (t) => !exclude.some((tag) => t.tags.some((tt) => tt.toLowerCase() === tag.toLowerCase())),
+    (t) => !normalizedExclude.some((tag) => t.tags.some((tt) => normalizeTag(tt) === tag)),
   );
 }
 

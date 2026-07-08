@@ -3,9 +3,11 @@ import {
   translateSLIQ,
   computeBlocked,
   applyHardExclusions,
+  applyDefaultViewExclusions,
   applyGlobalTaskExclusions,
   excludeDone,
   filterByTags,
+  filterExcludeTags,
   filterOverdue,
   filterBlocked,
   filterUnblocked,
@@ -264,6 +266,40 @@ describe('filterByTags', () => {
     ];
     const result = filterByTags(tasks, ['work']);
     expect(result).toHaveLength(2);
+  });
+});
+
+describe('filterExcludeTags', () => {
+  it('filters excluded tags with or without a hash prefix', () => {
+    const tasks = [
+      makeTask({ text: 'shopping', tags: ['shopping-list'] }),
+      makeTask({ text: 'planning', tags: ['coram-deo'] }),
+      makeTask({ text: 'visible', tags: ['work'] }),
+    ];
+    const result = filterExcludeTags(tasks, ['#shopping-list', 'coram-deo']);
+    expect(result.map((task) => task.text)).toEqual(['visible']);
+  });
+});
+
+describe('applyDefaultViewExclusions', () => {
+  it('filters tasks from pages tagged with excluded default-view tags', async () => {
+    const tasks = [
+      makeTask({ page: 'Shopping', tags: [] }),
+      makeTask({ page: 'Tasks', tags: [] }),
+    ];
+    const sbClient = {
+      getBaseURL: () => 'https://example.test',
+      readPage: async (page: string) => ({
+        lastModified: 0,
+        content:
+          page === 'Shopping'
+            ? '---\ntags:\n  - shopping-list\n---\n- [ ] milk\n'
+            : '---\ntags:\n  - work\n---\n- [ ] visible\n',
+      }),
+    } as any;
+
+    const result = await applyDefaultViewExclusions(tasks, sbClient, ['#shopping-list']);
+    expect(result.map((task) => task.page)).toEqual(['Tasks']);
   });
 });
 
