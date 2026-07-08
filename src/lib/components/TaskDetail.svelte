@@ -181,6 +181,7 @@
       aria-label="Task details"
       tabindex="-1"
     >
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
       <div class="sheet" onclick={(e) => e.stopPropagation()} role="document">
         <button class="close-btn" onclick={onclose} aria-label="Close"><Icon name="x" /></button>
         <button class="edit-btn" onclick={handleEdit} aria-label="Edit task"

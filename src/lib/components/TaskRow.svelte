@@ -159,6 +159,7 @@
           {#if task.tags.length > 2}
             <span
               class="tag-overflow-wrapper"
+              role="tooltip"
               onmouseenter={() => (tagOverflowOpen = true)}
               onmouseleave={() => (tagOverflowOpen = false)}
             >

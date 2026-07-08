@@ -30,6 +30,7 @@
 </script>
 
 <div class="overlay" onclick={onclose} onkeydown={handleOverlayKeydown} role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" tabindex="-1">
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
   <div class="sheet" onclick={(e) => e.stopPropagation()} role="document">
     <div class="header">
       <h2 class="title">Keyboard Shortcuts</h2>

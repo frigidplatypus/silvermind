@@ -53,6 +53,7 @@
   import { goto } from '$lib/router';
 
   let { activeTab = getDefaultView() }: { activeTab?: string } = $props();
+  // svelte-ignore state_referenced_locally
   let currentTab = $state<string>(activeTab);
   let prevTab = $state<string>('inbox');
   let searchSelectedTask = $state<Task | null>(null);
@@ -563,6 +564,7 @@
     border-radius: var(--radius-md);
     flex: 1;
     touch-action: manipulation;
+    user-select: none;
     -webkit-user-select: none;
   }
   .tab-button.active .tab-label {

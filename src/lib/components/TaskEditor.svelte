@@ -481,6 +481,7 @@
     aria-label="Edit task"
     tabindex="-1"
   >
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <div class="modal-dialog" onclick={(e) => e.stopPropagation()} role="document">
       <div class="modal-header">
         <h2 class="modal-title">Edit Task</h2>

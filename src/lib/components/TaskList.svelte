@@ -60,6 +60,7 @@
 
 <div
   class="task-list-container"
+  role="region"
   aria-busy={isLoading || isRefreshing}
   ontouchstart={onTouchStart}
   ontouchmove={onTouchMove}

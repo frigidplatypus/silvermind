@@ -27,7 +27,8 @@ function sortKeys(obj: Record<string, string>): [string, string][] {
 
 export function toMarkdown(task: Task): string {
   const displayStatus = task.status === '' ? ' ' : task.status;
-  const parts: string[] = [`- [${displayStatus}] ${task.text}`];
+  const tagStr = task.tags.length > 0 ? ' ' + task.tags.map(t => `#${t}`).join(' ') : '';
+  const parts: string[] = [`- [${displayStatus}] ${task.text}${tagStr}`];
 
   const attrs: Record<string, string> = {};
 

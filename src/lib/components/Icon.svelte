@@ -3,7 +3,7 @@
 
   let { name, size = '1.25rem' }: { name: string; size?: string } = $props();
 
-  const svg = $derived(feather.icons[name]?.toSvg({ width: size, height: size, 'aria-hidden': 'true', focusable: 'false' }) ?? '');
+  const svg = $derived(feather.icons[name]?.toSvg({ width: size, height: size, 'aria-hidden': 'true', focusable: 'false' } as any) ?? '');
 </script>
 
 {#if svg}

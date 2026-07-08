@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseTasksFromPage } from '../task-parser';
+import { parseTasksFromPage, parseTaskLine } from '../task-parser';
 import { toMarkdown } from '../task-serializer';
 import type { Task } from '../task-types';
 

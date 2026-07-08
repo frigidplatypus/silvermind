@@ -5,5 +5,5 @@ import type { Task } from '$lib/types/task';
 export async function undoTask(page: string, position: number): Promise<Task> {
   const sbClient = await getSbClient();
   const task = { page, position } as any;
-  return toggleUndone(task, sbClient) as Task;
+  return await toggleUndone(task, sbClient);
 }
