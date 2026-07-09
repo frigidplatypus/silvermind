@@ -186,12 +186,12 @@ function parseFavorites(
       currentPage = pageMatch[1].trim().replace(/^["']|["']$/g, '');
       continue;
     }
-    const headingMatch = trimmed.match(/^-\s+heading:\s*(.+)/);
+    const headingMatch = trimmed.match(/^heading:\s*(.+)/);
     if (headingMatch) {
       currentHeading = headingMatch[1].trim().replace(/^["']|["']$/g, '');
       continue;
     }
-    const blockMatch = trimmed.match(/^-\s+block:\s*(\d+)/);
+    const blockMatch = trimmed.match(/^block:\s*(\d+)/);
     if (blockMatch) {
       currentBlock = parseInt(blockMatch[1], 10);
       continue;
