@@ -1,0 +1,52 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:0.66422,0.66424,0.66423,1.00000",
+      "srgb:1.00000,1.00000,1.00000,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 0
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.7
+      }
+    }
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill" : "automatic",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "silvermind-logo.svg",
+          "name" : "silvermind-logo",
+          "position" : {
+            "scale" : 0.95,
+            "translation-in-points" : [
+              -0.0021823287035545036,
+              0.0036338467891710025
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
