@@ -6,7 +6,7 @@
     id = '',
     allowFreeText = false,
     freeTextLabel = 'Create: {query}',
-    value = '',
+    value = $bindable(''),
   }: {
     items: string[];
     placeholder?: string;

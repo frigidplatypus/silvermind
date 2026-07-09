@@ -644,7 +644,7 @@
           bind:value={pageFilterValue}
           placeholder="page name"
           allowFreeText
-          freeTextLabel="Create page: {query}"
+          freeTextLabel="Create page: {'{query}'}"
         />
       </div>
     </div>
