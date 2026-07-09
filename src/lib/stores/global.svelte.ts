@@ -10,8 +10,6 @@ interface RawSpace {
   url: string;
   active: boolean;
   default_page: string;
-  inbox_page: string;
-  default_exclude_tags?: string[];
   auth_token?: string;
 }
 
@@ -24,10 +22,18 @@ let spaces = $state<RawSpace[]>([]);
 let isLoading = $state(false);
 let error = $state<string | null>(null);
 
-export function getGlobalTasks(): TaskWithSpace[] { return tasks; }
-export function getGlobalSpaces(): RawSpace[] { return spaces; }
-export function getGlobalLoading(): boolean { return isLoading; }
-export function getGlobalError(): string | null { return error; }
+export function getGlobalTasks(): TaskWithSpace[] {
+  return tasks;
+}
+export function getGlobalSpaces(): RawSpace[] {
+  return spaces;
+}
+export function getGlobalLoading(): boolean {
+  return isLoading;
+}
+export function getGlobalError(): string | null {
+  return error;
+}
 
 export async function loadGlobalView(): Promise<void> {
   isLoading = true;
@@ -42,8 +48,6 @@ export async function loadGlobalView(): Promise<void> {
       url: s.url,
       active: active?.name === s.name,
       default_page: s.default_page,
-      inbox_page: s.inbox_page,
-      default_exclude_tags: s.default_exclude_tags || [],
       auth_token: s.auth_token,
     }));
 

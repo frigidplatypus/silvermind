@@ -10,16 +10,19 @@ export async function addSpace(
   name: string,
   url: string,
   defaultPage?: string,
-  inboxPage?: string,
+  _inboxPage?: string,
   authToken?: string,
-  defaultExcludeTags: string[] = [],
+  _excludeTags?: string[],
 ): Promise<SpaceConfig[]> {
   const cm = getConfigManager();
   await cm.load();
-  return cm.addSpace(name, url, defaultPage, inboxPage, authToken, defaultExcludeTags);
+  return cm.addSpace(name, url, defaultPage, undefined, authToken, undefined);
 }
 
-export async function verifySpace(url: string, authToken?: string): Promise<{ ok: boolean; task_count?: number; error?: string }> {
+export async function verifySpace(
+  url: string,
+  authToken?: string,
+): Promise<{ ok: boolean; task_count?: number; error?: string }> {
   try {
     const { createSbClient } = await import('./sb-client');
     const client = createSbClient({ spaceURL: url, authToken });

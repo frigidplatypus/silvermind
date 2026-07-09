@@ -1,7 +1,8 @@
-import { getSbClient } from '$lib/backend/backend-context';
+import { getSbClient, getSpaceConfig } from '$lib/backend/backend-context';
 import { getQueryPages, executeQueryBlock, saveQueryBlock } from '$lib/backend/query-operations';
 import { executeQuery } from '$lib/backend/query-operations';
 import { extractQueryBlocks } from '$lib/backend/query-operations';
+import { ensureSpaceConfig } from '$lib/backend/space-config';
 import type { Task } from '$lib/types/task';
 import { logInfo, logError } from '$lib/helpers/logger';
 
@@ -99,6 +100,12 @@ export async function checkHelpers(): Promise<{ exists: boolean }> {
   }
 }
 
-export async function deployHelpers(): Promise<{ deployed: boolean }> {
-  return { deployed: true };
+export async function deployHelpers(): Promise<{ deployed: boolean; created?: boolean }> {
+  try {
+    const sbClient = await getSbClient();
+    const result = await ensureSpaceConfig(sbClient);
+    return { deployed: true, created: result.created };
+  } catch {
+    return { deployed: false };
+  }
 }

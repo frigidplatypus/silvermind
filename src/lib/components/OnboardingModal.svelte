@@ -51,18 +51,11 @@
     error = '';
     try {
       if (isDesktopApp()) {
-        await addSpaceDesktop(
-          name.trim(),
-          url.trim(),
-          'Tasks',
-          inboxPage.trim() || 'Inbox',
-          authToken,
-        );
+        await addSpaceDesktop(name.trim(), url.trim(), 'Tasks', undefined, authToken, undefined);
       } else {
         await addSpace({
           name: name.trim(),
           url: url.trim(),
-          inbox_page: inboxPage.trim() || 'Inbox',
           auth_token: authToken || undefined,
         });
       }

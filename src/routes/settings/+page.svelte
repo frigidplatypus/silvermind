@@ -25,6 +25,9 @@
     removeSpace,
     setActiveSpaceApi,
     verifySpace,
+    getSpaceConfig,
+    updateSpaceConfig,
+    deploySpaceConfig,
   } from '$lib/api/spaces';
   import { showSuccess, showError } from '$lib/stores/toast.svelte';
   import { isCrashReportingEnabled, setCrashReporting } from '$lib/stores/privacy.svelte';
@@ -47,8 +50,11 @@
   let editName = $state('');
   let editUrl = $state('');
   let editInboxPage = $state('');
+  let editInboxMode = $state('page');
   let editDefaultExcludeTags = $state('');
   let editAuthToken = $state('');
+  let editSortBy = $state('due');
+  let editSortOrder = $state('asc');
   let showEditToken = $state(false);
   let showNewToken = $state(false);
   let verifyingAdd = $state(false);
@@ -129,14 +135,26 @@
       .filter(Boolean);
   }
 
-  function startEdit(space: Space) {
+  async function startEdit(space: Space) {
     editingSpace = space.name;
     editName = space.name;
     editUrl = space.url;
-    editInboxPage = space.inbox_page || 'Inbox';
-    editDefaultExcludeTags = (space.default_exclude_tags || []).map((tag) => `#${tag}`).join(', ');
     editAuthToken = '';
     showEditToken = false;
+    try {
+      const cfg = await getSpaceConfig();
+      editInboxMode = cfg.inbox_mode || 'page';
+      editInboxPage = cfg.inbox_page || 'Inbox';
+      editDefaultExcludeTags = (cfg.exclude_tags || []).map((tag) => `#${tag}`).join(', ');
+      editSortBy = cfg.default_sort_by || 'due';
+      editSortOrder = cfg.default_sort_order || 'asc';
+    } catch {
+      editInboxMode = 'page';
+      editInboxPage = 'Inbox';
+      editDefaultExcludeTags = '';
+      editSortBy = 'due';
+      editSortOrder = 'asc';
+    }
   }
 
   function cancelEdit() {
@@ -156,19 +174,24 @@
           name !== originalName ? name : '',
           url,
           '',
-          editInboxPage,
+          undefined,
           editAuthToken,
-          parseTags(editDefaultExcludeTags),
+          undefined,
         );
       } else {
         await updateSpace(originalName, {
           name: name !== originalName ? name : undefined,
           url,
-          inbox_page: editInboxPage || undefined,
           auth_token: editAuthToken || undefined,
-          default_exclude_tags: parseTags(editDefaultExcludeTags),
         });
       }
+      await updateSpaceConfig({
+        inbox_mode: editInboxMode || undefined,
+        inbox_page: editInboxMode === 'page' ? editInboxPage || undefined : undefined,
+        exclude_tags: parseTags(editDefaultExcludeTags),
+        default_sort_by: editSortBy || undefined,
+        default_sort_order: editSortOrder || undefined,
+      });
       editingSpace = null;
       await loadSpaces();
       deployHelpers().catch(() => {});
@@ -190,21 +213,12 @@
     error = null;
     try {
       if (isDesktop) {
-        await addSpaceDesktop(
-          name,
-          url,
-          '',
-          newInboxPage || 'Inbox',
-          newAuthToken,
-          parseTags(newDefaultExcludeTags),
-        );
+        await addSpaceDesktop(name, url, '', undefined, newAuthToken, undefined);
       } else {
         await addSpace({
           name,
           url,
-          inbox_page: newInboxPage || undefined,
           auth_token: newAuthToken || undefined,
-          default_exclude_tags: parseTags(newDefaultExcludeTags),
         });
       }
       newName = '';
@@ -394,15 +408,37 @@
                   </span>
                 {/if}
               </div>
-              <label class="field-label" for="edit-ip-{space.name}">Inbox page</label>
-              <input
-                id="edit-ip-{space.name}"
-                type="text"
-                class="field"
-                bind:value={editInboxPage}
-                placeholder="Inbox"
-                disabled={saving}
-              />
+              <label class="field-label" for="edit-inbox-mode-{space.name}">Quick Add target</label>
+              <div class="inbox-mode-picker">
+                <label class="radio-row">
+                  <input
+                    type="radio"
+                    name="inbox-mode-{space.name}"
+                    value="page"
+                    bind:group={editInboxMode}
+                    disabled={saving}
+                  />
+                  <span>Use a specific page</span>
+                </label>
+                <input
+                  id="edit-ip-{space.name}"
+                  type="text"
+                  class="field"
+                  bind:value={editInboxPage}
+                  placeholder="Inbox"
+                  disabled={saving || editInboxMode !== 'page'}
+                />
+                <label class="radio-row">
+                  <input
+                    type="radio"
+                    name="inbox-mode-{space.name}"
+                    value="journal"
+                    bind:group={editInboxMode}
+                    disabled={saving}
+                  />
+                  <span>Use SilverBullet journal page (Journal/YYYY-MM-DD)</span>
+                </label>
+              </div>
               <label class="field-label" for="edit-exclude-tags-{space.name}">
                 Exclude from default views
               </label>
@@ -415,8 +451,29 @@
                 disabled={saving}
               />
               <p class="field-help">
-                These tags are hidden from Task List, Today, and All Tasks. Custom queries can still use them.
+                These tags are hidden from Task List, Today, and All Tasks. Custom queries can still
+                use them.
               </p>
+              <label class="field-label" for="edit-sort-{space.name}" style="margin-top:0.25rem">
+                Default sort
+              </label>
+              <div style="display:flex;gap:0.5rem">
+                <select
+                  id="edit-sort-{space.name}"
+                  class="field"
+                  bind:value={editSortBy}
+                  disabled={saving}
+                >
+                  <option value="due">Due date</option>
+                  <option value="priority">Priority</option>
+                  <option value="page">Page</option>
+                  <option value="name">Name</option>
+                </select>
+                <select class="field" bind:value={editSortOrder} disabled={saving}>
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
+                </select>
+              </div>
               <label class="field-label" for="edit-token-{space.name}" style="margin-top:0.25rem">
                 Auth token
                 <button
@@ -453,12 +510,7 @@
             <div class="space-info">
               <span class="space-name">{space.name}</span>
               <span class="space-url">{space.url}</span>
-              <span class="space-meta">Quick Add goes to: {space.inbox_page || 'Inbox'}</span>
-              {#if space.default_exclude_tags?.length}
-                <span class="space-meta">
-                  Default views exclude: {space.default_exclude_tags.map((tag) => `#${tag}`).join(', ')}
-                </span>
-              {/if}
+              <span class="space-meta">Config stored in Library/Silvermind/config</span>
             </div>
             <div class="space-actions">
               {#if !space.active}
@@ -510,23 +562,6 @@
         bind:value={newUrl}
         disabled={saving}
       />
-      <input
-        type="text"
-        class="field"
-        placeholder="Inbox page (defaults to Inbox)"
-        bind:value={newInboxPage}
-        disabled={saving}
-      />
-      <input
-        type="text"
-        class="field"
-        placeholder="Exclude tags from default views, e.g. #shopping-list, #coram-deo"
-        bind:value={newDefaultExcludeTags}
-        disabled={saving}
-      />
-      <p class="field-help">
-        Hidden from Task List, Today, and All Tasks. Custom queries can still use these tags.
-      </p>
       <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
         <button
           class="verify-btn"
@@ -895,6 +930,23 @@
     cursor: pointer;
   }
   .toggle-row input {
+    accent-color: var(--color-accent);
+  }
+  .inbox-mode-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .radio-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .radio-row input {
     accent-color: var(--color-accent);
   }
 </style>

@@ -1,4 +1,9 @@
-import { getSbClient, getActiveSpace, getConfigManager } from '$lib/backend/backend-context';
+import {
+  getSbClient,
+  getActiveSpace,
+  getConfigManager,
+  getSpaceConfig,
+} from '$lib/backend/backend-context';
 import {
   toggleDone,
   toggleUndone,
@@ -9,7 +14,7 @@ import {
 import { createTask } from '$lib/backend/inbox-operations';
 import { createSbClient } from '$lib/backend/sb-client';
 import type { Task } from '$lib/types/task';
-import type { SpaceConfig } from '$lib/backend/task-types';
+import type { SpaceConfig, SpaceConfigRemote } from '$lib/backend/task-types';
 import { applyDefaultViewExclusions, applyGlobalTaskExclusions } from '$lib/backend/query-engine';
 import { mapRuntimeTask } from '$lib/backend/task-parser';
 import { loadTasks } from '$lib/backend/inbox-operations';
@@ -60,15 +65,16 @@ function filterFallbackTasks(tasks: Task[], params?: Record<string, string>): Ta
 
 function applyConfiguredDefaultExclusions(
   tasks: Task[],
-  space: SpaceConfig,
   sbClient: ReturnType<typeof createSbClient>,
+  excludeTags: string[],
 ): Promise<Task[]> {
-  return applyDefaultViewExclusions(tasks, sbClient, space.default_exclude_tags || []);
+  return applyDefaultViewExclusions(tasks, sbClient, excludeTags);
 }
 
 async function loadTaskList(
   space: SpaceConfig,
   params?: Record<string, string>,
+  spaceConfig?: SpaceConfigRemote,
 ): Promise<TaskListResponse> {
   const sbClient = createSbClient({ spaceURL: space.url, authToken: space.auth_token });
   const queryParams: Record<string, string> = { ...params };
@@ -80,8 +86,9 @@ async function loadTaskList(
       `Runtime task list for ${space.name}`,
     );
     const mapped = runtimeTasks.map(mapRuntimeTask) as Task[];
+    const excludeTags = spaceConfig?.exclude_tags || [];
     return (await applyGlobalTaskExclusions(
-      await applyConfiguredDefaultExclusions(mapped, space, sbClient),
+      await applyConfiguredDefaultExclusions(mapped, sbClient, excludeTags),
       sbClient,
     )) as TaskListResponse;
   } catch (e: any) {
@@ -90,7 +97,7 @@ async function loadTaskList(
     );
   }
 
-  const fallback = await loadTasks(space, sbClient, 0);
+  const fallback = await loadTasks(space, sbClient, 0, spaceConfig);
   return (await applyGlobalTaskExclusions(
     filterFallbackTasks(fallback, params),
     sbClient,
@@ -136,6 +143,7 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
   const active = await getActiveSpace();
   if (!active) return [];
   const sbClient = await getSbClient();
+  const spaceConfig = getSpaceConfig();
   const queryParams: Record<string, string> = {};
   if (params?.page) queryParams['page'] = params.page;
   if (params?.search) {
@@ -149,8 +157,9 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
       `Runtime task list for ${active.name}`,
     );
     const mapped = runtimeTasks.map(mapRuntimeTask) as Task[];
+    const excludeTags = spaceConfig.exclude_tags || [];
     return (await applyGlobalTaskExclusions(
-      await applyConfiguredDefaultExclusions(mapped, active, sbClient),
+      await applyConfiguredDefaultExclusions(mapped, sbClient, excludeTags),
       sbClient,
     )) as TaskListResponse;
   } catch (e: any) {
@@ -158,7 +167,7 @@ export async function getTasks(params?: Record<string, string>): Promise<TaskLis
       `[tasks-api] active runtime task list failed; falling back to .fs pages — space="${active.name}" error="${e?.message || e}"`,
     );
   }
-  const fallback = await loadTasks(active, sbClient, 0);
+  const fallback = await loadTasks(active, sbClient, 0, spaceConfig);
   return (await applyGlobalTaskExclusions(
     filterFallbackTasks(fallback, params),
     sbClient,
@@ -169,7 +178,8 @@ export async function createTaskFn(input: Record<string, unknown>): Promise<Task
   const active = await getActiveSpace();
   if (!active) throw new Error('No active space');
   const sbClient = await getSbClient();
-  return (await createTask(input as any, active, sbClient)) as Task;
+  const spaceConfig = getSpaceConfig();
+  return (await createTask(input as any, active, sbClient, spaceConfig)) as Task;
 }
 
 export { createTaskFn as createTask };
@@ -242,7 +252,6 @@ export async function getTasksForSpace(
           name: spaceOrUrl,
           url: spaceOrUrl,
           default_page: 'Tasks',
-          inbox_page: 'Inbox',
           auth_token: typeof authTokenOrParams === 'string' ? authTokenOrParams : undefined,
         }
       : spaceOrUrl;

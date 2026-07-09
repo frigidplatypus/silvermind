@@ -1,9 +1,11 @@
 import type { SbClient } from './sb-client';
-import type { Task, SpaceConfig } from './task-types';
+import type { Task, SpaceConfig, SpaceConfigRemote } from './task-types';
 import { toMarkdown } from './task-serializer';
 import { logInfo, logError } from '$lib/helpers/logger';
 import { applyDefaultViewExclusions, applyGlobalTaskExclusions } from './query-engine';
 import { mapRuntimeTask, parseTasksFromPage } from './task-parser';
+import { resolveInboxPage } from './space-config';
+import { getJournalPrefix } from './backend-context';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -30,19 +32,22 @@ export async function loadTasks(
   activeSpace: SpaceConfig,
   sbClient: SbClient,
   runtimeTimeoutMs = 6000,
+  spaceConfig?: SpaceConfigRemote,
 ): Promise<Task[]> {
+  const excludeTags = spaceConfig?.exclude_tags || [];
   if (runtimeTimeoutMs > 0) {
     try {
+      const queryParams: Record<string, string> = {};
+      if (spaceConfig?.default_sort_by) {
+        queryParams['sortBy'] = spaceConfig.default_sort_by;
+        queryParams['sortOrder'] = spaceConfig.default_sort_order || 'asc';
+      }
       const runtimeTasks = await withTimeout(
-        sbClient.queryTasks({}),
+        sbClient.queryTasks(queryParams),
         runtimeTimeoutMs,
         `Runtime task query for ${activeSpace.name}`,
       );
-      return applyDefaultViewExclusions(
-        runtimeTasks.map(mapRuntimeTask),
-        sbClient,
-        activeSpace.default_exclude_tags || [],
-      );
+      return applyDefaultViewExclusions(runtimeTasks.map(mapRuntimeTask), sbClient, excludeTags);
     } catch (e: any) {
       logError(`Runtime task query failed; falling back to .fs pages: ${e.message || e}`, {
         space: activeSpace.name,
@@ -50,7 +55,8 @@ export async function loadTasks(
     }
   }
 
-  const pages = [activeSpace.default_page || 'Tasks', activeSpace.inbox_page || 'Inbox'].filter(
+  const inboxPage = spaceConfig ? resolveInboxPage(spaceConfig, getJournalPrefix()) : 'Inbox';
+  const pages = [activeSpace.default_page || 'Tasks', inboxPage].filter(
     (page, index, all) => page && all.indexOf(page) === index,
   );
 
@@ -61,18 +67,19 @@ export async function loadTasks(
     else logError(`Fallback page task load failed: ${result.reason?.message || result.reason}`);
   }
   logInfo(`Fallback .fs task load: ${tasks.length} tasks from ${pages.length} page(s)`);
-  return applyDefaultViewExclusions(tasks, sbClient, activeSpace.default_exclude_tags || []);
+  return applyDefaultViewExclusions(tasks, sbClient, excludeTags);
 }
 
 export async function getInbox(
   _spaces: SpaceConfig[],
   activeSpace: SpaceConfig,
   sbClient: SbClient,
+  spaceConfig?: SpaceConfigRemote,
 ): Promise<Task[]> {
   logInfo(`Loading inbox from "${activeSpace.name}" via runtime API`);
 
   try {
-    const tasks = await loadTasks(activeSpace, sbClient);
+    const tasks = await loadTasks(activeSpace, sbClient, 6000, spaceConfig);
 
     const active = (await applyGlobalTaskExclusions(tasks, sbClient)).filter((t) => !t.done);
     logInfo(`Inbox: ${active.length} active / ${tasks.length} total tasks`);
@@ -95,11 +102,13 @@ export async function createTask(
   },
   activeSpace: SpaceConfig,
   sbClient: SbClient,
+  spaceConfig?: SpaceConfigRemote,
 ): Promise<Task> {
-  const inboxPage = input.page || activeSpace.inbox_page || 'Inbox';
+  const inboxPage =
+    input.page || (spaceConfig ? resolveInboxPage(spaceConfig, getJournalPrefix()) : 'Inbox');
 
   logInfo(
-    `[tasks-create] start space="${activeSpace.name}" targetPage="${inboxPage}" configuredInbox="${activeSpace.inbox_page || 'Inbox'}" text="${input.text.slice(0, 120)}"`,
+    `[tasks-create] start space="${activeSpace.name}" targetPage="${inboxPage}" mode="${spaceConfig?.inbox_mode || 'page'}" text="${input.text.slice(0, 120)}"`,
   );
 
   const task: Task = {

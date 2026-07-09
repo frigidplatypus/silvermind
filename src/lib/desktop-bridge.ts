@@ -2,8 +2,6 @@ export interface SpaceInfo {
   name: string;
   url: string;
   default_page: string;
-  inbox_page: string;
-  default_exclude_tags?: string[];
   active: boolean;
 }
 
@@ -23,11 +21,11 @@ export async function addSpaceDesktop(
   name: string,
   url: string,
   defaultPage?: string,
-  inboxPage?: string,
+  _inboxPage?: string,
   authToken?: string,
-  defaultExcludeTags: string[] = [],
+  _excludeTags?: string[],
 ): Promise<SpaceInfo[]> {
-  return go().AddSpace(name, url, defaultPage || '', inboxPage || '', authToken || '', defaultExcludeTags);
+  return go().AddSpace(name, url, defaultPage || '', '', authToken || '', []);
 }
 
 export async function updateSpaceDesktop(
@@ -35,11 +33,11 @@ export async function updateSpaceDesktop(
   newName: string,
   url: string,
   defaultPage?: string,
-  inboxPage?: string,
+  _inboxPage?: string,
   authToken?: string,
-  defaultExcludeTags: string[] = [],
+  _excludeTags?: string[],
 ): Promise<SpaceInfo[]> {
-  return go().UpdateSpace(name, newName, url, defaultPage || '', inboxPage || '', authToken || '', defaultExcludeTags);
+  return go().UpdateSpace(name, newName, url, defaultPage || '', '', authToken || '', []);
 }
 
 export async function removeSpaceDesktop(name: string): Promise<SpaceInfo[]> {

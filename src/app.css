@@ -195,6 +195,14 @@ select {
   -webkit-appearance: none;
 }
 
+input[type='radio'] {
+  -webkit-appearance: radio;
+  appearance: radio;
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
 a {
   color: var(--color-accent);
   text-decoration: none;

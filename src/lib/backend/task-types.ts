@@ -44,12 +44,18 @@ export interface TaskFilter {
   offset?: number;
 }
 
+export interface SpaceConfigRemote {
+  inbox_mode?: string;
+  inbox_page?: string;
+  exclude_tags?: string[];
+  default_sort_by?: string;
+  default_sort_order?: string;
+}
+
 export interface SpaceConfig {
   name: string;
   url: string;
   default_page: string;
-  inbox_page: string;
-  default_exclude_tags?: string[];
   auth_token?: string;
 }
 

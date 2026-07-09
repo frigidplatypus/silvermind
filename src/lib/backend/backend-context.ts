@@ -1,11 +1,14 @@
 import { createSbClient, type SbClient, type SbClientConfig } from './sb-client';
 import { createConfigManager, type ConfigManager } from './config-manager';
-import type { SpaceConfig } from './task-types';
+import type { SpaceConfig, SpaceConfigRemote } from './task-types';
+import { readSpaceConfig, readJournalPrefix } from './space-config';
 import { logInfo, logWarn, logError } from '$lib/helpers/logger';
 
 let _configManager: ConfigManager | null = null;
 let _sbClient: SbClient | null = null;
 let _activeSpaceName = '';
+let _spaceConfig: SpaceConfigRemote = {};
+let _journalPrefix = 'Journal/';
 let _initPromise: Promise<SpaceConfig | null> | null = null;
 
 export function getConfigManager(): ConfigManager {
@@ -13,6 +16,14 @@ export function getConfigManager(): ConfigManager {
     _configManager = createConfigManager();
   }
   return _configManager;
+}
+
+export function getSpaceConfig(): SpaceConfigRemote {
+  return _spaceConfig;
+}
+
+export function getJournalPrefix(): string {
+  return _journalPrefix;
 }
 
 export async function initBackend(): Promise<SpaceConfig | null> {
@@ -29,6 +40,11 @@ export async function initBackend(): Promise<SpaceConfig | null> {
         spaceURL: active.url,
         authToken: active.auth_token,
       });
+      _spaceConfig = await readSpaceConfig(_sbClient);
+      if (_spaceConfig.inbox_mode === 'journal') {
+        _journalPrefix = await readJournalPrefix(_sbClient);
+        logInfo(`Journal prefix: ${_journalPrefix}`);
+      }
     } else {
       logWarn('No active space configured');
     }
@@ -68,6 +84,11 @@ export async function setActiveSpace(name: string): Promise<SpaceConfig | null> 
       spaceURL: active.url,
       authToken: active.auth_token,
     });
+    _spaceConfig = await readSpaceConfig(_sbClient);
+    if (_spaceConfig.inbox_mode === 'journal') {
+      _journalPrefix = await readJournalPrefix(_sbClient);
+      logInfo(`Journal prefix: ${_journalPrefix}`);
+    }
   }
   return active;
 }
