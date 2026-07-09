@@ -537,7 +537,18 @@
 </script>
 
 <div class="query-builder">
-  <h2 class="builder-title">{create ? 'New Query' : 'Edit Query'}</h2>
+  <header class="builder-header">
+    <h2 class="builder-title">{create ? 'New Query' : 'Edit Query'}</h2>
+    <a
+      href="https://silverbullet.md/Space%20Lua/Integrated%20Query"
+      target="_blank"
+      rel="noopener"
+      class="help-link"
+      aria-label="SLIQ documentation"
+    >
+      <Icon name="help-circle" size="1rem" />
+    </a>
+  </header>
 
   {#if success}
     <div class="success-banner" role="status">{success}</div>
@@ -1167,5 +1178,26 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     margin-bottom: var(--space-4);
+  }
+  .builder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+  }
+  .help-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-md);
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-tertiary);
+    transition: all 0.2s ease;
+  }
+  .help-link:hover {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
   }
 </style>
