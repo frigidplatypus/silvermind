@@ -10,7 +10,11 @@ export default defineConfig({
       transformIndexHtml(html) {
         return html
           .replace(/ crossorigin/g, '')
-          .replace(/type="module"/g, 'defer');
+          .replace(/type="module"/g, 'defer')
+          .replace(
+            '</head>',
+            '<script>var preferences={},haptics={},statusBar={},splashScreen={},localNotifications={},browser={},filesystem={};</script></head>',
+          );
       },
     },
   ],
