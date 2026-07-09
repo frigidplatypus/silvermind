@@ -1,1 +1,0 @@
-import{_ as e}from"./index-D1Uxt9HC.js";import{registerPlugin as o}from"@capacitor/core";const i=o("Browser",{web:()=>e(()=>import("./web-BeyRy4PA.js"),[]).then(r=>new r.BrowserWeb)});export{i as Browser};

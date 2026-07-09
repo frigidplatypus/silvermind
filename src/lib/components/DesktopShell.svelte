@@ -471,9 +471,12 @@
         {/if}
       </div>
     {:else if isQueryView}
+      <div class="query-page-label">
+        {currentQueryPage.startsWith('queries/') ? currentQueryPage.slice(8) : currentQueryPage}
+      </div>
       <div class="query-header">
         <Icon name="search" size="1rem" />
-        <span class="query-title">{queryTitle ?? 'Query'}</span>
+        <span class="query-title">{currentQueryHeading || 'Query'}</span>
         {#if currentQueryHeading}
           <button
             class="query-star-btn"
@@ -627,6 +630,14 @@
   .hamburger-btn:hover {
     background: var(--color-bg-secondary);
     color: var(--color-text);
+  }
+  .query-page-label {
+    padding: 0.5rem 1rem 0 1rem;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-tertiary);
   }
   .query-header {
     display: flex;
