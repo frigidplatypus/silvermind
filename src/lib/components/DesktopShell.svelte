@@ -223,17 +223,24 @@
     onNavigate('builder');
   }
 
-  const currentQueryPage = $derived(
-    activeView.startsWith('queries:') ? decodeQueryPage(activeView.split(':')[1]) : '',
-  );
+  function getQueryPageLabel(): string {
+    if (!activeView.startsWith('queries:')) return '';
+    const parts = activeView.split(':');
+    const raw = parts.slice(1, -1).join(':') || parts[1];
+    const page = decodeQueryPage(raw);
+    return page.startsWith('queries/') ? page.slice(8) : page;
+  }
+
   const currentQueryBlockNumber = $derived(
-    activeView.startsWith('queries:') && activeView.split(':')[2]
-      ? parseInt(activeView.split(':')[2])
+    activeView.startsWith('queries:') && activeView.split(':').length > 2
+      ? parseInt(activeView.split(':')[activeView.split(':').length - 1])
       : 1,
   );
+
   const currentQueryHeading = $derived(
     (() => {
-      const qp = getQueryPagesList().find((p) => p.page === currentQueryPage);
+      const page = getQueryPageLabel();
+      const qp = getQueryPagesList().find((p) => p.page === page);
       if (!qp) return '';
       const block = qp.blocks.find((b) => b.number === currentQueryBlockNumber);
       return block?.title ?? qp.blocks[0]?.title ?? '';
@@ -241,8 +248,9 @@
   );
 
   async function handleToggleQueryStar() {
-    if (!currentQueryPage || !currentQueryHeading) return;
-    await toggleQueryFavorite(currentQueryPage, currentQueryHeading, currentQueryBlockNumber);
+    const page = getQueryPageLabel();
+    if (!page || !currentQueryHeading) return;
+    await toggleQueryFavorite(page, currentQueryHeading, currentQueryBlockNumber);
     loadQueryPages(true);
   }
 
@@ -301,7 +309,7 @@
               : activeView === 'settings'
                 ? 'Settings'
                 : isQueryView
-                  ? (queryTitle ?? 'Query')
+                  ? getQueryPageLabel() || 'Query'
                   : '',
   );
 
@@ -472,7 +480,7 @@
       </div>
     {:else if isQueryView}
       <div class="query-page-label">
-        {currentQueryPage.startsWith('queries/') ? currentQueryPage.slice(8) : currentQueryPage}
+        {getQueryPageLabel()}
       </div>
       <div class="query-header">
         <Icon name="search" size="1rem" />
@@ -480,9 +488,9 @@
         {#if currentQueryHeading}
           <button
             class="query-star-btn"
-            class:star-filled={isQueryFavorite(currentQueryPage, currentQueryHeading)}
+            class:star-filled={isQueryFavorite(getQueryPageLabel(), currentQueryHeading)}
             onclick={handleToggleQueryStar}
-            aria-label={isQueryFavorite(currentQueryPage, currentQueryHeading)
+            aria-label={isQueryFavorite(getQueryPageLabel(), currentQueryHeading)
               ? 'Remove from favorites'
               : 'Add to favorites'}
           >

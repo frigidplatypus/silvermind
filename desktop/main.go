@@ -68,7 +68,7 @@ func main() {
 		Height:    800,
 		MinWidth:  800,
 		MinHeight: 600,
-		LogLevel:  logger.TRACE,
+		LogLevel:  logger.ERROR,
 		AssetServer: &assetserver.Options{
 			Assets: func() fs.FS {
 				subFS, err := fs.Sub(assets, "frontend/dist")

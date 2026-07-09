@@ -364,7 +364,15 @@
                 : currentTab === 'settings'
                   ? 'Settings'
                   : currentTab.startsWith('queries:')
-                    ? getCurrentQueryTitle() || 'Query Results'
+                    ? (() => {
+                        const parts = currentTab.split(':');
+                        const raw = parts.slice(1, -1).join(':') || parts[1];
+                        try {
+                          return decodeURIComponent(raw);
+                        } catch {
+                          return raw;
+                        }
+                      })()
                     : '',
   );
 </script>
