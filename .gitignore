@@ -33,6 +33,9 @@ android/
 *.swo
 .DS_Store
 
+# opencode
+opencode.json
+
 # Build artifacts
 *.tsbuildinfo
 result
