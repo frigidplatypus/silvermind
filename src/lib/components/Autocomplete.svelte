@@ -41,6 +41,14 @@
     focused = false;
   }
 
+  function handleCreate() {
+    if (query.trim()) {
+      onselect?.(query.trim());
+      query = '';
+      focused = false;
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -53,10 +61,7 @@
       if (filtered[selectedIndex]) {
         handleSelect(filtered[selectedIndex]);
       } else if (allowFreeText && query.trim()) {
-        onselect?.(query.trim());
-        query = '';
-        selectedIndex = 0;
-        focused = false;
+        handleCreate();
       }
     } else if (e.key === 'Escape') {
       focused = false;
@@ -110,9 +115,7 @@
           role="option"
           onpointerdown={(e) => {
             e.preventDefault();
-            onselect?.(query.trim());
-            query = '';
-            focused = false;
+            handleCreate();
           }}
         >
           <span class="ac-create-icon">+</span>
