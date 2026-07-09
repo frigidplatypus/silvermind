@@ -310,28 +310,29 @@
     {/each}
   {/if}
 
-  {#if onToggleCollapse}
-    <button
-      class="sidebar-item collapse-item"
-      onclick={onToggleCollapse}
-      aria-label="Collapse sidebar"
-    >
-      <Icon name="chevron-left" size="1rem" />
-      <span>Collapse</span>
-    </button>
-  {/if}
-
   <div class="sidebar-spacer"></div>
 
-  <button
-    class="sidebar-item"
-    class:active={activeView === 'settings'}
-    onclick={() => onNavigate('settings')}
-    aria-current={activeView === 'settings' ? 'page' : undefined}
-  >
-    <Icon name="settings" />
-    <span>Settings</span>
-  </button>
+  {#if onToggleCollapse}
+    <div class="sidebar-bottom-actions">
+      <button
+        class="sidebar-item collapse-item"
+        onclick={onToggleCollapse}
+        aria-label="Collapse sidebar"
+      >
+        <Icon name="chevron-left" size="1rem" />
+        <span>Collapse</span>
+      </button>
+      <button
+        class="sidebar-item"
+        class:active={activeView === 'settings'}
+        onclick={() => onNavigate('settings')}
+        aria-current={activeView === 'settings' ? 'page' : undefined}
+      >
+        <Icon name="settings" />
+        <span>Settings</span>
+      </button>
+    </div>
+  {/if}
 </nav>
 
 <style>
@@ -518,6 +519,19 @@
   }
   .sidebar-spacer {
     flex: 1;
+  }
+  .sidebar-bottom-actions {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-separator);
+    padding-top: 0.25rem;
+    margin-top: 0.25rem;
+  }
+  .collapse-item {
+    color: var(--color-text-secondary);
+  }
+  .collapse-item:hover {
+    color: var(--color-accent);
   }
   .query-item-row {
     display: flex;
