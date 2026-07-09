@@ -65,6 +65,7 @@
 
   const hasExactMatch = $derived(filtered.some((f) => f.toLowerCase() === query.toLowerCase()));
   const showCreate = $derived(allowFreeText && query.trim() && !hasExactMatch);
+  const createLabel = $derived(freeTextLabel.replace('{query}', query));
 </script>
 
 <div class="autocomplete">
@@ -115,7 +116,7 @@
           }}
         >
           <span class="ac-create-icon">+</span>
-          {freeTextLabel.replace('{query}', query)}
+          {createLabel}
         </li>
       {/if}
     </ul>
