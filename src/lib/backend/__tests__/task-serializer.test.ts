@@ -124,7 +124,7 @@ describe('toMarkdown', () => {
     expect(line).toContain('- [ ] Review PR');
     expect(line).toContain('[due: ');
 
-<｜｜DSML｜｜parameter name="content" string="true">    expect(line).toContain('[name: ');
+    expect(line).toContain('[name: ');
     expect(line).toContain('[priority: ');
     expect(line).toContain('[parent: ');
     expect(line).toContain('[recur: ');

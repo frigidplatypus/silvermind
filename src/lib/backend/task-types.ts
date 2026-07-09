@@ -49,6 +49,7 @@ export interface SpaceConfig {
   url: string;
   default_page: string;
   inbox_page: string;
+  default_exclude_tags?: string[];
   auth_token?: string;
 }
 

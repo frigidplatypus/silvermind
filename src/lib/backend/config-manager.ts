@@ -59,6 +59,12 @@ function createCapacitorStore(): ConfigStore {
   };
 }
 
+function normalizeTags(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).map((tag) => tag.trim().replace(/^#/, '')).filter(Boolean);
+  if (typeof value === 'string') return value.split(/[\s,]+/).map((tag) => tag.trim().replace(/^#/, '')).filter(Boolean);
+  return [];
+}
+
 function detectStore(): ConfigStore {
   if (typeof window !== 'undefined' && (window as any).go?.main?.App) {
     return createWailsStore();
@@ -96,6 +102,7 @@ export function createConfigManager() {
           url: (sp as any).space || (sp as any).url || '',
           default_page: (sp as any).default_page || 'Tasks',
           inbox_page: (sp as any).inbox_page || 'Inbox',
+          default_exclude_tags: normalizeTags((sp as any).default_exclude_tags),
           auth_token: (sp as any).auth_token || '',
         };
       }
@@ -118,6 +125,7 @@ export function createConfigManager() {
         space: sp.url,
         default_page: sp.default_page,
         inbox_page: sp.inbox_page,
+        default_exclude_tags: sp.default_exclude_tags || [],
         auth_token: sp.auth_token || '',
       };
     }
@@ -135,6 +143,7 @@ export function createConfigManager() {
       url: sp.url,
       default_page: sp.default_page || 'Tasks',
       inbox_page: sp.inbox_page || 'Inbox',
+      default_exclude_tags: sp.default_exclude_tags || [],
       auth_token: sp.auth_token,
     }));
   }
@@ -149,6 +158,7 @@ export function createConfigManager() {
       url: sp.url,
       default_page: sp.default_page || 'Tasks',
       inbox_page: sp.inbox_page || 'Inbox',
+      default_exclude_tags: sp.default_exclude_tags || [],
       auth_token: sp.auth_token,
     };
   }
@@ -159,6 +169,7 @@ export function createConfigManager() {
     defaultPage?: string,
     inboxPage?: string,
     authToken?: string,
+    defaultExcludeTags: string[] = [],
   ): Promise<SpaceConfig[]> {
     const config = cache || (await load());
     const nameLower = name.toLowerCase();
@@ -172,6 +183,7 @@ export function createConfigManager() {
       url,
       default_page: defaultPage || 'Tasks',
       inbox_page: inboxPage || 'Inbox',
+      default_exclude_tags: defaultExcludeTags,
       auth_token: authToken || '',
     };
     if (!config.active_space) {
@@ -188,6 +200,7 @@ export function createConfigManager() {
     defaultPage?: string,
     inboxPage?: string,
     authToken?: string,
+    defaultExcludeTags?: string[],
   ): Promise<SpaceConfig[]> {
     const config = cache || (await load());
     const sp = config.spaces[name];
@@ -197,6 +210,7 @@ export function createConfigManager() {
     if (url) sp.url = url;
     if (defaultPage) sp.default_page = defaultPage;
     if (inboxPage) sp.inbox_page = inboxPage;
+    if (defaultExcludeTags !== undefined) sp.default_exclude_tags = defaultExcludeTags;
     if (authToken !== undefined) sp.auth_token = authToken;
     const effectiveName = newName || name;
     if (effectiveName.toLowerCase() !== name.toLowerCase()) {

@@ -2,7 +2,7 @@ import type { SbClient } from './sb-client';
 import type { Task, SpaceConfig } from './task-types';
 import { toMarkdown } from './task-serializer';
 import { logInfo, logError } from '$lib/helpers/logger';
-import { applyGlobalTaskExclusions } from './query-engine';
+import { applyDefaultViewExclusions, applyGlobalTaskExclusions } from './query-engine';
 import { mapRuntimeTask, parseTasksFromPage } from './task-parser';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -38,7 +38,11 @@ export async function loadTasks(
         runtimeTimeoutMs,
         `Runtime task query for ${activeSpace.name}`,
       );
-      return runtimeTasks.map(mapRuntimeTask);
+      return applyDefaultViewExclusions(
+        runtimeTasks.map(mapRuntimeTask),
+        sbClient,
+        activeSpace.default_exclude_tags || [],
+      );
     } catch (e: any) {
       logError(`Runtime task query failed; falling back to .fs pages: ${e.message || e}`, {
         space: activeSpace.name,
@@ -57,7 +61,7 @@ export async function loadTasks(
     else logError(`Fallback page task load failed: ${result.reason?.message || result.reason}`);
   }
   logInfo(`Fallback .fs task load: ${tasks.length} tasks from ${pages.length} page(s)`);
-  return tasks;
+  return applyDefaultViewExclusions(tasks, sbClient, activeSpace.default_exclude_tags || []);
 }
 
 export async function getInbox(

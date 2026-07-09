@@ -11,6 +11,7 @@ interface RawSpace {
   active: boolean;
   default_page: string;
   inbox_page: string;
+  default_exclude_tags?: string[];
   auth_token?: string;
 }
 
@@ -42,6 +43,7 @@ export async function loadGlobalView(): Promise<void> {
       active: active?.name === s.name,
       default_page: s.default_page,
       inbox_page: s.inbox_page,
+      default_exclude_tags: s.default_exclude_tags || [],
       auth_token: s.auth_token,
     }));
 

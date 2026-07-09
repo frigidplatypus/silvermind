@@ -58,6 +58,7 @@ export async function loadSpaces(): Promise<void> {
       name: s.name || s.url,
       url: s.url || s.space,
       inbox_page: s.inbox_page || 'Inbox',
+      default_exclude_tags: s.default_exclude_tags || [],
       active: s.active ?? false,
       is_default: s.is_default ?? false,
     }));
@@ -106,6 +107,7 @@ export async function setActiveSpace(spaceId: string): Promise<void> {
           name: s.name || s.url,
           url: s.url || s.space,
           inbox_page: s.inbox_page || 'Inbox',
+          default_exclude_tags: s.default_exclude_tags || [],
           active: s.active ?? false,
           is_default: s.is_default ?? false,
         }))

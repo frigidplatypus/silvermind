@@ -8,7 +8,9 @@ export default defineConfig({
     {
       name: 'desktop-html',
       transformIndexHtml(html) {
-        return html.replace(/ crossorigin/g, '').replace(/type="module"/g, 'defer');
+        return html
+          .replace(/ crossorigin/g, '')
+          .replace(/type="module"/g, 'defer');
       },
     },
   ],
@@ -26,7 +28,17 @@ export default defineConfig({
       output: {
         inlineDynamicImports: true,
         format: 'iife',
+        entryFileNames: 'assets/index-BU9u5dt0.js',
       },
+      external: [
+        '@capacitor/haptics',
+        '@capacitor/status-bar',
+        '@capacitor/splash-screen',
+        '@capacitor/preferences',
+        '@capacitor/local-notifications',
+        '@capacitor/browser',
+        '@capacitor/filesystem',
+      ],
     },
   },
 });

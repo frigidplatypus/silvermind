@@ -12,10 +12,11 @@ export async function addSpace(
   defaultPage?: string,
   inboxPage?: string,
   authToken?: string,
+  defaultExcludeTags: string[] = [],
 ): Promise<SpaceConfig[]> {
   const cm = getConfigManager();
   await cm.load();
-  return cm.addSpace(name, url, defaultPage, inboxPage, authToken);
+  return cm.addSpace(name, url, defaultPage, inboxPage, authToken, defaultExcludeTags);
 }
 
 export async function verifySpace(url: string, authToken?: string): Promise<{ ok: boolean; task_count?: number; error?: string }> {

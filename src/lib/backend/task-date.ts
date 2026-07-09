@@ -34,31 +34,28 @@ export function isValidRecurrence(recur: string): boolean {
   return RECUR_RE.test(recur);
 }
 
-function addDays(date: Date, days: number): Date {
+function addDaysUTC(date: Date, days: number): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() + days);
+  d.setUTCDate(d.getUTCDate() + days);
   return d;
 }
 
-function addMonthsClamped(date: Date, months: number): Date {
+function addMonthsClampedUTC(date: Date, months: number): Date {
   const d = new Date(date);
-  const targetMonth = d.getMonth() + months;
-  d.setMonth(targetMonth);
-
-  if (d.getMonth() !== (targetMonth % 12 + 12) % 12) {
-    d.setDate(0);
+  const targetMonth = d.getUTCMonth() + months;
+  d.setUTCMonth(targetMonth);
+  if (d.getUTCMonth() !== ((targetMonth % 12) + 12) % 12) {
+    d.setUTCDate(0);
   }
   return d;
 }
 
-function addYearsClamped(date: Date, years: number): Date {
+function addYearsClampedUTC(date: Date, years: number): Date {
   const d = new Date(date);
-  const originalMonth = d.getMonth();
-  const originalDate = d.getDate();
-  d.setFullYear(d.getFullYear() + years);
-
-  if (d.getMonth() !== originalMonth) {
-    d.setDate(0);
+  const origMonth = d.getUTCMonth();
+  d.setUTCFullYear(d.getUTCFullYear() + years);
+  if (d.getUTCMonth() !== origMonth) {
+    d.setUTCDate(0);
   }
   return d;
 }
@@ -87,19 +84,19 @@ export function advanceDue(
 
   switch (interval) {
     case 'daily': {
-      const next = addDays(refDate, count);
+      const next = addDaysUTC(refDate, count);
       return formatISODate(next);
     }
     case 'weekly': {
-      const next = addDays(refDate, count * 7);
+      const next = addDaysUTC(refDate, count * 7);
       return formatISODate(next);
     }
     case 'monthly': {
-      const next = addMonthsClamped(refDate, count);
+      const next = addMonthsClampedUTC(refDate, count);
       return formatISODate(next);
     }
     case 'yearly': {
-      const next = addYearsClamped(refDate, count);
+      const next = addYearsClampedUTC(refDate, count);
       return formatISODate(next);
     }
     default:
@@ -113,11 +110,7 @@ export function dateToJournalLink(date: string): string {
 
 export function isBeforeToday(dateStr: string): boolean {
   if (!dateStr) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(dateStr);
-  d.setHours(0, 0, 0, 0);
-  return d < today;
+  return dateStr < todayString();
 }
 
 export function isToday(dateStr: string): boolean {
