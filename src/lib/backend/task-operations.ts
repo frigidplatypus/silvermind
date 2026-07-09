@@ -2,7 +2,6 @@ import type { SbClient } from './sb-client';
 import type { Task } from './task-types';
 import { parseTasksFromPage, findNthTask, findTaskByContent } from './task-parser';
 import { toMarkdown } from './task-serializer';
-import { advanceDue, todayString } from './task-date';
 import { parseJournalLink } from './task-serializer';
 import { extractTags, stripTags } from './task-parser';
 import { logInfo, logWarn, logError } from '$lib/helpers/logger';
@@ -32,12 +31,6 @@ function validateTask(task: Task, field?: string): void {
     throw new TaskOperationError(
       'VALIDATION_ERROR',
       `invalid priority${field ? ` (${field})` : ''}: must be high, medium, or low`,
-    );
-  }
-  if (task.recur && !RECUR_RE.test(task.recur)) {
-    throw new TaskOperationError(
-      'VALIDATION_ERROR',
-      `invalid recur${field ? ` (${field})` : ''}: must be daily:N, weekly:N, monthly:N, or yearly:N`,
     );
   }
   if (task.tags) {
@@ -113,9 +106,7 @@ function describeTask(task: Task): string {
 }
 
 export async function toggleDone(task: Task, sbClient: SbClient): Promise<Task> {
-  logInfo(
-    `[task-op] toggleDone start — ${describeTask(task)} client="${sbClient.getBaseURL()}"`,
-  );
+  logInfo(`[task-op] toggleDone start — ${describeTask(task)} client="${sbClient.getBaseURL()}"`);
   let updatedTask: Task = { ...task, status: 'x', done: true };
   let notFound = false;
   let abortReason: string | null = null;
@@ -125,9 +116,7 @@ export async function toggleDone(task: Task, sbClient: SbClient): Promise<Task> 
     logInfo(`[task-op] toggleDone — read ${content.length} bytes from "${task.page}"`);
     const found = findTaskByContent(content, task);
     if (!found) {
-      logWarn(
-        `[task-op] toggleDone not found — ${describeTask(task)}`,
-      );
+      logWarn(`[task-op] toggleDone not found — ${describeTask(task)}`);
       notFound = true;
       return content;
     }
@@ -151,29 +140,6 @@ export async function toggleDone(task: Task, sbClient: SbClient): Promise<Task> 
 
     updatedTask = { ...found.task, status: 'x', done: true };
     changed = true;
-
-    if (found.task.recur) {
-      const dueStr = found.task.due || todayString();
-      const jl = parseJournalLink(dueStr);
-      const dateStr = jl ? jl.date : dueStr.replace(/[\[\]"]/g, '');
-      const baseDate = new Date(dateStr + 'T00:00:00');
-      const nextDue = advanceDue(dateStr, found.task.recur, baseDate);
-      const nextTask: Task = {
-        ...found.task,
-        status: '',
-        done: false,
-        due: `[[Journal/${nextDue}]]`,
-        due_parsed: null,
-        deferred: '',
-        deferred_parsed: null,
-        alerts: undefined,
-      };
-      const nextLine = toMarkdown(nextTask);
-      const lines = content.split('\n');
-      lines[found.lineIndex] = doneLine;
-      if (lines[lines.length - 1] === '') lines.pop();
-      return [...lines, nextLine, ''].join('\n');
-    }
 
     const lines = content.split('\n');
     lines[found.lineIndex] = doneLine;
@@ -205,9 +171,7 @@ export async function toggleDone(task: Task, sbClient: SbClient): Promise<Task> 
 }
 
 export async function toggleUndone(task: Task, sbClient: SbClient): Promise<Task> {
-  logInfo(
-    `[task-op] toggleUndone start — ${describeTask(task)} client="${sbClient.getBaseURL()}"`,
-  );
+  logInfo(`[task-op] toggleUndone start — ${describeTask(task)} client="${sbClient.getBaseURL()}"`);
   const updatedTask: Task = { ...task, status: '', done: false };
   let notFound = false;
   let abortReason: string | null = null;
@@ -239,22 +203,6 @@ export async function toggleUndone(task: Task, sbClient: SbClient): Promise<Task
     lines[found.lineIndex] = undoneLine;
     changed = true;
 
-    if (task.recur) {
-      const tasks = parseTasksFromPage(content, task.page);
-      for (let i = tasks.length - 1; i >= 0; i--) {
-        const t = tasks[i];
-        if (t.recur === task.recur && !t.done) {
-          if (task.name && t.name !== task.name) continue;
-          if (!task.name && t.text !== task.text) continue;
-          const matchFound = findTaskByContent(content, t);
-          if (matchFound) {
-            lines.splice(matchFound.lineIndex, 1);
-          }
-          break;
-        }
-      }
-    }
-
     return lines.join('\n');
   });
 
@@ -279,9 +227,6 @@ export async function modifyTask(
   }
   if (fields.priority !== undefined) {
     validateTask({ ...task, priority: fields.priority } as Task, 'priority');
-  }
-  if (fields.recur !== undefined) {
-    validateTask({ ...task, recur: fields.recur } as Task, 'recur');
   }
   if (fields.tags !== undefined) {
     validateTask({ ...task, tags: fields.tags } as Task, 'tags');

@@ -26,20 +26,20 @@ function sortKeys(obj: Record<string, string>): [string, string][] {
 }
 
 export function toMarkdown(task: Task): string {
+  // FUTURE: task dependencies & blocking
   const displayStatus = task.status === '' ? ' ' : task.status;
-  const tagStr = task.tags.length > 0 ? ' ' + task.tags.map(t => `#${t}`).join(' ') : '';
+  const tagStr = task.tags.length > 0 ? ' ' + task.tags.map((t) => `#${t}`).join(' ') : '';
   const parts: string[] = [`- [${displayStatus}] ${task.text}${tagStr}`];
 
   const attrs: Record<string, string> = {};
 
   if (task.due) attrs['due'] = task.due.includes('"') ? task.due : `"${task.due}"`;
-  if (task.deferred) attrs['deferred'] = task.deferred.includes('"') ? task.deferred : `"${task.deferred}"`;
+  if (task.deferred)
+    attrs['deferred'] = task.deferred.includes('"') ? task.deferred : `"${task.deferred}"`;
   if (task.name) attrs['name'] = task.name;
   if (task.priority) attrs['priority'] = task.priority;
   if (task.parent) attrs['parent'] = task.parent;
-  if (task.recur) attrs['recur'] = task.recur;
   if (task.alerts && task.alerts.length > 0) attrs['alerts'] = task.alerts.join(', ');
-  if (task.depends_on && task.depends_on.length > 0) attrs['dependsOn'] = task.depends_on.join(', ');
 
   if (task.extra_attrs) {
     for (const [k, v] of Object.entries(task.extra_attrs)) {

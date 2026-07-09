@@ -120,16 +120,6 @@
         <Icon name="check" size="0.75rem" />
       {/if}
     </span>
-    {#if task.blocked}
-      <span class="status-icon-block" role="img" aria-label="Blocked by dependencies"
-        ><Icon name="lock" size="0.875rem" /></span
-      >
-    {/if}
-    {#if task.recur}
-      <span class="status-icon-recur" role="img" aria-label="Recurring: {task.recur}"
-        ><Icon name="repeat" size="0.875rem" /></span
-      >
-    {/if}
     <div class="task-content">
       <span class="task-title" class:done={task.done || verifiedComplete}
         ><Markdown text={displayText} inline={true} {spaceURL} /></span
@@ -254,7 +244,10 @@
     flex-shrink: 0;
     color: transparent;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
   }
   .task-checkbox.toggling {
     opacity: 0.65;
@@ -273,19 +266,41 @@
     animation: check-draw 0.3s ease 0.05s both;
   }
   @keyframes check-pop {
-    0%   { transform: scale(1); }
-    30%  { transform: scale(1.3); }
-    60%  { transform: scale(0.9); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    30% {
+      transform: scale(1.3);
+    }
+    60% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
   @keyframes check-draw {
-    0%   { transform: scale(0) rotate(-45deg); opacity: 0; }
-    60%  { transform: scale(1.15) rotate(0deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+      transform: scale(0) rotate(-45deg);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.15) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
   }
   @keyframes checkbox-pending {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(0.88); }
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.88);
+    }
   }
   @keyframes verified-complete-pulse {
     0% {
@@ -321,16 +336,6 @@
   }
   .priority-dot.low {
     background: var(--color-priority-low);
-  }
-  .status-icon-block {
-    color: var(--color-danger);
-    margin-top: 0.25rem;
-    flex-shrink: 0;
-  }
-  .status-icon-recur {
-    color: var(--color-accent);
-    margin-top: 0.25rem;
-    flex-shrink: 0;
   }
   .task-content {
     flex: 1;

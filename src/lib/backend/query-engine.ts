@@ -312,22 +312,6 @@ function processFilterClause(
     return [(tasks) => filterOverdue(tasks)];
   }
 
-  if (sub === 'blocked') {
-    return [(tasks) => filterBlocked(tasks)];
-  }
-
-  if (sub === 'unblocked') {
-    return [(tasks) => filterUnblocked(tasks)];
-  }
-
-  if (sub === 'orphan') {
-    return [(tasks) => filterByOrphan(tasks)];
-  }
-
-  if (sub === 'recur') {
-    return [(tasks) => filterByRecur(tasks)];
-  }
-
   if (sub === 'not t.done') return null;
 
   if (sub === 't.done') {
@@ -549,19 +533,9 @@ function processFilterClause(
   return null;
 }
 
-export function computeBlocked(tasks: Task[]): void {
-  const doneNames = new Set<string>();
-  for (const t of tasks) {
-    if (t.done && t.name) doneNames.add(t.name);
-  }
-  for (const t of tasks) {
-    if (t.depends_on && t.depends_on.length > 0) {
-      t.blocked = t.depends_on.some((d) => !doneNames.has(d));
-    } else {
-      t.blocked = false;
-    }
-  }
-}
+// FUTURE: task dependencies & blocking
+// computeBlocked moved to FUTURE section
+// filterBlocked, filterUnblocked, filterByOrphan, filterByRecur moved to FUTURE section
 
 export function applyHardExclusions(tasks: Task[]): Task[] {
   return tasks.filter((t) => {
@@ -701,14 +675,6 @@ export function filterOverdue(tasks: Task[]): Task[] {
   });
 }
 
-export function filterBlocked(tasks: Task[]): Task[] {
-  return tasks.filter((t) => t.blocked);
-}
-
-export function filterUnblocked(tasks: Task[]): Task[] {
-  return tasks.filter((t) => !t.blocked);
-}
-
 export function filterByStatuses(tasks: Task[], statuses: string[]): Task[] {
   return tasks.filter((t) => statuses.includes(t.status));
 }
@@ -717,13 +683,19 @@ export function filterByParent(tasks: Task[], parent: string): Task[] {
   return tasks.filter((t) => t.parent === parent);
 }
 
-export function filterByOrphan(tasks: Task[]): Task[] {
-  return tasks.filter((t) => !t.parent);
-}
-
-export function filterByRecur(tasks: Task[]): Task[] {
-  return tasks.filter((t) => !!t.recur);
-}
+// FUTURE: task dependencies & blocking
+// export function filterBlocked(tasks: Task[]): Task[] {
+//   return tasks.filter((t) => t.blocked);
+// }
+// export function filterUnblocked(tasks: Task[]): Task[] {
+//   return tasks.filter((t) => !t.blocked);
+// }
+// export function filterByOrphan(tasks: Task[]): Task[] {
+//   return tasks.filter((t) => !t.parent);
+// }
+// export function filterByRecur(tasks: Task[]): Task[] {
+//   return tasks.filter((t) => !!t.recur);
+// }
 
 export function sortTasks(tasks: Task[], sortBy: string, order: string): void {
   const dir = order === 'desc' ? -1 : 1;

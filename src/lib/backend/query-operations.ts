@@ -2,7 +2,6 @@ import type { SbClient } from './sb-client';
 import type { Task, QueryBlock, QueryBlockPage, TaskFilter } from './task-types';
 import {
   translateSLIQ,
-  computeBlocked,
   sortTasks,
   normalizePositions,
   filterByTags,
@@ -239,7 +238,8 @@ export async function executeQuery(sliq: string, sbClient: SbClient): Promise<Ta
     tasks = filterExcludeTags(tasks, filter.excludeTags);
   }
 
-  computeBlocked(tasks);
+  // FUTURE: task dependencies & blocking
+  // computeBlocked(tasks);
   tasks = postFilter(tasks);
   normalizePositions(tasks);
   if (filter.sortBy) {

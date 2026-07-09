@@ -39,22 +39,12 @@ export function stripTags(text: string): string {
 
 export function collectExtraAttrs(rt: Record<string, unknown>): Record<string, unknown> {
   const known = new Set([
-    'ref',
-    'tag',
-    'name',
-    'done',
-    'state',
-    'page',
-    'pos',
-    'parent',
     'tags',
     'itags',
     'due',
     'deferred',
     'priority',
-    'recur',
     'alerts',
-    'depends_on',
     'due_parsed',
     'deferred_parsed',
     'text',
@@ -89,9 +79,6 @@ export function mapRuntimeTask(rt: Record<string, any>): Task {
     priority: rt.priority || '',
     tags: rt.tags || extractTags(stripped),
     parent: rt.parent,
-    depends_on: rt.depends_on,
-    blocked: false,
-    recur: rt.recur,
     alerts: rt.alerts,
     extra_attrs: rt.extra_attrs || collectExtraAttrs(rt),
   };
@@ -145,21 +132,7 @@ export function parseTaskLine(line: string, page: string, position: number): Tas
   const alertsStr = attrs['alerts'];
   const alerts = alertsStr ? alertsStr.split(',').map((s) => s.trim()) : undefined;
 
-  let depends_on: string[] | undefined;
-  if (attrs['dependsOn']) {
-    depends_on = attrs['dependsOn'].split(',').map((s) => s.trim());
-  }
-
-  const knownKeys = new Set([
-    'due',
-    'deferred',
-    'name',
-    'priority',
-    'recur',
-    'parent',
-    'alerts',
-    'dependsOn',
-  ]);
+  const knownKeys = new Set(['due', 'deferred', 'name', 'priority', 'recur', 'parent', 'alerts']);
   const extra_attrs: Record<string, string> = {};
   for (const [k, v] of Object.entries(attrs)) {
     if (!knownKeys.has(k)) {
@@ -181,9 +154,6 @@ export function parseTaskLine(line: string, page: string, position: number): Tas
     priority,
     tags,
     parent,
-    depends_on,
-    blocked: false,
-    recur,
     alerts,
     extra_attrs: Object.keys(extra_attrs).length > 0 ? extra_attrs : undefined,
   };
@@ -238,7 +208,6 @@ export function findNthTask(
           status: '',
           done: false,
           tags: [],
-          blocked: false,
           due: '',
           due_parsed: null,
           deferred: '',

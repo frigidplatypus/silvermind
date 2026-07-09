@@ -62,7 +62,9 @@ function mockSbClient(initialPage: string = ''): {
     client,
     getPage: () => pageContent,
     getPageWrites: () => writeLog,
-    setLastModified: (ts: number) => { lastModified = ts; },
+    setLastModified: (ts: number) => {
+      lastModified = ts;
+    },
   };
 }
 
@@ -129,11 +131,7 @@ describe('modifyTask', () => {
   it('modifies task due date', async () => {
     setupPage('- [ ] Due test\n');
     const task = baseTask({ text: 'Due test' });
-    const result = await modifyTask(
-      task,
-      { due: '[[Journal/2026-12-31]]' },
-      mock.client,
-    );
+    const result = await modifyTask(task, { due: '[[Journal/2026-12-31]]' }, mock.client);
 
     expect(result.due).toBe('[[Journal/2026-12-31]]');
     expect(mock.getPage()).toContain('[due: "[[Journal/2026-12-31]]"]');
@@ -142,23 +140,10 @@ describe('modifyTask', () => {
   it('modifies task deferred date', async () => {
     setupPage('- [ ] Deferred test\n');
     const task = baseTask({ text: 'Deferred test' });
-    const result = await modifyTask(
-      task,
-      { deferred: '[[Journal/2026-07-15]]' },
-      mock.client,
-    );
+    const result = await modifyTask(task, { deferred: '[[Journal/2026-07-15]]' }, mock.client);
 
     expect(result.deferred).toBe('[[Journal/2026-07-15]]');
     expect(mock.getPage()).toContain('[deferred: "[[Journal/2026-07-15]]"]');
-  });
-
-  it('modifies task recurrence', async () => {
-    setupPage('- [ ] Recur test\n');
-    const task = baseTask({ text: 'Recur test' });
-    const result = await modifyTask(task, { recur: 'daily:1' }, mock.client);
-
-    expect(result.recur).toBe('daily:1');
-    expect(mock.getPage()).toContain('[recur: "daily:1"]');
   });
 
   it('modifies task tags', async () => {
@@ -173,19 +158,6 @@ describe('modifyTask', () => {
     expect(saved.tags).toContain('urgent');
   });
 
-  it('modifies task depends_on', async () => {
-    setupPage('- [ ] Deps test\n');
-    const task = baseTask({ text: 'Deps test' });
-    const result = await modifyTask(
-      task,
-      { depends_on: ['step1', 'step2'] },
-      mock.client,
-    );
-
-    expect(result.depends_on).toEqual(['step1', 'step2']);
-    expect(mock.getPage()).toContain('[dependsOn: "step1, step2"]');
-  });
-
   it('modifies task name', async () => {
     setupPage('- [ ] Name test\n');
     const task = baseTask({ text: 'Name test' });
@@ -198,11 +170,7 @@ describe('modifyTask', () => {
   it('modifies task alerts', async () => {
     setupPage('- [ ] Alert test\n');
     const task = baseTask({ text: 'Alert test' });
-    const result = await modifyTask(
-      task,
-      { alerts: ['2026-07-01 09:00'] },
-      mock.client,
-    );
+    const result = await modifyTask(task, { alerts: ['2026-07-01 09:00'] }, mock.client);
 
     expect(result.alerts).toEqual(['2026-07-01 09:00']);
     expect(mock.getPage()).toContain('[alerts: "2026-07-01 09:00"]');
@@ -393,41 +361,41 @@ describe('modifyTask', () => {
   it('rejects invalid status with colon', async () => {
     setupPage('- [ ] Test\n');
     const task = baseTask({ text: 'Test' });
-    await expect(
-      modifyTask(task, { status: 'bad:value' }, mock.client),
-    ).rejects.toThrow(/status.*colon|status.*:/);
+    await expect(modifyTask(task, { status: 'bad:value' }, mock.client)).rejects.toThrow(
+      /status.*colon|status.*:/,
+    );
   });
 
   it('rejects invalid priority', async () => {
     setupPage('- [ ] Test\n');
     const task = baseTask({ text: 'Test' });
-    await expect(
-      modifyTask(task, { priority: 'extreme' }, mock.client),
-    ).rejects.toThrow(/priority.*high.*medium.*low/);
+    await expect(modifyTask(task, { priority: 'extreme' }, mock.client)).rejects.toThrow(
+      /priority.*high.*medium.*low/,
+    );
   });
 
   it('rejects invalid recur format', async () => {
     setupPage('- [ ] Test\n');
     const task = baseTask({ text: 'Test' });
-    await expect(
-      modifyTask(task, { recur: 'yearly' }, mock.client),
-    ).rejects.toThrow(/recur.*daily.*weekly.*monthly.*yearly/);
+    await expect(modifyTask(task, { recur: 'yearly' }, mock.client)).rejects.toThrow(
+      /recur.*daily.*weekly.*monthly.*yearly/,
+    );
   });
 
   it('rejects invalid tag characters', async () => {
     setupPage('- [ ] Test\n');
     const task = baseTask({ text: 'Test' });
-    await expect(
-      modifyTask(task, { tags: ['bad tag'] }, mock.client),
-    ).rejects.toThrow(/invalid tag/);
+    await expect(modifyTask(task, { tags: ['bad tag'] }, mock.client)).rejects.toThrow(
+      /invalid tag/,
+    );
   });
 
   it('rejects invalid alert format', async () => {
     setupPage('- [ ] Test\n');
     const task = baseTask({ text: 'Test' });
-    await expect(
-      modifyTask(task, { alerts: ['not-a-date'] }, mock.client),
-    ).rejects.toThrow(/alert.*YYYY-MM-DD/);
+    await expect(modifyTask(task, { alerts: ['not-a-date'] }, mock.client)).rejects.toThrow(
+      /alert.*YYYY-MM-DD/,
+    );
   });
 
   it('accepts valid status change', async () => {
@@ -704,9 +672,7 @@ describe('deleteTask', () => {
 
 describe('archiveTasks', () => {
   it('moves done tasks under a Task Archive header', async () => {
-    const mock = mockSbClient(
-      '- [ ] Active task\n- [x] Done task\n- [ ] Another active\n',
-    );
+    const mock = mockSbClient('- [ ] Active task\n- [x] Done task\n- [ ] Another active\n');
     const result = await archiveTasks('Tasks', mock.client);
 
     expect(result.archived).toBe(1);
@@ -720,9 +686,7 @@ describe('archiveTasks', () => {
   });
 
   it('appends to existing Task Archive section', async () => {
-    const mock = mockSbClient(
-      '- [ ] Active\n- [x] New done\n## Task Archive\n- [x] Old done\n',
-    );
+    const mock = mockSbClient('- [ ] Active\n- [x] New done\n## Task Archive\n- [x] Old done\n');
     const result = await archiveTasks('Tasks', mock.client);
 
     expect(result.archived).toBe(1);

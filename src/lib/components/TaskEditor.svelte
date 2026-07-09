@@ -27,8 +27,6 @@
   let priority = $state<'none' | 'low' | 'medium' | 'high'>('none');
   let due = $state('');
   let deferred = $state('');
-  let recur = $state('');
-  let deps = $state<string[]>([]);
   let parent = $state('');
   let isSaving = $state(false);
   let showDeleteConfirm = $state(false);
@@ -70,8 +68,6 @@
     priority = (task.priority || 'none') as 'none' | 'low' | 'medium' | 'high';
     due = task.due_parsed?.date || task.due || '';
     deferred = task.deferred_parsed?.date || task.deferred || '';
-    recur = task.recur || '';
-    deps = [...(task.depends_on || [])];
     parent = task.parent || '';
     tags = [...(task.tags || [])];
     extraAttrs = { ...(task.extra_attrs || {}) };
@@ -95,8 +91,6 @@
     if (priority !== (task.priority || 'none')) return true;
     if (due !== originalDue) return true;
     if (deferred !== originalScheduled) return true;
-    if (recur !== (task.recur || '')) return true;
-    if (deps.join(',') !== (task.depends_on || []).join(',')) return true;
     if (parent !== (task.parent || '')) return true;
     if (tags.join(',') !== (task.tags || []).join(',')) return true;
     if (JSON.stringify(alerts) !== JSON.stringify(task.alerts || [])) return true;
@@ -182,10 +176,6 @@
         fields.priority = priority === 'none' ? '' : priority;
       if (due !== originalDue) fields.due = due || '';
       if (deferred !== originalScheduled) fields.deferred = deferred || '';
-      if (recur !== (task.recur || '')) fields.recur = recur || '';
-      const oldDeps = (task.depends_on || []).join(',');
-      const newDeps = deps.join(',');
-      if (newDeps !== oldDeps) fields.depends_on = deps;
       if (parent !== (task.parent || '')) fields.parent = parent || '';
       const oldTags = (task.tags || []).join(',');
       const newTags = tags.join(',');
@@ -352,40 +342,6 @@
           >×</button
         ></span
       >
-    </div>
-  {/if}
-
-  <label class="field-label" for="edit-recur">Recurrence</label>
-  <select id="edit-recur" class="field" bind:value={recur}>
-    <option value="">None</option>
-    <option value="daily:1">Daily</option>
-    <option value="weekly:1">Weekly</option>
-    <option value="monthly:1">Monthly</option>
-    <option value="yearly:1">Yearly</option>
-  </select>
-
-  <label class="field-label" for="ac-deps">Dependencies</label>
-  <Autocomplete
-    id="ac-deps"
-    items={taskNames}
-    placeholder="Add dependency…"
-    onselect={(name) => {
-      if (!deps.includes(name)) deps = [...deps, name];
-    }}
-  />
-  {#if deps.length > 0}
-    <div class="chip-row">
-      {#each deps as dep}
-        <span class="chip"
-          ><Icon name="link" size="0.75rem" />
-          {dep}
-          <button
-            class="chip-remove"
-            onclick={() => (deps = deps.filter((d) => d !== dep))}
-            aria-label="Remove {dep}">×</button
-          ></span
-        >
-      {/each}
     </div>
   {/if}
 

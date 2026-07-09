@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   translateSLIQ,
-  computeBlocked,
   applyHardExclusions,
   applyDefaultViewExclusions,
   applyGlobalTaskExclusions,
@@ -9,11 +8,7 @@ import {
   filterByTags,
   filterExcludeTags,
   filterOverdue,
-  filterBlocked,
-  filterUnblocked,
   filterByStatuses,
-  filterByOrphan,
-  filterByRecur,
   sortTasks,
 } from '../query-engine';
 import type { Task } from '../task-types';
@@ -32,7 +27,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     name: '',
     priority: '',
     tags: [],
-    blocked: false,
     ...overrides,
   };
 }
@@ -117,17 +111,6 @@ describe('translateSLIQ', () => {
     expect(result[0].due).toBe('2020-01-01');
   });
 
-  it('parses blocked filter', () => {
-    const { postFilter } = translateSLIQ(
-      'from t = index.objects("task")\nwhere blocked\nselect templates.taskItem(t)',
-    );
-    const blocked = makeTask({ blocked: true });
-    const unblocked = makeTask({ blocked: false });
-    const result = postFilter([blocked, unblocked]);
-    expect(result).toHaveLength(1);
-    expect(result[0].blocked).toBe(true);
-  });
-
   it('parses sort order', () => {
     const { filter } = translateSLIQ(
       'from t = index.objects("task")\norder by t.due asc\nselect templates.taskItem(t)',
@@ -142,59 +125,6 @@ describe('translateSLIQ', () => {
     );
     expect(filter.limit).toBe(50);
   });
-
-  it('parses orphan filter', () => {
-    const { postFilter } = translateSLIQ(
-      'from t = index.objects("task")\nwhere orphan\nselect templates.taskItem(t)',
-    );
-    const orphan = makeTask({ text: 'orphan' });
-    const child = makeTask({ text: 'child', parent: 'parent-task' });
-
-    const result = postFilter([orphan, child]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].text).toBe('orphan');
-  });
-
-  it('parses recur filter', () => {
-    const { postFilter } = translateSLIQ(
-      'from t = index.objects("task")\nwhere recur\nselect templates.taskItem(t)',
-    );
-    const recurring = makeTask({ text: 'recurring', recur: 'daily:1' });
-    const oneOff = makeTask({ text: 'one-off' });
-
-    const result = postFilter([recurring, oneOff]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].recur).toBe('daily:1');
-  });
-});
-
-describe('computeBlocked', () => {
-  it('marks task as blocked when dependency is not done', () => {
-    const tasks: Task[] = [
-      makeTask({ name: 'task-a', done: false, depends_on: ['task-b'] }),
-      makeTask({ name: 'task-b', done: false }),
-    ];
-    computeBlocked(tasks);
-    expect(tasks[0].blocked).toBe(true);
-  });
-
-  it('marks task as unblocked when all dependencies done', () => {
-    const tasks: Task[] = [
-      makeTask({ name: 'task-a', done: false, depends_on: ['task-b'] }),
-      makeTask({ name: 'task-b', done: true }),
-    ];
-    computeBlocked(tasks);
-    expect(tasks[0].blocked).toBe(false);
-  });
-
-  it('task without dependencies is not blocked', () => {
-    const tasks: Task[] = [makeTask({ name: 'standalone', done: false })];
-    computeBlocked(tasks);
-    expect(tasks[0].blocked).toBe(false);
-  });
-});
 
 describe('applyHardExclusions', () => {
   it('excludes done and waiting tasks', () => {
@@ -283,10 +213,7 @@ describe('filterExcludeTags', () => {
 
 describe('applyDefaultViewExclusions', () => {
   it('filters tasks from pages tagged with excluded default-view tags', async () => {
-    const tasks = [
-      makeTask({ page: 'Shopping', tags: [] }),
-      makeTask({ page: 'Tasks', tags: [] }),
-    ];
+    const tasks = [makeTask({ page: 'Shopping', tags: [] }), makeTask({ page: 'Tasks', tags: [] })];
     const sbClient = {
       getBaseURL: () => 'https://example.test',
       readPage: async (page: string) => ({
@@ -300,29 +227,6 @@ describe('applyDefaultViewExclusions', () => {
 
     const result = await applyDefaultViewExclusions(tasks, sbClient, ['#shopping-list']);
     expect(result.map((task) => task.page)).toEqual(['Tasks']);
-  });
-});
-
-describe('filterByOrphan', () => {
-  it('filters tasks without parent', () => {
-    const tasks = [
-      makeTask({ text: 'orphan' }),
-      makeTask({ text: 'child', parent: 'parent-task' }),
-    ];
-    const result = filterByOrphan(tasks);
-    expect(result).toHaveLength(1);
-    expect(result[0].text).toBe('orphan');
-  });
-});
-
-describe('filterByRecur', () => {
-  it('filters tasks with recurrence', () => {
-    const tasks = [
-      makeTask({ text: 'recurring', recur: 'daily:1' }),
-      makeTask({ text: 'one-off' }),
-    ];
-    const result = filterByRecur(tasks);
-    expect(result).toHaveLength(1);
   });
 });
 

@@ -16,9 +16,6 @@ export interface Task {
   priority: string;
   tags: string[];
   parent?: string;
-  depends_on?: string[];
-  blocked: boolean;
-  recur?: string;
   alerts?: string[];
   extra_attrs?: Record<string, string>;
 }
