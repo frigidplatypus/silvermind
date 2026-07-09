@@ -510,7 +510,7 @@
             <div class="space-info">
               <span class="space-name">{space.name}</span>
               <span class="space-url">{space.url}</span>
-              <span class="space-meta">Config stored in Library/Silvermind/config</span>
+              <span class="space-meta">Config stored in <a href="https://silverbullet.md/Space%20Lua/Integrated%20Query" target="_blank" rel="noopener" class="help-link">Library/Silvermind/config</a></span>
             </div>
             <div class="space-actions">
               {#if !space.active}
@@ -945,6 +945,14 @@
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
     cursor: pointer;
+  }
+  .help-link {
+    color: var(--color-text-tertiary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .help-link:hover {
+    color: var(--color-accent);
   }
   .radio-row input {
     accent-color: var(--color-accent);
