@@ -1,7 +1,8 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import Autocomplete from './Autocomplete.svelte';
   import { saveQuery, testQuery, checkHelpers, deployHelpers } from '$lib/api/queries';
-  import { loadQueryPages } from '$lib/stores/queries.svelte';
+  import { loadQueryPages, getPageNames, loadPageNames } from '$lib/stores/queries.svelte';
   import { getBuilderEdit, clearBuilderEdit } from '$lib/stores/builder-edit.svelte';
   import { onMount } from 'svelte';
   import { devLog } from '$lib/helpers/dev-log';
@@ -17,6 +18,8 @@
   let editBlockNumber = $state(0);
   let helpersMissing = $state(false);
   let deployingHelpers = $state(false);
+
+  let queryPageNames = $state<string[]>([]);
 
   onMount(() => {
     devLog('[query-builder] onMount called');
@@ -35,6 +38,7 @@
         helpersMissing = !r.exists;
       })
       .catch(() => {});
+    loadPageNames();
   });
 
   async function handleDeployHelpers() {
@@ -634,11 +638,13 @@
           <option value="starts">starts with</option>
           <option value="not-starts">not starts with</option>
         </select>
-        <input
-          type="text"
+        <Autocomplete
+          id="page-filter"
+          items={getPageNames()}
           bind:value={pageFilterValue}
           placeholder="page name"
-          class="field-input"
+          allowFreeText
+          freeTextLabel="Create page: {query}"
         />
       </div>
     </div>

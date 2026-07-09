@@ -117,6 +117,12 @@ export async function deployHelpers(): Promise<{ deployed: boolean; created?: bo
   }
 }
 
+export async function getQueryPageNames(): Promise<string[]> {
+  const sbClient = await getSbClient();
+  const pages = await getQueryPages(sbClient);
+  return pages.map((p) => p.page).sort();
+}
+
 export function getFavorites(): FavoriteQuery[] {
   return getSpaceConfig().favorites || [];
 }

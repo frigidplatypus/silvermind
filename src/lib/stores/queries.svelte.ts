@@ -1,7 +1,13 @@
 import type { Task } from '$lib/types/task';
 import type { QueryPage, QueryBlockInfo, QueryExecuteResult } from '$lib/api/queries';
 import type { FavoriteQuery } from '$lib/backend/task-types';
-import { getQueryPages, executeQuery, getQueryBlocks, getFavorites } from '$lib/api/queries';
+import {
+  getQueryPages,
+  executeQuery,
+  getQueryBlocks,
+  getFavorites,
+  getQueryPageNames,
+} from '$lib/api/queries';
 import { formatError } from '$lib/helpers/format-error';
 import { devLog } from '$lib/helpers/dev-log';
 import { logInfo, logError } from '$lib/helpers/logger';
@@ -15,6 +21,8 @@ let currentQueryTasks = $state<Task[]>([]);
 let currentQueryTitle = $state<string | null>(null);
 let queryLoading = $state(false);
 let favoriteQueries = $state<FavoriteQuery[]>([]);
+let pageNames = $state<string[]>([]);
+let pageNamesLoading = $state(false);
 
 export function getQueryPagesList(): QueryPage[] {
   return queryPages;
@@ -45,6 +53,26 @@ export function getFavoriteQueries(): FavoriteQuery[] {
   return favoriteQueries;
 }
 
+export function getPageNames(): string[] {
+  return pageNames;
+}
+export function getPageNamesLoading(): boolean {
+  return pageNamesLoading;
+}
+
+export async function loadPageNames(): Promise<void> {
+  if (pageNamesLoading) return;
+  pageNamesLoading = true;
+  try {
+    pageNames = await getQueryPageNames();
+    logInfo(`[queries-store] loadPageNames done: ${pageNames.length} pages`);
+  } catch (e) {
+    logError('[queries-store] loadPageNames failed:', e);
+  } finally {
+    pageNamesLoading = false;
+  }
+}
+
 export async function loadQueryPages(refresh = false): Promise<void> {
   logInfo(`[queries-store] loadQueryPages called (refresh=${refresh})`);
   pagesLoading = true;
@@ -53,6 +81,7 @@ export async function loadQueryPages(refresh = false): Promise<void> {
     queryPages = await getQueryPages(undefined, refresh);
     favoriteQueries = getFavorites();
     logInfo(`[queries-store] loadQueryPages done: ${queryPages.length} pages`);
+    await loadPageNames();
   } catch (e) {
     pagesError = formatError(e);
     logError('[queries-store] loadQueryPages failed:', e);
