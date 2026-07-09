@@ -1,5 +1,6 @@
 import type { SbClient } from './sb-client';
-import type { SpaceConfigRemote } from './task-types';
+import type { SpaceConfigRemote, FavoriteQuery } from './task-types';
+import { extractQueryBlocks } from './query-operations';
 import { logInfo, logWarn, logError } from '$lib/helpers/logger';
 
 const CONFIG_PAGE = 'Library/Silvermind/config';
@@ -12,6 +13,7 @@ export function getDefaultConfig(): SpaceConfigRemote {
     exclude_tags: [],
     default_sort_by: 'due',
     default_sort_order: 'asc',
+    favorites: [],
   };
 }
 
@@ -97,6 +99,9 @@ export function parseConfigYaml(content: string): SpaceConfigRemote {
           config.inbox_page = value.replace(/^["']|["']$/g, '');
         }
         break;
+      case 'favorites':
+        config.favorites = parseFavorites(trimmed, yamlStr, line);
+        break;
       case 'exclude_tags': {
         const tags = parseYamlArray(trimmed, yamlStr, line);
         if (tags) config.exclude_tags = tags;
@@ -154,6 +159,51 @@ function parseYamlArray(
   return items.length > 0 ? items : null;
 }
 
+function parseFavorites(
+  _firstLine: string,
+  fullBlock: string,
+  firstLineStr: string,
+): FavoriteQuery[] {
+  const firstIdx = fullBlock.indexOf(firstLineStr);
+  if (firstIdx === -1) return [];
+
+  const afterFirst = fullBlock.slice(firstIdx + firstLineStr.length);
+  const favorites: FavoriteQuery[] = [];
+  let currentPage = '';
+  let currentHeading = '';
+  let currentBlock = 0;
+
+  for (const line of afterFirst.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- page:') && currentPage && currentHeading) {
+      favorites.push({ page: currentPage, heading: currentHeading, block: currentBlock });
+      currentPage = '';
+      currentHeading = '';
+      currentBlock = 0;
+    }
+    const pageMatch = trimmed.match(/^-\s+page:\s*(.+)/);
+    if (pageMatch) {
+      currentPage = pageMatch[1].trim().replace(/^["']|["']$/g, '');
+      continue;
+    }
+    const headingMatch = trimmed.match(/^-\s+heading:\s*(.+)/);
+    if (headingMatch) {
+      currentHeading = headingMatch[1].trim().replace(/^["']|["']$/g, '');
+      continue;
+    }
+    const blockMatch = trimmed.match(/^-\s+block:\s*(\d+)/);
+    if (blockMatch) {
+      currentBlock = parseInt(blockMatch[1], 10);
+      continue;
+    }
+  }
+  if (currentPage && currentHeading) {
+    favorites.push({ page: currentPage, heading: currentHeading, block: currentBlock });
+  }
+
+  return favorites;
+}
+
 export function formatConfigYaml(config: SpaceConfigRemote): string {
   const lines: string[] = [];
 
@@ -182,7 +232,43 @@ export function formatConfigYaml(config: SpaceConfigRemote): string {
     lines.push(`default_sort_order: ${config.default_sort_order}`);
   }
 
+  const favs = config.favorites || [];
+  if (favs.length > 0) {
+    lines.push('favorites:');
+    for (const f of favs) {
+      lines.push(`  - page: ${f.page}`);
+      lines.push(`    heading: ${f.heading}`);
+      lines.push(`    block: ${f.block}`);
+    }
+  }
+
   return lines.join('\n');
+}
+
+export interface ResolvedFavorite {
+  page: string;
+  block: number;
+  heading: string;
+}
+
+export function isFavorite(config: SpaceConfigRemote, page: string, heading: string): boolean {
+  return (config.favorites || []).some((f) => f.page === page && f.heading === heading);
+}
+
+export function toggleFavorite(
+  config: SpaceConfigRemote,
+  page: string,
+  heading: string,
+  block: number,
+): SpaceConfigRemote {
+  const favs = [...(config.favorites || [])];
+  const idx = favs.findIndex((f) => f.page === page && f.heading === heading);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+  } else {
+    favs.push({ page, heading, block });
+  }
+  return { ...config, favorites: favs };
 }
 
 export async function readSpaceConfig(sbClient: SbClient): Promise<SpaceConfigRemote> {

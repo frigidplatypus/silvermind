@@ -1,8 +1,15 @@
-import { getSbClient, getSpaceConfig } from '$lib/backend/backend-context';
+import { getSbClient, getSpaceConfig, setSpaceConfig } from '$lib/backend/backend-context';
 import { getQueryPages, executeQueryBlock, saveQueryBlock } from '$lib/backend/query-operations';
 import { executeQuery } from '$lib/backend/query-operations';
 import { extractQueryBlocks } from '$lib/backend/query-operations';
-import { ensureSpaceConfig } from '$lib/backend/space-config';
+import {
+  ensureSpaceConfig,
+  isFavorite,
+  toggleFavorite,
+  writeSpaceConfig,
+  readSpaceConfig,
+} from '$lib/backend/space-config';
+import type { FavoriteQuery } from '$lib/backend/task-types';
 import type { Task } from '$lib/types/task';
 import { logInfo, logError } from '$lib/helpers/logger';
 
@@ -108,4 +115,26 @@ export async function deployHelpers(): Promise<{ deployed: boolean; created?: bo
   } catch {
     return { deployed: false };
   }
+}
+
+export function getFavorites(): FavoriteQuery[] {
+  return getSpaceConfig().favorites || [];
+}
+
+export function isQueryFavorite(page: string, heading: string): boolean {
+  return isFavorite(getSpaceConfig(), page, heading);
+}
+
+export async function toggleQueryFavorite(
+  page: string,
+  heading: string,
+  block: number,
+): Promise<FavoriteQuery[]> {
+  const sbClient = await getSbClient();
+  const current = getSpaceConfig();
+  const updated = toggleFavorite(current, page, heading, block);
+  await writeSpaceConfig(sbClient, updated);
+  const fresh = await readSpaceConfig(sbClient);
+  setSpaceConfig(fresh);
+  return fresh.favorites || [];
 }

@@ -44,12 +44,19 @@ export interface TaskFilter {
   offset?: number;
 }
 
+export interface FavoriteQuery {
+  page: string;
+  heading: string;
+  block: number;
+}
+
 export interface SpaceConfigRemote {
   inbox_mode?: string;
   inbox_page?: string;
   exclude_tags?: string[];
   default_sort_by?: string;
   default_sort_order?: string;
+  favorites?: FavoriteQuery[];
 }
 
 export interface SpaceConfig {

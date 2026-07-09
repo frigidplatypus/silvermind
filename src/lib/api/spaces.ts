@@ -7,7 +7,7 @@ import {
 } from '$lib/backend/space-operations';
 import { getConfigManager, getSpaceConfig, getSbClient } from '$lib/backend/backend-context';
 import { readSpaceConfig, writeSpaceConfig, ensureSpaceConfig } from '$lib/backend/space-config';
-import type { SpaceConfigRemote } from '$lib/backend/task-types';
+import type { SpaceConfigRemote, FavoriteQuery } from '$lib/backend/task-types';
 import type { SpacesResponse } from '$lib/types/space';
 
 export async function getSpaces(): Promise<SpacesResponse> {
@@ -85,6 +85,7 @@ export interface UpdateSpaceConfigRequest {
   exclude_tags?: string[];
   default_sort_by?: string;
   default_sort_order?: string;
+  favorites?: FavoriteQuery[];
 }
 
 export async function updateSpaceConfigFn(req: UpdateSpaceConfigRequest): Promise<void> {
@@ -96,6 +97,7 @@ export async function updateSpaceConfigFn(req: UpdateSpaceConfigRequest): Promis
     exclude_tags: req.exclude_tags ?? current.exclude_tags,
     default_sort_by: req.default_sort_by ?? current.default_sort_by,
     default_sort_order: req.default_sort_order ?? current.default_sort_order,
+    favorites: req.favorites ?? current.favorites,
   };
   await writeSpaceConfig(sbClient, updated);
 }

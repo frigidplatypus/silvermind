@@ -22,9 +22,11 @@
     getErrorSLIQ,
     getQueryError,
     getQueryPagesList,
+    getFavoriteQueries,
+    loadQueryPages,
   } from '$lib/stores/queries.svelte';
   import { markTaskDone, undoTask } from '$lib/api/tasks';
-  import { getQueryBlocks } from '$lib/api/queries';
+  import { getQueryBlocks, toggleQueryFavorite, isQueryFavorite } from '$lib/api/queries';
   import type { Task } from '$lib/types/task';
   import SearchBar from './SearchBar.svelte';
   import ServiceErrorBanner from './ServiceErrorBanner.svelte';
@@ -210,32 +212,38 @@
   }
 
   async function handleEditQuery() {
+    if (!activeView.startsWith('queries:')) return;
     const parts = activeView.split(':');
     const page = decodeQueryPage(parts[1]);
-    const blockNumber = parts[2] ? parseInt(parts[2]) : 0;
-    const title = queryTitle ?? '';
-
-    let sliq: string | undefined;
-    if (blockNumber > 0) {
-      try {
-        const blocks = await getQueryBlocks(page);
-        const block = blocks.find((b) => b.number === blockNumber);
-        sliq = block?.sliq;
-      } catch {
-        /* fall through */
-      }
-    }
-    if (!sliq) {
-      sliq = getErrorSLIQ() ?? undefined;
-    }
-    if (!sliq) {
-      const qp = getQueryPagesList().find((p) => p.page === page);
-      const block = qp?.blocks.find((b) => b.number === (blockNumber || 1));
-      sliq = block?.sliq;
-    }
-
-    setBuilderEdit(page, title, blockNumber, sliq);
+    const blockIndex = parts[2] ? parseInt(parts[2]) : undefined;
+    const blocks = await getQueryBlocks(page);
+    const block = blockIndex ? blocks.find((b) => b.number === blockIndex) : blocks[0];
+    if (!block) return;
+    setBuilderEdit(page, block.title, block.number, block.sliq);
     onNavigate('builder');
+  }
+
+  const currentQueryPage = $derived(
+    activeView.startsWith('queries:') ? decodeQueryPage(activeView.split(':')[1]) : '',
+  );
+  const currentQueryBlockNumber = $derived(
+    activeView.startsWith('queries:') && activeView.split(':')[2]
+      ? parseInt(activeView.split(':')[2])
+      : 1,
+  );
+  const currentQueryHeading = $derived(
+    (() => {
+      const qp = getQueryPagesList().find((p) => p.page === currentQueryPage);
+      if (!qp) return '';
+      const block = qp.blocks.find((b) => b.number === currentQueryBlockNumber);
+      return block?.title ?? qp.blocks[0]?.title ?? '';
+    })(),
+  );
+
+  async function handleToggleQueryStar() {
+    if (!currentQueryPage || !currentQueryHeading) return;
+    await toggleQueryFavorite(currentQueryPage, currentQueryHeading, currentQueryBlockNumber);
+    loadQueryPages(true);
   }
 
   function handleEdit() {
@@ -466,6 +474,18 @@
       <div class="query-header">
         <Icon name="search" size="1rem" />
         <span class="query-title">{queryTitle ?? 'Query'}</span>
+        {#if currentQueryHeading}
+          <button
+            class="query-star-btn"
+            class:star-filled={isQueryFavorite(currentQueryPage, currentQueryHeading)}
+            onclick={handleToggleQueryStar}
+            aria-label={isQueryFavorite(currentQueryPage, currentQueryHeading)
+              ? 'Remove from favorites'
+              : 'Add to favorites'}
+          >
+            <Icon name="star" size="0.875rem" />
+          </button>
+        {/if}
         <button class="query-edit-btn" onclick={handleEditQuery} aria-label="Edit query">
           <Icon name="edit-3" size="0.875rem" />
         </button>
@@ -632,6 +652,26 @@
   }
   .query-edit-btn:hover {
     background: var(--color-bg-tertiary);
+    color: var(--color-accent);
+  }
+  .query-star-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-md);
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .query-star-btn:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-accent);
+  }
+  .query-star-btn.star-filled {
     color: var(--color-accent);
   }
   .query-title {

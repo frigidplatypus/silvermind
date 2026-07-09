@@ -15,7 +15,9 @@
     getQueryPagesLoading,
     getQueryPagesError,
     loadQueryPages,
+    getFavoriteQueries,
   } from '$lib/stores/queries.svelte';
+  import { isQueryFavorite, toggleQueryFavorite } from '$lib/api/queries';
   import { getShowToday } from '$lib/stores/landing.svelte';
   import { logInfo } from '$lib/helpers/logger';
 
@@ -50,6 +52,38 @@
 
   let refreshingQueries = $state(false);
   let refreshingInbox = $state(false);
+
+  function flattenBlocks(): Array<{
+    page: string;
+    block: number;
+    heading: string;
+  }> {
+    const result: Array<{ page: string; block: number; heading: string }> = [];
+    for (const qp of getQueryPagesList()) {
+      for (const b of qp.blocks) {
+        result.push({ page: qp.page, block: b.number, heading: b.title });
+      }
+    }
+    return result;
+  }
+
+  const favoriteBlockIds = $derived(
+    new Set(getFavoriteQueries().map((f) => `${f.page}::${f.heading}`)),
+  );
+
+  const allBlocks = $derived(flattenBlocks());
+  const favoriteBlocks = $derived(
+    allBlocks.filter((b) => favoriteBlockIds.has(`${b.page}::${b.heading}`)),
+  );
+  const nonFavorites = $derived(
+    allBlocks.filter((b) => !favoriteBlockIds.has(`${b.page}::${b.heading}`)),
+  );
+
+  async function handleToggleFavorite(page: string, heading: string, block: number, e: MouseEvent) {
+    e.stopPropagation();
+    await toggleQueryFavorite(page, heading, block);
+    loadQueryPages(true);
+  }
 
   async function handleRefreshInbox() {
     refreshingInbox = true;
@@ -158,6 +192,17 @@
       <span>{item.label}</span>
     </button>
   {/each}
+  {#each favoriteBlocks as fav}
+    <button
+      class="sidebar-item"
+      class:active={activeView === `queries:${fav.page}:${fav.block}`}
+      onclick={() => onNavigate(`queries:${fav.page}:${fav.block}`)}
+      aria-current={activeView === `queries:${fav.page}:${fav.block}` ? 'page' : undefined}
+    >
+      <Icon name="star" />
+      <span>{fav.heading}</span>
+    </button>
+  {/each}
 
   <div
     class="sidebar-section-label"
@@ -185,25 +230,38 @@
   {:else if getQueryPagesList().length > 0}
     {#each getQueryPagesList() as qp}
       {#if qp.blocks.length === 1}
-        <button
-          class="sidebar-item query-page-toggle"
-          class:active={activeView === `queries:${qp.page}:1`}
-          onclick={() => onNavigate(`queries:${qp.page}:1`)}
-        >
-          {#if qp.page.includes('/') && !qp.page.startsWith('queries/')}
-            <span class="query-page-name">
-              <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
-              {qp.page.split('/').pop()}
-            </span>
-          {:else}
-            <span class="query-page-name"
-              >{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span
-            >
-          {/if}
-          {#if qp.errors && qp.errors.length > 0}
-            <Icon name="alert-triangle" size="0.75rem" />
-          {/if}
-        </button>
+        <div class="sidebar-item query-item-row">
+          <button
+            class="query-star-toggle"
+            class:star-empty={!favoriteBlockIds.has(`${qp.page}::${qp.blocks[0].title}`)}
+            onclick={(e) =>
+              handleToggleFavorite(qp.page, qp.blocks[0].title, qp.blocks[0].number, e)}
+            aria-label={favoriteBlockIds.has(`${qp.page}::${qp.blocks[0].title}`)
+              ? 'Remove from favorites'
+              : 'Add to favorites'}
+          >
+            <Icon name="star" size="0.75rem" />
+          </button>
+          <button
+            class="query-item-btn"
+            class:active={activeView === `queries:${qp.page}:1`}
+            onclick={() => onNavigate(`queries:${qp.page}:1`)}
+          >
+            {#if qp.page.includes('/') && !qp.page.startsWith('queries/')}
+              <span class="query-page-name">
+                <span class="query-page-folder">{qp.page.split('/').slice(0, -1).join('/')}/</span>
+                {qp.page.split('/').pop()}
+              </span>
+            {:else}
+              <span class="query-page-name"
+                >{qp.page.startsWith('queries/') ? qp.page.slice(8) : qp.page}</span
+              >
+            {/if}
+            {#if qp.errors && qp.errors.length > 0}
+              <Icon name="alert-triangle" size="0.75rem" />
+            {/if}
+          </button>
+        </div>
       {:else}
         <div class="query-page-group">
           <button
@@ -226,14 +284,26 @@
             {/if}
           </button>
           {#each qp.blocks as block}
-            <button
-              class="sidebar-item sidebar-item-child"
-              class:active={activeView === `queries:${qp.page}:${block.number}`}
-              onclick={() => onNavigate(`queries:${qp.page}:${block.number}`)}
-            >
-              <Icon name="chevron-right" size="0.75rem" />
-              <span>{block.title}</span>
-            </button>
+            <div class="sidebar-item sidebar-item-child query-item-row">
+              <button
+                class="query-star-toggle child-star"
+                class:star-empty={!favoriteBlockIds.has(`${qp.page}::${block.title}`)}
+                onclick={(e) => handleToggleFavorite(qp.page, block.title, block.number, e)}
+                aria-label={favoriteBlockIds.has(`${qp.page}::${block.title}`)
+                  ? 'Remove from favorites'
+                  : 'Add to favorites'}
+              >
+                <Icon name="star" size="0.65rem" />
+              </button>
+              <button
+                class="query-item-btn child-btn"
+                class:active={activeView === `queries:${qp.page}:${block.number}`}
+                onclick={() => onNavigate(`queries:${qp.page}:${block.number}`)}
+              >
+                <Icon name="chevron-right" size="0.75rem" />
+                <span>{block.title}</span>
+              </button>
+            </div>
           {/each}
         </div>
       {/if}
@@ -412,10 +482,6 @@
     font-size: var(--font-size-sm);
     color: var(--color-text-tertiary);
   }
-  .sidebar-item-child.active {
-    color: var(--color-accent);
-    font-weight: 600;
-  }
   .query-page-toggle.active {
     font-weight: 600;
   }
@@ -452,5 +518,56 @@
   }
   .sidebar-spacer {
     flex: 1;
+  }
+  .query-item-row {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    gap: 0;
+  }
+  .query-star-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+  }
+  .query-star-toggle:hover {
+    color: var(--color-accent);
+  }
+  .query-star-toggle:not(.star-empty) {
+    color: var(--color-accent);
+  }
+  .query-star-toggle.child-star {
+    padding: 0.25rem;
+  }
+  .query-item-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    padding: 0.375rem 0.5rem 0.375rem 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: left;
+    border-radius: var(--radius-sm);
+  }
+  .query-item-btn:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+  }
+  .query-item-btn.active {
+    background: var(--color-accent-bg);
+    color: var(--color-accent);
+  }
+  .query-item-btn.child-btn {
+    padding-left: 0;
   }
 </style>

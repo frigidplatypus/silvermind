@@ -22,6 +22,10 @@ export function getSpaceConfig(): SpaceConfigRemote {
   return _spaceConfig;
 }
 
+export function setSpaceConfig(config: SpaceConfigRemote) {
+  _spaceConfig = config;
+}
+
 export function getJournalPrefix(): string {
   return _journalPrefix;
 }

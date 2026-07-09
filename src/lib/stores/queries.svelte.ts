@@ -1,6 +1,7 @@
 import type { Task } from '$lib/types/task';
 import type { QueryPage, QueryBlockInfo, QueryExecuteResult } from '$lib/api/queries';
-import { getQueryPages, executeQuery, getQueryBlocks } from '$lib/api/queries';
+import type { FavoriteQuery } from '$lib/backend/task-types';
+import { getQueryPages, executeQuery, getQueryBlocks, getFavorites } from '$lib/api/queries';
 import { formatError } from '$lib/helpers/format-error';
 import { devLog } from '$lib/helpers/dev-log';
 import { logInfo, logError } from '$lib/helpers/logger';
@@ -13,6 +14,7 @@ let errorSLIQ = $state<string | null>(null);
 let currentQueryTasks = $state<Task[]>([]);
 let currentQueryTitle = $state<string | null>(null);
 let queryLoading = $state(false);
+let favoriteQueries = $state<FavoriteQuery[]>([]);
 
 export function getQueryPagesList(): QueryPage[] {
   return queryPages;
@@ -39,12 +41,17 @@ export function getErrorSLIQ(): string | null {
   return errorSLIQ;
 }
 
+export function getFavoriteQueries(): FavoriteQuery[] {
+  return favoriteQueries;
+}
+
 export async function loadQueryPages(refresh = false): Promise<void> {
   logInfo(`[queries-store] loadQueryPages called (refresh=${refresh})`);
   pagesLoading = true;
   pagesError = null;
   try {
     queryPages = await getQueryPages(undefined, refresh);
+    favoriteQueries = getFavorites();
     logInfo(`[queries-store] loadQueryPages done: ${queryPages.length} pages`);
   } catch (e) {
     pagesError = formatError(e);
