@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Silvermind — a cross-platform task management app for SilverBullet",
   "type": "module",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
